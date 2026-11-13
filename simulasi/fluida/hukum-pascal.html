@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fluida: Mesin Hidrolik & Hukum Pascal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* --- TEMA & VARIABEL WARNA --- */
+        :root {
+            --bg-dark: #121417;        /* Gunmetal Dark */
+            --panel-bg: #1e2229;       /* Oil Black */
+            --panel-border: #374151;   /* Steel */
+            --fluid-color: #ef4444;    /* Transmission Red */
+            --fluid-glow: rgba(239, 68, 68, 0.4);
+            --piston-color: #eab308;   /* Safety Yellow */
+            --force-color: #f97316;    /* Orange */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --pipe-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* --- HEADER --- */
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(180deg, var(--panel-bg) 0%, var(--bg-dark) 100%);
+            border-bottom: 2px solid var(--piston-color);
+            border-radius: 8px 8px 0 0;
+        }
+
+        h1 {
+            color: var(--piston-color);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* --- KARTU & PANEL --- */
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            color: var(--force-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 10px;
+        }
+
+        /* --- BOLA PASCAL (3D) --- */
+        .pascal-concept {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .concept-text {
+            flex: 1;
+            min-width: 250px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .sphere-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 300px;
+            position: relative;
+        }
+
+        #pascal3d {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .pressure-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--piston-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid var(--piston-color);
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .pressure-label.visible {
+            opacity: 1;
+        }
+        
+        #lblCenter { top: 50%; left: 50%; background: rgba(239, 68, 68, 0.8); color: white; border-color: white; pointer-events: auto; animation: pulse 2s infinite; cursor: pointer; }
+        #lblTop { top: 10%; left: 50%; }
+        #lblBottom { top: 90%; left: 50%; }
+        #lblLeft { top: 50%; left: 15%; }
+        #lblRight { top: 50%; left: 85%; }
+
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
+        /* --- SIMULATOR UTAMA --- */
+        .simulator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .simulator-grid { grid-template-columns: 1fr; }
+        }
+
+        .visual-panel {
+            background-color: #16181d;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            height: 480px; /* Diperdalam dari 400px */
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            border: 1px inset #2a2d34;
+        }
+
+        /* Desain Pipa U Realistis */
+        .u-tube {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 360px; /* Diperdalam dari 250px */
+            border: 4px solid var(--panel-border);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            display: flex;
+            justify-content: space-between;
+            overflow: hidden; /* Memotong rapi efek cairan di sudut */
+        }
+
+        /* Penutup bagian tengah untuk membentuk huruf U */
+        .u-tube-inner-gap {
+            position: absolute;
+            top: 0;
+            bottom: 40px; /* Ketebalan pipa bawah */
+            /* left dan right diatur dinamis oleh JS */
+            background-color: #16181d; /* Warna background panel visual */
+            border: 4px solid var(--panel-border);
+            border-top: none;
+            border-radius: 0 0 16px 16px;
+            z-index: 5;
+        }
+
+        /* Cairan horizontal statis di dasar pipa */
+        .u-tube-fluid-bottom {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 40px;
+            background-color: var(--fluid-color);
+            z-index: 1;
+        }
+
+        .pipe-section {
+            position: relative;
+            height: calc(100% - 40px); /* Menyisakan ruang untuk pipa horizontal */
+            background-color: rgba(255, 255, 255, 0.03); /* Efek kaca kosong */
+            z-index: 1;
+        }
+
+        .pipe-left { width: 40px; }
+        .pipe-right { width: 100px; }
+
+        /* Cairan dalam pipa vertikal */
+        .fluid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--fluid-color);
+            transition: height 1s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 2;
+        }
+
+        .fluid-left { height: 70%; }
+        .fluid-right { height: 70%; }
+
+        /* Piston */
+        .piston {
+            position: absolute;
+            width: 100%;
+            background-color: var(--piston-color);
+            border: 2px solid #a16207;
+            /* Update transisi untuk respons instan (real-time) */
+            transition: bottom 0.1s linear;
+            z-index: 6; /* Selalu di atas celah tengah */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .piston-left { 
+            height: 20px; 
+            bottom: 70%; 
+        }
+        .piston-right { 
+            height: 20px; 
+            bottom: 70%; 
+            background: linear-gradient(90deg, #94a3b8, #cbd5e1, #94a3b8); /* Warna alas baja metalik */
+            border: 2px solid #475569;
+            border-radius: 4px 4px 0 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Cairan Transisi Cepat */
+        .fluid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--fluid-color);
+            transition: height 0.1s linear;
+            z-index: 2;
+        }
+
+        /* Pipa Transisi Cepat untuk resize A1/A2 */
+        .pipe-section, .u-tube-inner-gap {
+            transition: width 0.1s linear, left 0.1s linear, right 0.1s linear;
+        }
+
+        /* Beban (Mobil Realistis) */
+        .car-load {
+            position: absolute;
+            bottom: 100%;
+            width: 110px;
+            height: 55px;
+            transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: bottom center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            z-index: 10;
+            margin-bottom: 8px; /* Memberi ruang agar roda pas duduk di atas piston/alas */
+        }
+        
+        /* Kabin atas mobil */
+        .car-body-top {
+            width: 65%;
+            height: 22px;
+            background-color: #dc2626;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+            border: 2px solid #991b1b;
+            border-bottom: none;
+        }
+        
+        /* Kaca Jendela mobil */
+        .car-body-top::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 8px; right: 8px; bottom: 0;
+            background: #cbd5e1;
+            border-radius: 8px 8px 0 0;
+            border: 2px solid #475569;
+            border-bottom: none;
+        }
+
+        /* Bodi bawah mobil */
+        .car-body-bottom {
+            width: 100%;
+            height: 28px;
+            background-color: #dc2626;
+            border-radius: 8px 8px 4px 4px;
+            border: 2px solid #991b1b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.7rem;
+            line-height: 1.1;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            position: relative;
+            z-index: 2;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Roda Mobil */
+        .car-wheels {
+            position: absolute;
+            bottom: -8px; /* Roda menonjol ke bawah menyentuh alas baja */
+            width: 75%;
+            display: flex;
+            justify-content: space-between;
+            z-index: 1;
+        }
+        .wheel {
+            width: 20px;
+            height: 20px;
+            background: #111827;
+            border-radius: 50%;
+            border: 4px solid #94a3b8; /* Chrome hubcap */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Animasi Gagal */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake-animation { animation: shake 0.5s; }
+
+        /* --- KONTROL & DASHBOARD --- */
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .value-badge {
+            background-color: var(--bg-dark);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+            color: var(--piston-color);
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+
+        /* Styling Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--force-color);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+        }
+
+        /* Dashboard Data Real-time */
+        .dashboard {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .formula-box {
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        .formula-box span { font-family: sans-serif; font-style: normal; font-size: 0.9rem; color: var(--text-muted); display: block; margin-top: 5px; letter-spacing: normal;}
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed var(--panel-border);
+            padding-bottom: 5px;
+        }
+
+        .result-highlight {
+            font-size: 1.3rem;
+            color: var(--success);
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(16, 185, 129, 0.4);
+        }
+        .result-fail { color: var(--danger); text-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+
+        /* Trade-off Bar */
+        .tradeoff-container { margin-top: 15px; }
+        .tradeoff-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+        .tradeoff-bar-bg {
+            width: 100%; height: 10px; background-color: var(--panel-bg); border-radius: 5px; overflow: hidden; margin-bottom: 10px;
+        }
+        .tradeoff-h1 { width: 100%; height: 100%; background-color: var(--force-color); transition: width 0.3s; }
+        .tradeoff-h2 { width: 10%; height: 100%; background-color: var(--piston-color); transition: width 0.3s; }
+
+        /* Tombol Aksi */
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #121417;
+            background-color: var(--piston-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #b45309;
+            margin-top: 15px;
+            display: none; /* Disembunyikan karena sudah real-time */
+        }
+
+        /* Konfeti */
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: var(--piston-color); opacity: 0; z-index: 10; pointer-events: none;}
+        @keyframes fall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(200px) rotate(360deg); } }
+
+        /* Pesan Status */
+        .status-message { text-align: center; margin-top: 10px; font-weight: bold; min-height: 24px; transition: color 0.3s; }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- HEADER -->
+    <header>
+        <h1>Tahap 1.3: Sihir Angkat Mobil</h1>
+        <h2>(Hukum Pascal)</h2>
+        <p style="margin-top: 10px; color: var(--text-muted); font-size: 0.95rem;">Bagaimana mengangkat beban berat 1 Ton hanya dengan satu jari?</p>
+    </header>
+
+    <!-- KONSEP AWAL: BOLA PASCAL -->
+    <div class="card">
+        <div class="card-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
+            1. Konsep Dasar: Tekanan Segala Arah
+        </div>
+        <div class="pascal-concept">
+            <div class="concept-text">
+                <p>Hukum Pascal menyatakan: <strong>"Tekanan yang diberikan pada zat cair dalam ruang tertutup akan diteruskan ke segala arah dengan sama besar."</strong></p>
+                <br>
+                <p>Coba berikan tekanan pada bola 3D di samping dengan cara <strong>mengkliknya</strong>. Perhatikan nilai tekanan yang terdistribusi ke seluruh pipa.</p>
+            </div>
+            <div class="sphere-container">
+                <div id="pascal3d">
+                    <div id="lblCenter" class="pressure-label visible">Klik Saya!</div>
+                    <div id="lblTop" class="pressure-label">P = 500 Pa</div>
+                    <div id="lblBottom" class="pressure-label">P = 500 Pa</div>
+                    <div id="lblLeft" class="pressure-label">P = 500 Pa</div>
+                    <div id="lblRight" class="pressure-label">P = 500 Pa</div>
+                </div>
+                <small style="color: var(--text-muted); margin-top: 10px;">Simulasi 3D: Distribusi Tekanan Serentak</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIMULATOR UTAMA -->
+    <div class="card">
+        <div class="card-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v4h16v-4"></path><path d="M4 10v4"></path><path d="M20 10v4"></path><path d="M4 10h16"></path><path d="M12 10V4"></path><path d="M8 6h8"></path></svg>
+            2. Simulator Mesin Hidrolik
+        </div>
+        
+        <div class="simulator-grid">
+            
+            <!-- PANEL VISUAL -->
+            <div class="visual-panel" id="visualPanel">
+                <div class="u-tube" id="uTube">
+                    <!-- Layer penutup tengah untuk efek pipa U -->
+                    <div class="u-tube-inner-gap" id="innerGap"></div>
+                    <!-- Cairan horizontal dasar -->
+                    <div class="u-tube-fluid-bottom"></div>
+                    
+                    <!-- Pipa Kiri (Input) -->
+                    <div class="pipe-section pipe-left" id="pipeLeftDiv">
+                        <div class="fluid fluid-left" id="fluidLeft"></div>
+                        <div class="piston piston-left" id="pistonLeft">
+                        </div>
+                    </div>
+                    
+                    <!-- Pipa Kanan (Output) -->
+                    <div class="pipe-section pipe-right" id="pipeRightDiv">
+                        <div class="fluid fluid-right" id="fluidRight"></div>
+                        <div class="piston piston-right" id="pistonRight">
+                            <!-- Visual Mobil -->
+                            <div class="car-load" id="carLoad">
+                                <div class="car-body-top"></div>
+                                <div class="car-body-bottom">MOBIL<br>10.000 N</div>
+                                <div class="car-wheels">
+                                    <div class="wheel"></div>
+                                    <div class="wheel"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL KONTROL & DATA -->
+            <div>
+                <div style="margin-bottom: 20px;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">Atur nilai secara <strong>Real-time</strong>! Geser slider di bawah ini. Bisakah Anda mengangkat mobil 10.000 N?</p>
+                </div>
+
+                <!-- Kontrol Slider -->
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Gaya Dorong Jari (F₁):</span>
+                        <span class="value-badge" id="valF1">100 N</span>
+                    </div>
+                    <input type="range" id="sliderF1" min="10" max="500" step="10" value="100">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Luas Penampang Pipa 1 (A₁):</span>
+                        <span class="value-badge" id="valA1">10 cm²</span>
+                    </div>
+                    <input type="range" id="sliderA1" min="5" max="50" step="5" value="10">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Luas Penampang Pipa 2 (A₂):</span>
+                        <span class="value-badge" id="valA2">100 cm²</span>
+                    </div>
+                    <input type="range" id="sliderA2" min="50" max="500" step="10" value="100">
+                </div>
+
+                <!-- Dashboard Matematika -->
+                <div class="dashboard">
+                    <div class="formula-box">
+                        F₁ / A₁ = F₂ / A₂
+                        <span>(Hukum Pascal: Tekanan Masuk = Tekanan Keluar)</span>
+                    </div>
+
+                    <div class="data-row">
+                        <span>Rumus Gaya Angkat:</span>
+                        <span>F₂ = F₁ × (A₂/A₁)</span>
+                    </div>
+                    
+                    <div class="data-row" style="align-items: center;">
+                        <span>Gaya Angkat Aktual (F₂):</span>
+                        <span class="result-highlight" id="valF2">1000 N</span>
+                    </div>
+
+                    <!-- Visualisasi Trade-off -->
+                    <div class="tradeoff-container">
+                        <div class="tradeoff-label">Trade-off (Hukum Kekekalan Energi):</div>
+                        <div style="display: flex; gap: 10px; align-items: center; font-size: 0.8rem;">
+                            <span style="width: 80px; color: var(--text-muted);">Jarak Tekan (h₁)</span>
+                            <div class="tradeoff-bar-bg"><div class="tradeoff-h1" id="barH1"></div></div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; font-size: 0.8rem;">
+                            <span style="width: 80px; color: var(--text-muted);">Jarak Angkat (h₂)</span>
+                            <div class="tradeoff-bar-bg"><div class="tradeoff-h2" id="barH2"></div></div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #facc15; text-align: right; margin-top: 4px;">
+                            *Gaya berlipat ganda, namun jarak angkat menjadi sangat pendek.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-message" id="statusMessage">Sesuaikan nilai untuk mengangkat mobil.</div>
+                
+                <div style="text-align:center; font-size: 0.85rem; color: var(--text-muted); padding: 10px; border: 1px dashed var(--panel-border); border-radius: 8px; margin-top: 10px;">
+                    💡 Tips: Geser slider di atas untuk mengamati perubahan gaya dan luas penampang secara real-time.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- LOGIKA BOLA PASCAL (3D THREE.JS) ---
+    const pascalContainer = document.getElementById('pascal3d');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, pascalContainer.clientWidth / pascalContainer.clientHeight, 0.1, 1000);
+    camera.position.z = 12;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(pascalContainer.clientWidth, pascalContainer.clientHeight);
+    pascalContainer.appendChild(renderer.domElement);
+
+    // Pencahayaan
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 5, 10);
+    scene.add(dirLight);
+
+    // Material
+    const fluidMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+    const pipeMat = new THREE.MeshPhongMaterial({ color: 0x64748b, transparent: true, opacity: 0.5 });
+    const pistonMat = new THREE.MeshPhongMaterial({ color: 0xeab308 });
+
+    // Bola Tengah
+    const sphereGroup = new THREE.Group();
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.8, 32, 32), fluidMat);
+    sphereGroup.add(sphere);
+    scene.add(sphereGroup);
+
+    // Membuat Pipa dan Piston
+    const gauges = [];
+    const createPipe = (x, y, z, rz) => {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+        group.rotation.z = rz;
+
+        // Pipa pelindung
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 3, 16), pipeMat);
+        pipe.position.y = 1.5; 
+        group.add(pipe);
+
+        // Cairan dalam pipa (Diperpanjang agar terhubung utuh ke pusat bola)
+        const innerFluid = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.5, 16), fluidMat);
+        innerFluid.position.y = 1.25; 
+        group.add(innerFluid);
+
+        // Piston indikator tekanan
+        const gaugePiston = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.5, 16), pistonMat);
+        gaugePiston.position.y = 2.5; // Posisi awal tepat di atas cairan
+        group.add(gaugePiston);
+        gauges.push(gaugePiston); // Simpan referensi
+
+        scene.add(group);
+    };
+
+    // Pipa: Atas, Bawah, Kiri, Kanan (Didekatkan ke pusat agar tembus ke dalam bola)
+    createPipe(0, 1.5, 0, 0);
+    createPipe(0, -1.5, 0, Math.PI);
+    createPipe(-1.5, 0, 0, Math.PI / 2);
+    createPipe(1.5, 0, 0, -Math.PI / 2);
+
+    // Logic Klik & Tekanan
+    let isPressured = false;
+    const lblCenter = document.getElementById('lblCenter');
+    const pressureLabels = [
+        document.getElementById('lblTop'),
+        document.getElementById('lblBottom'),
+        document.getElementById('lblLeft'),
+        document.getElementById('lblRight')
+    ];
+
+    pascalContainer.addEventListener('click', () => {
+        if (!isPressured) {
+            trigger3DPressure();
+        }
+    });
+
+    function trigger3DPressure() {
+        isPressured = true;
+        lblCenter.textContent = "Tekanan Masuk: 500 Pa";
+        lblCenter.style.animation = "none";
+        
+        pressureLabels.forEach(lbl => lbl.classList.add('visible'));
+
+        // Reset setelah 2 detik
+        setTimeout(() => {
+            isPressured = false;
+            lblCenter.textContent = "Klik Saya!";
+            lblCenter.style.animation = "pulse 2s infinite";
+            pressureLabels.forEach(lbl => lbl.classList.remove('visible'));
+        }, 2000);
+    }
+
+    // Animasi Render 3D
+    function animate3D() {
+        requestAnimationFrame(animate3D);
+
+        // Rotasi lambat efek 3D
+        scene.rotation.y += 0.005;
+        scene.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+
+        // Efek ditekan (Lerp)
+        const targetScale = isPressured ? 0.9 : 1.0;
+        sphereGroup.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+
+        const targetGaugeY = isPressured ? 2.9 : 2.5;
+        gauges.forEach(g => {
+            g.position.y += (targetGaugeY - g.position.y) * 0.1;
+        });
+
+        renderer.render(scene, camera);
+    }
+    animate3D();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = pascalContainer.clientWidth / pascalContainer.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(pascalContainer.clientWidth, pascalContainer.clientHeight);
+    });
+
+    // --- LOGIKA SIMULATOR HIDROLIK ---
+    const CAR_WEIGHT = 10000; // Newton
+
+    // DOM Elements Kontrol
+    const sliderF1 = document.getElementById('sliderF1');
+    const sliderA1 = document.getElementById('sliderA1');
+    const sliderA2 = document.getElementById('sliderA2');
+    const valF1 = document.getElementById('valF1');
+    const valA1 = document.getElementById('valA1');
+    const valA2 = document.getElementById('valA2');
+    const valF2 = document.getElementById('valF2');
+    const barH1 = document.getElementById('barH1');
+    const barH2 = document.getElementById('barH2');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // DOM Elements Visual Pipa
+    const pipeLeftDiv = document.getElementById('pipeLeftDiv');
+    const pipeRightDiv = document.getElementById('pipeRightDiv');
+    const innerGap = document.getElementById('innerGap');
+    const pistonLeft = document.getElementById('pistonLeft');
+    const pistonRight = document.getElementById('pistonRight');
+    const fluidLeft = document.getElementById('fluidLeft');
+    const fluidRight = document.getElementById('fluidRight');
+    const carLoad = document.getElementById('carLoad');
+    const visualPanel = document.getElementById('visualPanel');
+
+    // Variabel State
+    let f1 = parseInt(sliderF1.value);
+    let a1 = parseInt(sliderA1.value);
+    let a2 = parseInt(sliderA2.value);
+    let ratio = a2 / a1;
+    let f2 = 0;
+    let hasLifted = false; // Mencegah spam confeti
+
+    // Fungsi Kalkulasi & Update UI Real-Time
+    function updateDashboard() {
+        f1 = parseInt(sliderF1.value);
+        a1 = parseInt(sliderA1.value);
+        a2 = parseInt(sliderA2.value);
+        
+        // Kalkulasi F2
+        ratio = a2 / a1;
+        f2 = f1 * ratio;
+
+        // Update Text
+        valF1.textContent = f1 + " N";
+        valA1.textContent = a1 + " cm²";
+        valA2.textContent = a2 + " cm²";
+        valF2.textContent = Math.round(f2).toLocaleString('id-ID') + " N";
+
+        // Update Visual Lebar Pipa secara proporsional sesuai rentang penuh slider
+        // A1 (Rentang 5 - 50) dipetakan ke pixel (25px - 80px)
+        let leftW = 25 + ((a1 - 5) / (50 - 5)) * (80 - 25);
+        
+        // A2 (Rentang 50 - 500) dipetakan ke pixel (60px - 200px)
+        let rightW = 60 + ((a2 - 50) / (500 - 50)) * (200 - 60);
+        
+        pipeLeftDiv.style.width = leftW + "px";
+        pipeRightDiv.style.width = rightW + "px";
+        
+        // Memastikan penutup tengah menyesuaikan sehingga U-tube menyatu sempurna
+        innerGap.style.left = leftW + "px";
+        innerGap.style.right = rightW + "px";
+
+        // Kalkulasi pergerakan Piston dan Cairan (Real-time Feedback)
+        let dropPerc = 0;
+        let liftPerc = 0;
+
+        // Cek Status (Sukses atau Gagal)
+        if (f2 >= CAR_WEIGHT) {
+            valF2.className = "result-highlight";
+            statusMessage.textContent = "BERHASIL! Mobil Terangkat.";
+            statusMessage.style.color = "var(--success)";
+            
+            // Logika Gerakan Sukses: F1 mendikte seberapa dalam piston turun (Max 40% travel)
+            dropPerc = ((f1 - 10) / 490) * 40; 
+            // Piston Kanan naik sebanding dengan rasio (dikalikan 5 untuk visual booster agar terlihat)
+            liftPerc = dropPerc * (a1 / a2) * 5; 
+
+            if (!hasLifted) {
+                createConfetti();
+                hasLifted = true;
+                carLoad.classList.remove('shake-animation');
+            }
+        } else {
+            valF2.className = "result-highlight result-fail";
+            statusMessage.textContent = "Gaya Angkat KURANG dari 10.000 N.";
+            statusMessage.style.color = "var(--danger)";
+            
+            // Logika Gerakan Gagal: Zat cair inkompresibel, piston kiri seperti tertahan (hanya turun max 2%)
+            dropPerc = ((f1 - 10) / 490) * 2; 
+            liftPerc = 0;
+            
+            if (hasLifted) {
+                hasLifted = false; // Reset status jika turun lagi
+            }
+            
+            // Efek getar jika F1 ditarik maksimal tapi belum kuat
+            if(f1 > 400 && f2 < CAR_WEIGHT) {
+                carLoad.classList.add('shake-animation');
+            } else {
+                carLoad.classList.remove('shake-animation');
+            }
+        }
+
+        // Terapkan ke DOM
+        pistonLeft.style.bottom = (70 - dropPerc) + "%";
+        fluidLeft.style.height = (70 - dropPerc) + "%";
+        pistonRight.style.bottom = (70 + liftPerc) + "%";
+        fluidRight.style.height = (70 + liftPerc) + "%";
+
+        // Update Visual Trade-off H1 vs H2
+        barH1.style.width = (dropPerc > 0 ? (dropPerc / 40 * 100) : 0) + "%";
+        let h2VisualPercent = liftPerc > 0 ? Math.max(2, (liftPerc / 20) * 100) : 2; 
+        barH2.style.width = h2VisualPercent + "%";
+    }
+
+    // Fungsi Membuat Efek Konfeti
+    function createConfetti() {
+        for (let i = 0; i < 30; i++) {
+            const conf = document.createElement('div');
+            conf.classList.add('confetti');
+            conf.style.left = Math.random() * 100 + '%';
+            conf.style.top = '-10px';
+            conf.style.backgroundColor = ['#facc15', '#f97316', '#10b981', '#0ea5e9'][Math.floor(Math.random() * 4)];
+            conf.style.animation = `fall ${Math.random() * 2 + 1}s linear forwards`;
+            visualPanel.appendChild(conf);
+            
+            setTimeout(() => { conf.remove(); }, 3000);
+        }
+    }
+
+    // Inisialisasi Event Listener Sliders
+    sliderF1.addEventListener('input', updateDashboard);
+    sliderA1.addEventListener('input', updateDashboard);
+    sliderA2.addEventListener('input', updateDashboard);
+
+    // Inisialisasi tampilan awal
+    updateDashboard();
+
+</script>
+</body>
+</html>
