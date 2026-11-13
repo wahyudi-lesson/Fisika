@@ -34,7 +34,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-darkbg text-slate-800 dark:text-slate-100 pb-20 md:pb-8 transition-colors duration-200 select-none">
 
-    <!-- BILAH PERINGATAN PAKSA LAYAR PENUH (MUNCUL JIKA SISWA KELUAR DARI FULLSCREEN) -->
+    <!-- BILAH PERINGATAN PAKSA LAYAR PENUH -->
     <div id="fullscreen-guard-bar" onclick="requestAppFullscreen()" class="hidden fixed top-0 inset-x-0 z-50 bg-amber-500 text-slate-950 text-xs font-bold py-2 px-4 text-center cursor-pointer shadow-lg flex items-center justify-center gap-2">
         <i class="fa-solid fa-expand"></i>
         <span>Tampilan keluar dari Layar Penuh. Ketuk di mana saja untuk kembali ke Mode Layar Penuh.</span>
@@ -59,32 +59,38 @@
                 <button onclick="navigate('home')" class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-sky-400 transition">Beranda</button>
                 
                 <div class="relative group">
-                    <button class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
+                    <button type="button" class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
                         Kelas X <i class="fa-solid fa-chevron-down text-[10px]"></i>
                     </button>
-                    <div class="absolute left-0 mt-1 w-60 bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden group-hover:block">
-                        <a href="#" onclick="openTopic('Besaran dan Pengukuran')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Besaran dan Pengukuran</a>
-                        <a href="#" onclick="openTopic('Pengolahan Sumber Daya Alam')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Pengolahan Sumber Daya Alam dan Dampaknya</a>
+                    <div class="absolute left-0 top-full pt-1 w-64 hidden group-hover:block z-50">
+                        <div class="bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2">
+                            <a href="#" onclick="event.preventDefault(); openTopic('Besaran dan Pengukuran')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Besaran dan Pengukuran</a>
+                            <a href="#" onclick="event.preventDefault(); openTopic('Pengolahan Sumber Daya Alam')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Pengolahan Sumber Daya Alam dan Dampaknya</a>
+                        </div>
                     </div>
                 </div>
 
                 <div class="relative group">
-                    <button class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
+                    <button type="button" class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
                         Kelas XI <i class="fa-solid fa-chevron-down text-[10px]"></i>
                     </button>
-                    <div class="absolute left-0 mt-1 w-60 bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden group-hover:block">
-                        <a href="#" onclick="openTopic('Gerak')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Kinematika dan Dinamika</a>
-                        <a href="#" onclick="openTopic('Fluida')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Fluida Statis & Dinamis</a>
-                        <a href="#" onclick="openTopic('Getaran dan Gelombang')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Getaran dan Gelombang</a>
+                    <div class="absolute left-0 top-full pt-1 w-60 hidden group-hover:block z-50">
+                        <div class="bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2">
+                            <a href="#" onclick="event.preventDefault(); openTopic('Gerak')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Kinematika dan Dinamika</a>
+                            <a href="#" onclick="event.preventDefault(); openTopic('Fluida')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Fluida Statis & Dinamis</a>
+                            <a href="#" onclick="event.preventDefault(); openTopic('Getaran dan Gelombang')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Getaran dan Gelombang</a>
+                        </div>
                     </div>
                 </div>
 
                 <div class="relative group">
-                    <button class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
+                    <button type="button" class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-1">
                         Kelas XII <i class="fa-solid fa-chevron-down text-[10px]"></i>
                     </button>
-                    <div class="absolute left-0 mt-1 w-60 bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden group-hover:block">
-                        <a href="#" onclick="openTopic('Teknologi Digital')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Teknologi Digital</a>
+                    <div class="absolute left-0 top-full pt-1 w-60 hidden group-hover:block z-50">
+                        <div class="bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2">
+                            <a href="#" onclick="event.preventDefault(); openTopic('Teknologi Digital')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Teknologi Digital</a>
+                        </div>
                     </div>
                 </div>
 
@@ -95,22 +101,18 @@
 
             <!-- Kontrol Tema, Layar Penuh, Install PWA & Akun -->
             <div class="flex items-center gap-1.5 sm:gap-2">
-                <!-- Tombol Toggle Dark/Light Mode -->
                 <button onclick="toggleTheme()" id="btn-theme-toggle" title="Ubah Tema Gelap / Terang" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
 
-                <!-- Tombol Layar Penuh -->
                 <button onclick="requestAppFullscreen()" id="btn-fullscreen" title="Mode Layar Penuh" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
-                    <i class="fa-solid fa-expand"></i>
+                    <i id="fullscreen-icon" class="fa-solid fa-expand"></i>
                 </button>
 
-                <!-- Tombol Install PWA -->
                 <button id="btn-install-pwa" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Install App</span>
                 </button>
 
-                <!-- Area Login / Profil -->
                 <div id="auth-header-area"></div>
             </div>
         </div>
@@ -122,7 +124,7 @@
         <!-- BANNER STATUS SISWA, LENCANA & PROGRES -->
         <div id="student-banner" class="mb-5"></div>
 
-        <!-- KARTU LANJUTKAN BELAJAR (MUNCUL JIKA ADA RIWAYAT TERAKHIR) -->
+        <!-- KARTU LANJUTKAN BELAJAR -->
         <div id="resume-card-area" class="mb-5"></div>
 
         <!-- BREADCRUMB NAVIGASI -->
@@ -183,10 +185,9 @@
             <div id="submateri-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
         </section>
 
-        <!-- HALAMAN 4: PENAMPIL KONTEN TERINTEGRASI (DENGAN SPLIT-SCREEN & NEXT STEP) -->
+        <!-- HALAMAN 4: PENAMPIL KONTEN TERINTEGRASI -->
         <section id="view-content" class="hidden animate-fade">
             <div class="bg-white dark:bg-darkcard rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <!-- Header Penampil -->
                 <div class="p-3.5 md:p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <div class="flex items-center flex-wrap gap-2">
@@ -199,12 +200,10 @@
                     </div>
 
                     <div class="flex items-center flex-wrap gap-2">
-                        <!-- Tombol Split-Screen Simulator Pendamping (Muncul khusus di LKPD) -->
                         <button id="btn-toggle-split" onclick="toggleSplitScreen()" class="hidden text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-lg transition">
                             <i class="fa-solid fa-table-columns mr-1"></i> <span>Buka Simulator Pendamping</span>
                         </button>
 
-                        <!-- Tombol Pintasan Tutor AI -->
                         <a id="btn-floating-ai" href="#" target="_blank" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-2 rounded-lg transition">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Tanya Tutor AI
                         </a>
@@ -219,7 +218,6 @@
                     </div>
                 </div>
 
-                <!-- Banner Identitas Siswa -->
                 <div id="auto-identity-banner" class="hidden bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800 px-4 py-2.5 text-xs text-emerald-900 dark:text-emerald-200 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-id-card text-emerald-600 text-base"></i>
@@ -227,9 +225,7 @@
                     </div>
                 </div>
 
-                <!-- Area Iframe Utama & Split-Screen -->
                 <div id="content-split-wrapper" class="grid grid-cols-1 bg-slate-100 dark:bg-slate-950">
-                    <!-- Panel Simulator Pendamping (Tersembunyi default) -->
                     <div id="companion-sim-pane" class="hidden border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-700 flex flex-col">
                         <div class="bg-slate-800 text-amber-400 text-[11px] font-bold px-3 py-1.5 flex justify-between items-center">
                             <span><i class="fa-solid fa-flask mr-1"></i> SIMULATOR PENDAMPING EKSPERIMEN</span>
@@ -238,11 +234,9 @@
                         <iframe id="companion-sim-iframe" src="" class="w-full h-[45vh] lg:h-[72vh] border-0" loading="lazy"></iframe>
                     </div>
 
-                    <!-- Panel Aktivitas Utama -->
                     <div id="content-body" class="w-full"></div>
                 </div>
 
-                <!-- Bilah Navigasi Lanjut ke Tahap Berikutnya -->
                 <div id="next-step-footer" class="p-3.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
                     <span id="next-step-hint" class="text-xs text-slate-500 dark:text-slate-400">Selesai mempelajari bagian ini?</span>
                     <button onclick="goToNextStage()" id="btn-next-stage" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center gap-2 transition">
@@ -378,7 +372,6 @@
         // 1. KONFIGURASI SISTEM & DATABASE MATERI
         // =========================================================================
         const CONFIG = {
-            // Tempelkan URL Web App Google Apps Script Router Anda di sini
             SCRIPT_URL: "",
             DEFAULT_SEKOLAH: "SMAN 1 Balongpanggang",
             DEFAULT_TAPEL: "2026/2027",
@@ -406,13 +399,13 @@
                         { nama: "Media & Tutor AI: Pengukuran & Angka Penting", url: "./media/media-pengukuran.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Besaran, Satuan, Dimensi, dan Sistem Matrik", url: "./simulasi/Besaran-Pengukuran/Besaran-Satuan.html" }
-                        { nama: "Angka Penting, Notasi Ilmiah dan Ketidakpastian", url: "./simulasi/Besaran-Pengukuran/AngkaPenting-NotasiIlmiah.html" }
-                        { nama: "Pengukuran dengan berbagai alat ukur", url: "./simulasi/Besaran-Pengukuran/Pengukuran.html" }
+                        { nama: "Besaran, Satuan, Dimensi, dan Sistem Matrik", url: "./simulasi/Besaran-Pengukuran/Besaran-Satuan.html" },
+                        { nama: "Angka Penting, Notasi Ilmiah dan Ketidakpastian", url: "./simulasi/Besaran-Pengukuran/AngkaPenting-NotasiIlmiah.html" },
+                        { nama: "Pengukuran dengan berbagai alat ukur", url: "./simulasi/Besaran-Pengukuran/Pengukuran.html" },
                         { nama: "Variabel, Pengumpulan Data, Analisis Grafik", url: "./simulasi/Besaran-Pengukuran/AnalisisData.html" }
                     ],
                     "Lembar Kerja": [
-                        { nama: "LKPD 1: Pengukuran Tunggal & Berulang", url: "./lkpd/lkpd-pengukuran.html", simUrl: "./simulasi/sim-pengukuran.html" }
+                        { nama: "LKPD 1: Pengukuran Tunggal & Berulang", url: "./lkpd/lkpd-pengukuran.html", simUrl: "./simulasi/Besaran-Pengukuran/Pengukuran.html" }
                     ],
                     "Uji Kompetensi": [
                         { nama: "Uji Kompetensi: Besaran & Pengukuran", url: "./evaluasi/pengukuran-pgk.html" }
@@ -432,13 +425,13 @@
                         { nama: "Media & Tutor AI: Energi & Diagram Sankey", url: "./media/media-sda.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulasi Proses Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/PengelolaanSumberEnergi.html" }
-                        { nama: "Simulasi Dampak Negatif dan Dampak Positif dari Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/DampakPengelolaanSumberEnergi.html" }
-                        { nama: "Simulasi Terjadinya Pemanasan Global Akibat Gas Rumah Kaca", url: "./simulasi/SumberEnergi/PemanasanGlobal.html" }
+                        { nama: "Simulasi Proses Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/PengelolaanSumberEnergi.html" },
+                        { nama: "Simulasi Dampak Negatif dan Dampak Positif dari Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/DampakPengelolaanSumberEnergi.html" },
+                        { nama: "Simulasi Terjadinya Pemanasan Global Akibat Gas Rumah Kaca", url: "./simulasi/SumberEnergi/PemanasanGlobal.html" },
                         { nama: "Simulasi Hujan Asam dan Dampaknya", url: "./simulasi/SumberEnergi/HujanAsam.html" }
                     ],
                     "Lembar Kerja": [
-                        { nama: "LKPD: Audit Energi Listrik Rumah Tangga", url: "./lkpd/lkpd-sda.html", simUrl: "./simulasi/sim-sda.html" }
+                        { nama: "LKPD: Audit Energi Listrik Rumah Tangga", url: "./lkpd/lkpd-sda.html", simUrl: "./simulasi/SumberEnergi/PengelolaanSumberEnergi.html" }
                     ],
                     "Uji Kompetensi": [
                         { nama: "Uji Kompetensi: Energi Terbarukan", url: "./evaluasi/sda-pgk.html" }
@@ -483,15 +476,15 @@
                         { nama: "Media & Tutor AI: Fluida Statis & Dinamis", url: "./media/media-fluida.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulator Fluida dan Massa Jenis", url: "./simulasi/fluida/fluida-dan-massa-jenis.html" }
-                        { nama: "Simulator Tekanan Hidrostatis", url: "./simulasi/fluida/tekanan-hidrostatis.html" }
-                        { nama: "Simulator Hukum Pascal", url: "./simulasi/fluida/hukum-pascal.html" }
-                        { nama: "Simulator Prinsip Archimedes", url: "./simulasi/fluida/prinsip-archimedes.html" }
-                        { nama: "Simulator Asas Kontinyuitas", url: "./simulasi/fluida/asas-kontinyuitas.html" }
+                        { nama: "Simulator Fluida dan Massa Jenis", url: "./simulasi/fluida/fluida-dan-massa-jenis.html" },
+                        { nama: "Simulator Tekanan Hidrostatis", url: "./simulasi/fluida/tekanan-hidrostatis.html" },
+                        { nama: "Simulator Hukum Pascal", url: "./simulasi/fluida/hukum-pascal.html" },
+                        { nama: "Simulator Prinsip Archimedes", url: "./simulasi/fluida/prinsip-archimedes.html" },
+                        { nama: "Simulator Asas Kontinyuitas", url: "./simulasi/fluida/asas-kontinyuitas.html" },
                         { nama: "Simulator Prinsip Bernoulli", url: "./simulasi/fluida/prinsip-bernoulli.html" }
                     ],
                     "Lembar Kerja": [
-                        { nama: "LKPD: Gaya Apung & Asas Bernoulli", url: "./lkpd/lkpd-fluida.html", simUrl: "./simulasi/sim-fluida.html" }
+                        { nama: "LKPD: Gaya Apung & Asas Bernoulli", url: "./lkpd/lkpd-fluida.html", simUrl: "./simulasi/fluida/prinsip-archimedes.html" }
                     ],
                     "Uji Kompetensi": [
                         { nama: "Uji Kompetensi: Fluida Statis & Dinamis", url: "./evaluasi/fluida-pgk.html" }
@@ -514,15 +507,15 @@
                         { nama: "Gelombang Cahaya & Optika Geometri", url: "./media/media-gelombang.html?sub=optika-geometri" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulasi Elastisitas", url: "./simulasi/getaran-gelombang/elastisitas.html" }
-                        { nama: "Simulasi Getaran Harmonis Sederhana", url: "./simulasi/getaran-gelombang/Getaran-Harmonis-Sederhana.html" }
-                        { nama: "Simulasi Gelombang", url: "./simulasi/getaran-gelombang/gelombang.html" }
-                        { nama: "Simulasi Gelombang Bunyi", url: "./simulasi/getaran-gelombang/Gelombang-Bunyi.html" }
-                        { nama: "Simulasi Gelombang Cahaya", url: "./simulasi/getaran-gelombang/Gelombang-Cahaya.html" }
+                        { nama: "Simulasi Elastisitas", url: "./simulasi/getaran-gelombang/elastisitas.html" },
+                        { nama: "Simulasi Getaran Harmonis Sederhana", url: "./simulasi/getaran-gelombang/Getaran-Harmonis-Sederhana.html" },
+                        { nama: "Simulasi Gelombang", url: "./simulasi/getaran-gelombang/gelombang.html" },
+                        { nama: "Simulasi Gelombang Bunyi", url: "./simulasi/getaran-gelombang/Gelombang-Bunyi.html" },
+                        { nama: "Simulasi Gelombang Cahaya", url: "./simulasi/getaran-gelombang/Gelombang-Cahaya.html" },
                         { nama: "Simulasi Optika Geometri", url: "./simulasi/getaran-gelombang/Optika-Geometri.html" }
                     ],
                     "Lembar Kerja": [
-                        { nama: "LKPD: Penyelidikan Frekuensi & Panjang Gelombang", url: "./lkpd/lkpd-gelombang.html", simUrl: "./simulasi/sim-gelombang.html" }
+                        { nama: "LKPD: Penyelidikan Frekuensi & Panjang Gelombang", url: "./lkpd/lkpd-gelombang.html", simUrl: "./simulasi/getaran-gelombang/gelombang.html" }
                     ],
                     "Uji Kompetensi": [
                         { nama: "Uji Kompetensi: Getaran & Gelombang", url: "./evaluasi/gelombang-pgk.html" }
@@ -586,7 +579,6 @@
                 iconEl.className = 'fa-solid fa-moon';
             }
 
-            // Kirim sinyal perubahan tema ke iframe yang sedang aktif
             const iframe = document.querySelector('#content-body iframe');
             if (iframe && iframe.contentWindow) {
                 iframe.contentWindow.postMessage({ type: 'SIPINTAR_THEME_CHANGE', theme: themeName }, '*');
@@ -605,12 +597,12 @@
                 if (req) {
                     req.call(elem).then(() => {
                         document.getElementById('fullscreen-guard-bar').classList.add('hidden');
+                        document.getElementById('fullscreen-icon').className = 'fa-solid fa-compress';
                     }).catch(() => {});
                 }
             }
         }
 
-        // Otomatis masuk layar penuh pada interaksi pertama siswa & pulihkan jika keluar
         document.addEventListener('click', () => {
             if (state.fullscreenEnforced && !document.fullscreenElement && !document.webkitFullscreenElement) {
                 requestAppFullscreen();
@@ -619,10 +611,13 @@
 
         document.addEventListener('fullscreenchange', () => {
             const guardBar = document.getElementById('fullscreen-guard-bar');
+            const fsIcon = document.getElementById('fullscreen-icon');
             if (!document.fullscreenElement && state.fullscreenEnforced) {
                 guardBar.classList.remove('hidden');
+                fsIcon.className = 'fa-solid fa-expand';
             } else {
                 guardBar.classList.add('hidden');
+                fsIcon.className = 'fa-solid fa-compress';
             }
         });
 
@@ -688,7 +683,6 @@
             } catch (e) {}
         }
 
-        // Tangkap sinyal penyelesaian dari iframe (LKPD PDF / Uji Kompetensi / Media)
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'SIPINTAR_ACTIVITY_DONE' && state.currentTopic && state.currentCategory) {
                 const topic = MATERI_DB.find(m => m.judul === state.currentTopic);
@@ -1070,7 +1064,6 @@
             }
             const topic = MATERI_DB.find(m => m.judul === topicJudul);
             const items = topic?.subMateri[categoryName] || [];
-            // Jika hanya ada 1 sub-materi, langsung buka kontennya agar hemat 1 klik!
             if (items.length === 1) {
                 openContent(topicJudul, categoryName, 0);
             } else {
@@ -1147,12 +1140,10 @@
             state.currentCategory = categoryName;
             state.currentItemIndex = itemIndex;
 
-            // Simpan riwayat terakhir untuk Kartu "Lanjutkan Belajar"
             state.lastActivity = { topicJudul, categoryName, itemIndex, subNama: item.nama };
             localStorage.setItem('sipintar_last_activity', JSON.stringify(state.lastActivity));
             renderResumeCard();
 
-            // Otomatis tandai selesai untuk Tahap 1 & Tahap 2 saat diakses
             if (categoryName === 'Tutor AI dan Media' || categoryName === 'Eksplorasi Konsep') {
                 markSubMateriCompleted(topicJudul, categoryName, item.nama);
             }
@@ -1165,7 +1156,6 @@
             document.getElementById('btn-open-external').href = finalUrl;
             document.getElementById('btn-floating-ai').href = topic.aiUrl || 'https://gemini.google.com/';
 
-            // Atur Tombol Split-Screen Simulator Pendamping (Khusus LKPD yang punya simUrl)
             const splitBtn = document.getElementById('btn-toggle-split');
             state.splitActive = false;
             document.getElementById('companion-sim-pane').classList.add('hidden');
@@ -1180,7 +1170,6 @@
                 document.getElementById('companion-sim-iframe').src = '';
             }
 
-            // Banner Identitas Otomatis
             const idTag = document.getElementById('content-identity-tag');
             const idBanner = document.getElementById('auto-identity-banner');
             if (state.user && (categoryName === 'Uji Kompetensi' || categoryName === 'Lembar Kerja')) {
@@ -1339,45 +1328,49 @@
         let deferredPrompt;
         const btnInstall = document.getElementById('btn-install-pwa');
 
-        const manifestData = {
-            name: "Si-PINTAR Fisika",
-            short_name: "Si-PINTAR",
-            start_url: "./",
-            display: "fullscreen",
-            orientation: "any",
-            background_color: "#0f172a",
-            theme_color: "#1d4ed8",
-            icons: [{
-                src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231d4ed8'/><text x='50' y='66' font-size='54' text-anchor='middle' fill='white'>⚛️</text></svg>",
-                sizes: "192x192",
-                type: "image/svg+xml"
-            }]
-        };
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' }));
-        document.head.appendChild(manifestLink);
+        try {
+            const manifestData = {
+                name: "Si-PINTAR Fisika",
+                short_name: "Si-PINTAR",
+                start_url: "./",
+                display: "fullscreen",
+                orientation: "any",
+                background_color: "#0f172a",
+                theme_color: "#1d4ed8",
+                icons: [{
+                    src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231d4ed8'/><text x='50' y='66' font-size='54' text-anchor='middle' fill='white'>⚛️</text></svg>",
+                    sizes: "192x192",
+                    type: "image/svg+xml"
+                }]
+            };
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' }));
+            document.head.appendChild(manifestLink);
+        } catch (e) {}
 
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                const CACHE_NAME = 'sipintar-fisika-v2';
-                self.addEventListener('install', e => self.skipWaiting());
-                self.addEventListener('fetch', e => {
-                    e.respondWith(
-                        caches.match(e.request).then(cached => {
-                            return cached || fetch(e.request).then(res => {
-                                return caches.open(CACHE_NAME).then(cache => {
-                                    if (e.request.method === 'GET' && res.status === 200) {
-                                        cache.put(e.request, res.clone());
-                                    }
-                                    return res;
-                                });
-                            }).catch(() => cached);
-                        })
-                    );
-                });
-            `;
-            navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' }))).catch(() => {});
+            try {
+                const swCode = `
+                    const CACHE_NAME = 'sipintar-fisika-v2';
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(
+                            caches.match(e.request).then(cached => {
+                                return cached || fetch(e.request).then(res => {
+                                    return caches.open(CACHE_NAME).then(cache => {
+                                        if (e.request.method === 'GET' && res.status === 200) {
+                                            cache.put(e.request, res.clone());
+                                        }
+                                        return res;
+                                    });
+                                }).catch(() => cached);
+                            })
+                        );
+                    });
+                `;
+                navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' }))).catch(() => {});
+            } catch (e) {}
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
