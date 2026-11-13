@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonic Lab: Orkestra Fisika Bunyi</title>
+    
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* CSS Variables - Studio Recording / Oscilloscope Theme */
+        :root {
+            --bg-pitch: #050505;
+            --bg-panel: #111111;
+            --electric-purple: #9d00ff;
+            --purple-glow: rgba(157, 0, 255, 0.4);
+            --neon-yellow: #eaff00;
+            --yellow-glow: rgba(234, 255, 0, 0.4);
+            --cyan-accent: #00f3ff;
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --alert-red: #ff003c;
+            --border-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--bg-pitch);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-bottom: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 2px solid var(--electric-purple);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        h1 {
+            color: var(--text-main);
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px var(--purple-glow);
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: var(--neon-yellow); font-weight: 300; letter-spacing: 1px; }
+        
+        /* Audio Global Control */
+        .audio-toggle {
+            position: absolute;
+            right: 0; top: 2rem;
+            background: transparent;
+            border: 2px solid var(--neon-yellow);
+            color: var(--neon-yellow);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .audio-toggle:hover { background: var(--yellow-glow); }
+        .audio-toggle.active { background: var(--neon-yellow); color: #000; }
+
+        /* Layout & Panels */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid #222;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+        }
+        .panel-header {
+            border-bottom: 1px solid var(--electric-purple);
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.5rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .panel-title { color: var(--electric-purple); font-size: 1.4rem; text-transform: uppercase; }
+
+        /* Grid System */
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        @media (min-width: 800px) { .grid-2 { grid-template-columns: 2fr 1fr; } }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+
+        /* Canvases */
+        .canvas-wrapper {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            height: 300px;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls */
+        .controls-box {
+            background: rgba(255,255,255,0.02);
+            padding: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid #222;
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .control-header { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); }
+        .val { color: var(--neon-yellow); font-family: monospace; font-weight: bold; font-size: 1.1rem; }
+        
+        /* Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%; height: 6px; background: #333; border-radius: 3px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--electric-purple); cursor: pointer;
+            box-shadow: 0 0 10px var(--electric-purple);
+        }
+
+        /* Buttons & Tabs */
+        .tab-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .tab-btn {
+            background: #111; border: 1px solid #444; color: #aaa;
+            padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 0.9rem;
+        }
+        .tab-btn:hover { border-color: var(--electric-purple); color: #fff; }
+        .tab-btn.active { background: var(--purple-glow); border-color: var(--electric-purple); color: #fff; }
+        
+        /* Display Boxes (Math & Real-time Info) */
+        .math-box {
+            background: #0a0a0a; 
+            border-left: 4px solid var(--neon-yellow);
+            padding: 1rem; 
+            font-size: 1.2rem;
+            border-radius: 0 8px 8px 0; 
+            margin-top: 1rem;
+            overflow-x: auto;
+            color: var(--neon-yellow);
+        }
+        .info-card {
+            background: #151515; border: 1px solid #333; padding: 1rem;
+            border-radius: 8px; text-align: center;
+        }
+        .info-val { font-size: 1.8rem; color: var(--neon-yellow); margin-top: 0.5rem; font-family: monospace; }
+        
+        /* Specific Alerts */
+        .alert-danger {
+            background: rgba(255, 0, 60, 0.1); border-left-color: var(--alert-red) !important;
+            color: var(--alert-red);
+        }
+        .alert-danger .info-val { color: var(--alert-red); }
+
+        /* Theory Box */
+        .theory-box {
+            background: rgba(157, 0, 255, 0.05); border: 1px solid var(--purple-glow);
+            padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: #ccc;
+        }
+        .theory-box h4 { color: var(--cyan-accent); margin-bottom: 0.5rem; }
+        .theory-box ul { margin-left: 1.5rem; margin-top: 0.5rem; }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 600px) {
+            .audio-toggle { position: static; margin-top: 1rem; width: 100%; justify-content: center; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body style="background: var(--bg-pitch);">
+
+<div class="container">
+    <header>
+        <h1 id="appTitle">Sonic Lab</h1>
+        <div class="subtitle" id="appSubtitle">
+            Orkestra Fisika Bunyi - Memahami Harmoni melalui Frekuensi & Intensitas
+        </div>
+        <button id="btnAudio" class="audio-toggle">
+            <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon><line x1="15" y1="9" x2="15" y2="15"></line>
+            </svg> Audio Off 
+        </button>
+    </header>
+
+    <!-- MODUL 1: SUMBER BUNYI -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Modul 1: Simulator Sumber Bunyi</div>
+        </div>
+        <div class="grid-2">
+            <div>
+                <div class="tab-group" id="tabsMod1">
+                    <button class="tab-btn active" data-type="dawai">Dawai (Gitar/Biola)</button> 
+                    <button class="tab-btn" data-type="pot">Pipa Organa Terbuka (Seruling)</button> 
+                    <button class="tab-btn" data-type="ptt">Pipa Organa Tertutup (Klarinet)</button>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="cvsSource"></canvas>
+                    <div style="position: absolute; top:10px; left:10px; color:#aaa; font-size: 0.8rem;" id="lblSimpulPerut">
+                        Titik Biru: Simpul | Titik Kuning: Perut
+                    </div>
+                </div>
+                <!-- Box Formula Dinamis LaTeX -->
+                <div class="math-box" id="mathSource" style="border-left-color:var(--neon-yellow); color:var(--neon-yellow);">
+                    <!-- Diisi otomatis oleh JavaScript -->
+                </div>
+            </div>
+            
+            <div class="controls-box">
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Harmonik (Nada)</span> <span class="val" id="valH">Nada Dasar (n=0)</span>
+                    </div>
+                    <input type="range" id="slH" min="0" max="2" step="1" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Panjang (L)</span> <span class="val" id="valL">1.00 m</span>
+                    </div>
+                    <input type="range" id="slL" min="0.5" max="3" step="0.1" value="1.0">
+                </div>
+                <div class="control-group" id="ctrlF">
+                    <div class="control-header">
+                        <span>Tegangan Dawai (F)</span> <span class="val" id="valF">100 N</span>
+                    </div>
+                    <input type="range" id="slF" min="10" max="300" step="1" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span id="speedLabelText">Kecepatan Animasi</span> <span class="val" id="valSpeed">Normal (1x)</span>
+                    </div>
+                    <select id="speedSelect"> 
+                        <option value="1">Normal (1x)</option> 
+                        <option value="0.5">Lambat (0.5x)</option> 
+                        <option value="0.25">Sangat Lambat (0.25x)</option> 
+                        <option value="0.1">Super Lambat (0.1x)</option> 
+                    </select>
+                </div>
+                <div class="theory-box" style="margin-top:auto;">
+                    <h4>Parameter Terukur</h4>
+                    <div>Kecepatan Gelombang (v): <strong class="val" style="font-size:1rem;" id="resV">141.4 m/s</strong></div>
+                    <div>Frekuensi (f): <strong class="val" style="font-size:1rem; color:var(--cyan-accent);" id="resF">70.7 Hz</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 2: INTENSITAS -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Modul 2: Intensitas & Taraf Intensitas</div>
+        </div>
+        <div class="grid-2">
+            <div class="canvas-wrapper" style="height: 350px;">
+                <canvas id="cvsIntensity"></canvas>
+                <div style="position: absolute; bottom:10px; left:10px; color:#fff; font-size: 0.8rem; display: flex; align-items:center; gap:5px;">
+                    <span style="display:inline-block; width:10px; height:10px; background:#fff; border-radius:50%;"></span> Sumber 
+                    <span style="display:inline-block; width:10px; height:10px; background:var(--electric-purple); border-radius:50%; margin-left:10px;"></span> Pendengar
+                </div>
+            </div>
+            
+            <div class="controls-box" id="intBox">
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Daya Sumber (P)</span> <span class="val" id="valP">100 W</span>
+                    </div>
+                    <input type="range" id="slP" min="10" max="1000" step="10" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Jarak Pendengar (r)</span> <span class="val" id="valR">5.0 m</span>
+                    </div>
+                    <input type="range" id="slR" min="1" max="30" step="0.5" value="5.0">
+                </div>
+
+                <div class="grid-3" style="margin-top:1rem;">
+                    <div class="info-card">
+                        <div style="font-size: 0.8rem; color:var(--text-muted);">Intensitas (I)</div>
+                        <div class="info-val" id="resI" style="font-size:1.2rem;">0.318 W/m²</div>
+                    </div>
+                    <div class="info-card" id="cardTI">
+                        <div style="font-size: 0.8rem; color:var(--text-muted);">Taraf Intensitas (TI)</div>
+                        <div class="info-val" id="resTI">115 dB</div>
+                    </div>
+                </div>
+                
+                <div class="math-box" id="mathIntensity" style="font-size:1rem; border-left-color:var(--electric-purple); color:var(--electric-purple);">
+                    $$I = \frac{P}{4\pi r^2}$$
+                    $$TI = 10 \log \left(\frac{I}{I_0}\right)$$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 3: EFEK DOPPLER -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Modul 3: Simulator Efek Doppler</div>
+        </div>
+        <div class="grid-2">
+            <div>
+                <div class="canvas-wrapper" style="height: 250px;">
+                    <canvas id="cvsDoppler"></canvas>
+                </div>
+                <div class="math-box" id="mathDoppler" style="border-left-color:var(--cyan-accent); color:var(--cyan-accent);">
+                    $$f_p = f_s \left( \frac{v \pm v_p}{v \mp v_s} \right)$$
+                </div>
+            </div>
+            
+            <div class="controls-box">
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Kecepatan Sumber / Ambulans (v_s)</span> <span class="val" id="valVS">20 m/s</span>
+                    </div>
+                    <input type="range" id="slVS" min="-50" max="50" step="1" value="20"> 
+                    <small style="color:#666;">(-) Menjauh &nbsp;&nbsp;&nbsp; (+) Mendekat</small>
+                </div>
+                <div class="control-group" style="margin-top:10px;">
+                    <div class="control-header">
+                        <span>Kecepatan Pendengar (v_p)</span> <span class="val" id="valVP">0 m/s</span>
+                    </div>
+                    <input type="range" id="slVP" min="-20" max="20" step="1" value="0"> 
+                    <small style="color:#666;">(-) Menjauh &nbsp;&nbsp;&nbsp; (+) Mendekat</small>
+                </div>
+
+                <div class="info-card" style="margin-top:1rem; border-color:var(--cyan-accent);">
+                    <div style="font-size: 0.9rem; color:#aaa;">Frekuensi yang Terdengar (f_p)</div>
+                    <div class="info-val" id="resFP" style="color:var(--cyan-accent);">0 Hz</div>
+                    <div style="font-size:0.8rem; color:#666; margin-top:5px;">Frekuensi Asli (f_s) = 500 Hz | v_udara = 340 m/s</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- THEORY FOOTER -->
+    <div class="theory-box" style="margin-bottom: 2rem;">
+        <div class="grid-3">
+            <div>
+                <h4>Dawai & Pipa Organa</h4>
+                <ul>
+                    <li><strong>Dawai & POT:</strong> Memiliki semua harmonik (n=0,1,2..). Frekuensi kelipatan bulat dari nada dasar (1f, 2f, 3f).</li>
+                    <li><strong>PTT:</strong> Hanya memiliki harmonik ganjil. Frekuensi kelipatan ganjil (1f, 3f, 5f). Ujung tertutup selalu menjadi Simpul.</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Hukum Kuadrat Terbalik</h4>
+                <ul>
+                    <li>Intensitas berbanding terbalik dengan kuadrat jarak ($1/r^2$).</li>
+                    <li>Jarak 2x lipat ➔ Intensitas jadi 1/4 kalinya.</li>
+                    <li>Ambang batas pendengaran ($I_0$) = $10^{-12}$ W/m². Ambang nyeri ≈ 120 dB.</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Efek Doppler</h4>
+                <ul>
+                    <li>Sumber <strong>Mendekat</strong>: Gelombang merapat di depan (Frekuensi naik).</li>
+                    <li>Sumber <strong>Menjauh</strong>: Gelombang merenggang di belakang (Frekuensi turun).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       AUDIO ENGINE (AudioContext API)
+       ========================================= */
+    const AudioSys = {
+        ctx: null, osc1: null, gain1: null, osc3: null, gain3: null, isMuted: true,
+        
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                this.osc1 = this.ctx.createOscillator();
+                this.gain1 = this.ctx.createGain();
+                this.osc1.type = 'sine';
+                this.gain1.gain.value = 0;
+                this.osc1.connect(this.gain1);
+                this.gain1.connect(this.ctx.destination);
+                this.osc1.start();
+
+                this.osc3 = this.ctx.createOscillator();
+                this.gain3 = this.ctx.createGain();
+                this.osc3.type = 'triangle';
+                this.gain3.gain.value = 0;
+                this.osc3.connect(this.gain3);
+                this.gain3.connect(this.ctx.destination);
+                this.osc3.start();
+            }
+        },
+        toggleMute() {
+            this.isMuted = !this.isMuted;
+            if(!this.isMuted && this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+            if(this.isMuted && this.gain1) {
+                this.gain1.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+                this.gain3.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            }
+            return this.isMuted;
+        },
+        updateFreq1(freq) {
+            if(this.isMuted || !this.osc1) return;
+            let audioF = Math.max(100, Math.min(freq, 2000));
+            this.osc1.frequency.setTargetAtTime(audioF, this.ctx.currentTime, 0.1);
+            this.gain1.gain.setTargetAtTime(0.1, this.ctx.currentTime, 0.1);
+        },
+        updateFreq3(freq) {
+            if(this.isMuted || !this.osc3) return;
+            let audioF = Math.max(100, Math.min(freq, 2000));
+            this.osc3.frequency.setTargetAtTime(audioF, this.ctx.currentTime, 0.1);
+            this.gain3.gain.setTargetAtTime(0.05, this.ctx.currentTime, 0.1);
+        }
+    };
+
+    const btnAudio = document.getElementById('btnAudio');
+    btnAudio.addEventListener('click', () => {
+        AudioSys.init();
+        const muted = AudioSys.toggleMute();
+        if(muted) {
+            btnAudio.classList.remove('active');
+            btnAudio.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon><line x1="15" y1="9" x2="15" y2="15"></line></svg> Audio Off`;
+        } else {
+            btnAudio.classList.add('active');
+            btnAudio.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon><path d="M15 9v6M19 7a7 7 0 0 1 0 10"></path></svg> Audio On`;
+        }
+    });
+
+    /* =========================================
+       MODULE 1: SUMBER BUNYI (STANDING WAVES)
+       ========================================= */
+    const Mod1 = {
+        cvs: document.getElementById('cvsSource'),
+        ctx: document.getElementById('cvsSource').getContext('2d'),
+        type: 'dawai',
+        L: 1.0, F: 100, mu: 0.005, n: 0,
+        time: 0, animSpeed: 1.0, f_current: 70.7,
+        
+        init() {
+            document.querySelectorAll('#tabsMod1 .tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('#tabsMod1 .tab-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    this.type = e.target.dataset.type;
+                    document.getElementById('ctrlF').style.display = this.type === 'dawai' ? 'flex' : 'none';
+                    this.updateFormula(); // Re-render LaTeX
+                    this.updateMath();
+                });
+            });
+
+            document.getElementById('slH').addEventListener('input', e => {
+                this.n = parseInt(e.target.value);
+                const labels = ["Nada Dasar (n=0)", "Nada Atas 1 (n=1)", "Nada Atas 2 (n=2)"];
+                document.getElementById('valH').innerText = labels[this.n];
+                this.updateMath();
+            });
+
+            document.getElementById('slL').addEventListener('input', e => {
+                this.L = parseFloat(e.target.value);
+                document.getElementById('valL').innerText = this.L.toFixed(2) + " m";
+                this.updateMath();
+            });
+
+            document.getElementById('slF').addEventListener('input', e => {
+                this.F = parseFloat(e.target.value);
+                document.getElementById('valF').innerText = this.F + " N";
+                this.updateMath();
+            });
+
+            document.getElementById('speedSelect').addEventListener('change', e => {
+                this.animSpeed = parseFloat(e.target.value);
+                const labels = {1: 'Normal (1x)', 0.5: 'Lambat (0.5x)', 0.25: 'Sangat Lambat (0.25x)', 0.1: 'Super Lambat (0.1x)'};
+                document.getElementById('valSpeed').innerText = labels[this.animSpeed];
+            });
+
+            this.updateFormula();
+            this.updateMath();
+        },
+
+        updateFormula() {
+            let formula = '';
+            if(this.type === 'dawai') {
+                formula = `$$v = \\sqrt{\\frac{F}{\\mu}}$$ $$f_n = \\frac{(n+1)v}{2L}$$`;
+            } else if(this.type === 'pot') {
+                formula = `$$\\text{Pipa Organa Terbuka}$$ $$f_n = \\frac{(n+1)v}{2L}$$`;
+            } else {
+                formula = `$$\\text{Pipa Organa Tertutup}$$ $$f_n = \\frac{(2n+1)v}{4L}$$`;
+            }
+            
+            document.getElementById('mathSource').innerHTML = formula;
+            if (window.MathJax) { 
+                MathJax.typesetPromise([document.getElementById('mathSource')]); 
+            }
+        },
+
+        updateMath() {
+            let v, f;
+            if(this.type === 'dawai') {
+                v = Math.sqrt(this.F / this.mu);
+                f = ((this.n + 1) * v) / (2 * this.L);
+            } else if(this.type === 'pot') {
+                v = 340;
+                f = ((this.n + 1) * v) / (2 * this.L);
+            } else {
+                v = 340;
+                f = ((2 * this.n + 1) * v) / (4 * this.L);
+            }
+            
+            document.getElementById('resV').innerText = v.toFixed(1) + " m/s";
+            document.getElementById('resF').innerText = f.toFixed(1) + " Hz";
+            
+            this.f_current = f;
+            AudioSys.updateFreq1(f);
+        },
+
+        draw() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+            
+            this.time += (this.f_current * 0.002) * this.animSpeed;
+
+            let A = height * 0.3;
+            let midY = height / 2;
+            let padding = 40;
+            let drawW = width - (padding * 2);
+            
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#333';
+            this.ctx.moveTo(padding, midY);
+            this.ctx.lineTo(padding + drawW, midY);
+            this.ctx.stroke();
+
+            let k, phaseShift;
+            if(this.type === 'dawai') {
+                k = ((this.n + 1) * Math.PI) / drawW;
+                phaseShift = 0;
+            } else if(this.type === 'pot') {
+                k = ((this.n + 1) * Math.PI) / drawW;
+                phaseShift = Math.PI / 2;
+            } else {
+                k = ((2 * this.n + 1) * Math.PI) / (2 * drawW);
+                phaseShift = 0;
+            }
+
+            let envVal = Math.sin(this.time);
+            
+            this.ctx.beginPath();
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeStyle = 'var(--neon-yellow)';
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = 'var(--neon-yellow)';
+            
+            for(let x = 0; x <= drawW; x+=2) {
+                let y = A * Math.sin(k * x + phaseShift) * envVal;
+                if(x===0) this.ctx.moveTo(padding + x, midY - y);
+                else this.ctx.lineTo(padding + x, midY - y);
+            }
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
+            
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = 'rgba(234, 255, 0, 0.3)';
+            for(let x = 0; x <= drawW; x+=2) {
+                let y = A * Math.sin(k * x + phaseShift) * -envVal;
+                if(x===0) this.ctx.moveTo(padding + x, midY - y);
+                else this.ctx.lineTo(padding + x, midY - y);
+            }
+            this.ctx.stroke();
+
+            for(let x = 0; x <= drawW; x+=drawW/100) {
+                let baseVal = Math.sin(k * x + phaseShift);
+                let px = padding + x;
+                
+                if(Math.abs(baseVal) < 0.05) {
+                    this.ctx.fillStyle = '#00f3ff';
+                    this.ctx.beginPath(); this.ctx.arc(px, midY, 4, 0, Math.PI*2); this.ctx.fill();
+                }
+                if(Math.abs(Math.abs(baseVal) - 1) < 0.01) {
+                    this.ctx.fillStyle = '#eaff00';
+                    this.ctx.beginPath(); this.ctx.arc(px, midY, 4, 0, Math.PI*2); this.ctx.fill();
+                }
+            }
+
+            this.ctx.fillStyle = '#fff';
+            if(this.type === 'dawai' || this.type === 'ptt') {
+                this.ctx.fillRect(padding - 5, midY - 20, 5, 40);
+            }
+            if(this.type === 'dawai') {
+                this.ctx.fillRect(padding + drawW, midY - 20, 5, 40);
+            }
+        }
+    };
+
+    /* =========================================
+       MODULE 2: INTENSITAS BUNYI
+       ========================================= */
+    const Mod2 = {
+        cvs: document.getElementById('cvsIntensity'),
+        ctx: document.getElementById('cvsIntensity').getContext('2d'),
+        P: 100, r: 5.0, I0: 1e-12,
+        time: 0,
+
+        init() {
+            document.getElementById('slP').addEventListener('input', e => {
+                this.P = parseFloat(e.target.value);
+                document.getElementById('valP').innerText = this.P + " W";
+                this.updateMath();
+            });
+            document.getElementById('slR').addEventListener('input', e => {
+                this.r = parseFloat(e.target.value);
+                document.getElementById('valR').innerText = this.r.toFixed(1) + " m";
+                this.updateMath();
+            });
+            this.updateMath();
+        },
+
+        updateMath() {
+            let I = this.P / (4 * Math.PI * Math.pow(this.r, 2));
+            let TI = 10 * Math.log10(I / this.I0);
+            
+            let I_str = I < 0.001 ? I.toExponential(2) : I.toFixed(3);
+            
+            document.getElementById('resI').innerText = I_str + " W/m²";
+            document.getElementById('resTI').innerText = TI.toFixed(1) + " dB";
+
+            let cardTI = document.getElementById('cardTI');
+            let boxBox = document.getElementById('intBox');
+            if(TI >= 120) {
+                cardTI.classList.add('alert-danger');
+                boxBox.style.borderColor = 'var(--alert-red)';
+            } else {
+                cardTI.classList.remove('alert-danger');
+                boxBox.style.borderColor = '#222';
+            }
+        },
+
+        draw() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+            this.time += 1;
+
+            let cx = width / 2;
+            let cy = height / 2;
+
+            let waveSpacing = 20;
+            this.time += 1.5;
+            let maxRadius = Math.max(width, height);
+
+            this.ctx.strokeStyle = 'var(--neon-yellow)';
+            for(let r = (this.time % waveSpacing); r < maxRadius; r += waveSpacing) {
+                let alpha = Math.min(1, (this.P / 200) * (1 - (r / maxRadius)));
+                this.ctx.globalAlpha = Math.max(0, alpha);
+                
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, r, 0, Math.PI*2);
+                this.ctx.stroke();
+            }
+            this.ctx.globalAlpha = 1.0;
+
+            this.ctx.fillStyle = '#fff';
+            this.ctx.beginPath(); this.ctx.arc(cx, cy, 6, 0, Math.PI*2); this.ctx.fill();
+
+            let scaleR = (this.r / 30) * (Math.min(width, height)/2 - 20);
+            let lx = cx + scaleR;
+            this.ctx.fillStyle = 'var(--electric-purple)';
+            this.ctx.beginPath(); this.ctx.arc(lx, cy, 8, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.shadowBlur = 10; this.ctx.shadowColor = 'var(--electric-purple)';
+            this.ctx.fill(); this.ctx.shadowBlur = 0;
+            
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            this.ctx.setLineDash([5,5]);
+            this.ctx.beginPath(); this.ctx.moveTo(cx, cy); this.ctx.lineTo(lx, cy); this.ctx.stroke();
+            this.ctx.setLineDash([]);
+        }
+    };
+
+    /* =========================================
+       MODULE 3: EFEK DOPPLER
+       ========================================= */
+    const Mod3 = {
+        cvs: document.getElementById('cvsDoppler'),
+        ctx: document.getElementById('cvsDoppler').getContext('2d'),
+        vs: 20, vp: 0, v_snd: 340, fs: 500,
+        xs: 50, xp: null, waves: [], time: 0,
+
+        init() {
+            this.xs = 50;
+            document.getElementById('slVS').addEventListener('input', e => {
+                this.vs = parseFloat(e.target.value);
+                document.getElementById('valVS').innerText = this.vs + " m/s";
+                this.updateMath();
+            });
+            document.getElementById('slVP').addEventListener('input', e => {
+                this.vp = parseFloat(e.target.value);
+                document.getElementById('valVP').innerText = this.vp + " m/s";
+                this.updateMath();
+            });
+            this.updateMath();
+        },
+
+        updateMath() {
+            let vp_sign = this.vp;
+            let vs_sign = -this.vs;
+            
+            let fp = this.fs * (this.v_snd + vp_sign) / (this.v_snd + vs_sign);
+            
+            document.getElementById('resFP').innerText = fp.toFixed(1) + " Hz";
+            AudioSys.updateFreq3(fp);
+        },
+
+        draw() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+            
+            if(this.xp === null) this.xp = width - 50;
+
+            this.ctx.clearRect(0, 0, width, height);
+            let cy = height / 2;
+            
+            let v_snd_visual = 2.5;
+            let scale_v = v_snd_visual / this.v_snd;
+            
+            let v_s_visual = this.vs * scale_v * 4;
+            let v_p_visual = this.vp * scale_v * 4;
+            
+            this.xs += v_s_visual;
+            this.xp -= v_p_visual;
+            
+            if(this.xs > width + 50) this.xs = -50;
+            if(this.xs < -50) this.xs = width + 50;
+            if(this.xp > width + 50) this.xp = -50;
+            if(this.xp < -50) this.xp = width + 50;
+
+            this.time++;
+            if(this.time % 15 === 0) {
+                this.waves.push({ x: this.xs, y: cy, r: 0 });
+            }
+
+            this.ctx.strokeStyle = 'var(--cyan-accent)';
+            this.ctx.lineWidth = 1.5;
+            for(let i=0; i<this.waves.length; i++) {
+                let w = this.waves[i];
+                w.r += v_snd_visual;
+                
+                let alpha = 1 - (w.r / (width * 0.7));
+                if(alpha <= 0) {
+                    this.waves.splice(i, 1);
+                    i--; continue;
+                }
+                
+                this.ctx.globalAlpha = alpha;
+                this.ctx.beginPath();
+                this.ctx.arc(w.x, w.y, w.r, 0, Math.PI*2);
+                this.ctx.stroke();
+            }
+            this.ctx.globalAlpha = 1.0;
+
+            this.ctx.fillStyle = 'var(--neon-yellow)';
+            this.ctx.beginPath(); this.ctx.arc(this.xp, cy, 8, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '10px sans-serif';
+            this.ctx.fillText("Pendengar", this.xp - 20, cy + 20);
+
+            this.ctx.fillStyle = '#ff003c';
+            this.ctx.fillRect(this.xs - 10, cy - 10, 20, 20);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText("Ambulans", this.xs - 20, cy - 15);
+            
+            if(this.vs !== 0) {
+                let dir = this.vs > 0 ? 1 : -1;
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.xs, cy);
+                this.ctx.lineTo(this.xs + (dir * 30), cy);
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.xs + (dir * 30), cy);
+                this.ctx.lineTo(this.xs + (dir * 25), cy - 4);
+                this.ctx.lineTo(this.xs + (dir * 25), cy + 4);
+                this.ctx.fill();
+            }
+            
+            if(this.vp !== 0) {
+                let dir = this.vp > 0 ? -1 : 1;
+                this.ctx.strokeStyle = 'var(--neon-yellow)';
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.xp, cy);
+                this.ctx.lineTo(this.xp + (dir * 30), cy);
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.xp + (dir * 30), cy);
+                this.ctx.lineTo(this.xp + (dir * 25), cy - 4);
+                this.ctx.lineTo(this.xp + (dir * 25), cy + 4);
+                this.ctx.fill();
+            }
+        }
+    };
+
+    function initAll() {
+        Mod1.init();
+        Mod2.init();
+        Mod3.init();
+        requestAnimationFrame(renderLoop);
+    }
+
+    function renderLoop() {
+        Mod1.draw();
+        Mod2.draw();
+        Mod3.draw();
+        requestAnimationFrame(renderLoop);
+    }
+
+    window.addEventListener('load', initAll);
+
+</script>
+</body>
+</html>
