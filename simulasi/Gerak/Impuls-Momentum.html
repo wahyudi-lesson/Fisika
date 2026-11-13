@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Vektor: Momentum & Impuls</title>
+    
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-panel: #111827;
+            --bg-card: #1f2937;
+            --cyan-neon: #00e5ff;
+            --yellow-neon: #facc15;
+            --red-crimson: #ff3333;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            /* Grid Background */
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        header {
+            text-align: center; padding: 30px 20px; background: var(--bg-panel);
+            border: 1px solid #334155; border-radius: 12px; border-top: 4px solid var(--cyan-neon);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        header h1 { color: var(--cyan-neon); font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); margin-bottom: 5px; }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid #334155; border-radius: 10px;
+            padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); position: relative;
+        }
+        .panel-title { font-size: 1.3rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+        
+        .info-box { background: rgba(255,255,255,0.03); border-left: 3px solid var(--cyan-neon); padding: 12px; font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--text-main); }
+
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #475569; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        .btn {
+            width: 100%; padding: 12px; background: #1e293b; color: var(--text-main); 
+            border: 1px solid #475569; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: #334155; }
+        .btn-action { border-color: var(--cyan-neon); color: var(--cyan-neon); background: rgba(0, 229, 255, 0.1); }
+        .btn-action:hover { background: rgba(0, 229, 255, 0.2); box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+        .btn-warning { border-color: var(--yellow-neon); color: var(--yellow-neon); background: rgba(250, 204, 21, 0.1); }
+        .btn-warning:hover { background: rgba(250, 204, 21, 0.2); box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
+
+        .slider-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold; color: var(--text-muted); }
+        .slider-val { font-family: var(--font-mono); color: var(--text-main); }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--text-main); cursor: pointer; }
+        
+        .slider-cyan::-webkit-slider-thumb { background: var(--cyan-neon); box-shadow: 0 0 10px var(--cyan-neon); }
+        .slider-yellow::-webkit-slider-thumb { background: var(--yellow-neon); box-shadow: 0 0 10px var(--yellow-neon); }
+
+        /* Data Display Layout */
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .data-card { background: #000; border: 1px solid #334155; padding: 10px; border-radius: 6px; text-align: center; }
+        .data-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .data-card .value { font-family: var(--font-mono); font-size: 1.25rem; font-weight: bold; }
+        .val-cyan { color: var(--cyan-neon); text-shadow: 0 0 8px rgba(0,229,255,0.5); }
+        .val-yellow { color: var(--yellow-neon); text-shadow: 0 0 8px rgba(250,204,21,0.5); }
+        .val-red { color: var(--red-crimson); text-shadow: 0 0 8px rgba(255,51,51,0.5); }
+
+        .math-box { background: #000; border: 1px dashed var(--cyan-neon); padding: 15px; border-radius: 8px; text-align: center; font-size: 1.1rem; color: var(--text-main); margin-bottom: 15px; overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 15px; background: rgba(0,0,0,0.3); }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: left; }
+        th { background: #1e293b; color: var(--cyan-neon); }
+
+        .game-panel { border-color: var(--yellow-neon); background: linear-gradient(180deg, var(--bg-panel), #1a1a00); position: relative; }
+        .game-status-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; border-radius: 10px; }
+        .game-status-overlay.active { opacity: 1; pointer-events: all; }
+        .game-msg { font-size: 1.8rem; font-weight: bold; margin-bottom: 10px; text-align: center;}
+        
+        .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .radio-label { flex: 1; text-align: center; padding: 10px; background: #1f2937; border: 1px solid #475569; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 0.9rem;}
+        .radio-label:hover { background: #334155; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + .radio-label { background: rgba(0, 229, 255, 0.2); border-color: var(--cyan-neon); color: var(--cyan-neon); }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Laboratorium Vektor: Momentum & Impuls</h1>
+            <p>Eksplorasi Vektor Massa-Kecepatan serta Dinamika Gaya Impulsif terhadap Waktu Kontak</p>
+        </header>
+
+        <!-- MODUL 1: APERSEPSI -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--yellow-neon);">⚾ Visualisasi Apersepsi (Eksperimen Pemukul & Bola)</h2>
+            <div class="info-box">
+                Skenario: Seseorang memukul bola dengan dua jenis alat. Perhatikan bagaimana <strong>Waktu Kontak ($\Delta t$)</strong> mempengaruhi lonjakan <strong>Gaya ($F$)</strong>.
+            </div>
+            
+            <div class="grid-2">
+                <div class="canvas-container" style="height: 250px;">
+                    <canvas id="apersepsiCanvas"></canvas>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="batType" value="hard" checked onchange="setBatType('hard')">
+                            <div class="radio-label">Pemukul Kayu Keras<br><span style="font-size:0.75rem; color:var(--text-muted);">Kontak Singkat ($\Delta t$ kecil)</span></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="batType" value="soft" onchange="setBatType('soft')">
+                            <div class="radio-label">Pemukul Busa Tebal<br><span style="font-size:0.75rem; color:var(--text-muted);">Kontak Lama ($\Delta t$ besar)</span></div>
+                        </label>
+                    </div>
+                    
+                    <button class="btn btn-warning" onclick="playApersepsi()">PUKUL BOLA SEKARANG!</button>
+                    
+                    <div id="apersepsi-popup" class="info-box" style="margin-top: 15px; border-color: var(--yellow-neon); display: none;">
+                        <strong>Analisis Grafik:</strong> <span id="apersepsi-desc"></span><br>
+                        Besar Impuls ($\vec{I}$) berbanding lurus dengan Gaya ($F$) dan Waktu Kontak ($\Delta t$). Semakin singkat waktu kontak $\Delta t$, semakin besar Gaya Impulsif $F$ yang terjadi!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            
+            <!-- BAGIAN A: SIMULATOR MOMENTUM -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-neon);">☄️ Simulator Momentum ($\vec{p}$)</h2>
+                <div class="info-box">Momentum adalah besaran vektor. Arah vektor Momentum ($\vec{p}$) selalu mengikuti arah vektor Kecepatan ($\vec{v}$).</div>
+                
+                <div class="canvas-container" style="height: 150px;">
+                    <canvas id="momentumCanvas"></canvas>
+                </div>
+
+                <div class="data-grid">
+                    <div class="data-card">
+                        <div class="label">Massa (m)</div>
+                        <div class="value" id="val-m">5.0 kg</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="label">Kecepatan ($\vec{v}$)</div>
+                        <div class="value val-cyan" id="val-v">+10.0 m/s</div>
+                    </div>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Massa Benda ($m$)</span></div>
+                    <input type="range" class="slider-cyan" id="slider-m" min="0.1" max="10" step="0.1" value="5" oninput="updateMomentum()">
+                </div>
+                
+                <div class="slider-box">
+                    <div class="slider-label"><span>Kecepatan ($\vec{v}$)</span> <span style="font-size:0.75rem; font-weight:normal;">(-) Kiri | Kanan (+)</span></div>
+                    <input type="range" class="slider-cyan" id="slider-v" min="-20" max="20" step="0.5" value="10" oninput="updateMomentum()">
+                </div>
+
+                <div class="math-box" style="border-color: var(--cyan-neon);">
+                    $\vec{p} = m \cdot \vec{v}$<br>
+                    $\vec{p} =$ <span id="calc-p-val" class="val-cyan">50.0 kg·m/s</span>
+                </div>
+            </div>
+
+            <!-- BAGIAN B: SIMULATOR IMPULS -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--yellow-neon);">⚡ Simulator Impuls ($\vec{I}$)</h2>
+                <div class="info-box">Impuls adalah besaran vektor. Arah vektor Impuls ($\vec{I}$) selalu digambar sejajar dan SEARAH dengan vektor Gaya ($\vec{F}$).</div>
+                
+                <div class="canvas-container" style="height: 150px;">
+                    <canvas id="impulseCanvas"></canvas>
+                </div>
+
+                <div class="data-grid">
+                    <div class="data-card">
+                        <div class="label">Gaya Kontak ($\vec{F}$)</div>
+                        <div class="value val-yellow" id="val-f">+200 N</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="label">Waktu Kontak ($\Delta t$)</div>
+                        <div class="value" id="val-t">0.100 s</div>
+                    </div>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Gaya Impulsif ($\vec{F}$)</span> <span style="font-size:0.75rem; font-weight:normal;">(-) Kiri | Kanan (+)</span></div>
+                    <input type="range" class="slider-yellow" id="slider-f" min="-500" max="500" step="10" value="200" oninput="updateImpulse()">
+                </div>
+                
+                <div class="slider-box">
+                    <div class="slider-label"><span>Waktu Kontak ($\Delta t$)</span></div>
+                    <input type="range" class="slider-yellow" id="slider-t" min="0.001" max="0.5" step="0.001" value="0.1" oninput="updateImpulse()">
+                </div>
+
+                <div class="math-box" style="border-color: var(--yellow-neon);">
+                    $\vec{I} = \vec{F} \cdot \Delta t$<br>
+                    $\vec{I} =$ <span id="calc-i-val" class="val-yellow">20.0 N·s</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--text-main);">📈 Visualisasi Luas Grafik ($F - t$)</h2>
+                <div class="info-box">
+                    Area yang diarsir di bawah grafik $F-t$ merepresentasikan akumulasi/besar nilai Impuls ($I$).<br>
+                    <strong>Rumus Luas = Panjang $\times$ Lebar = $\Delta t \times F$</strong>.
+                </div>
+                
+                <div class="canvas-container" style="height: 250px;">
+                    <canvas id="graphCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel game-panel">
+                <h2 class="panel-title" style="color: var(--cyan-neon);">🎯 Mini-Game: Presisi Gaya Impulsif</h2>
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px;">
+                    Skenario: Anda adalah operator pelontar mekanik. Sesuaikan slider Gaya dan Waktu Kontak di bawah ini untuk mencapai target Impuls yang diminta! 
+                    <strong>Peringatan:</strong> Mesin akan rusak jika Gaya $F$ melampaui batas toleransi.
+                </p>
+
+                <div class="data-grid" style="grid-template-columns: 1fr;">
+                    <div class="data-card" style="border-color: var(--cyan-neon);">
+                        <div class="label">Target Impuls ($\vec{I}_{\text{target}}$)</div>
+                        <div class="value val-cyan" id="game-target-i" style="font-size: 2rem;">50.0 N·s</div>
+                    </div>
+                </div>
+                <div class="info-box" style="border-color: var(--red-crimson); color: var(--red-crimson); text-align: center;">
+                    Batas Toleransi Gaya ($F_{max}$): <strong>300 N</strong>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Set Gaya Pelontar ($F$)</span> <span class="slider-val" id="game-val-f">100 N</span></div>
+                    <input type="range" class="slider-yellow" id="game-slider-f" min="10" max="500" step="5" value="100" oninput="updateGameUI()">
+                </div>
+                
+                <div class="slider-box">
+                    <div class="slider-label"><span>Set Waktu Kontak ($\Delta t$)</span> <span class="slider-val" id="game-val-t">0.100 s</span></div>
+                    <input type="range" class="slider-yellow" id="game-slider-t" min="0.01" max="0.5" step="0.01" value="0.1" oninput="updateGameUI()">
+                </div>
+
+                <div style="text-align: center; margin-bottom: 15px; font-family: var(--font-mono); font-size: 1.1rem;">
+                    Impuls Dihasilkan = <span id="game-current-i" class="val-yellow">10.0 N·s</span>
+                </div>
+
+                <button class="btn btn-action" onclick="checkGame()">LUNCURKAN OBJEK!</button>
+
+                <!-- Game Overlay -->
+                <div class="game-status-overlay" id="game-overlay">
+                    <div class="game-msg" id="game-msg">Berhasil!</div>
+                    <p id="game-desc" style="color: var(--text-muted); margin-bottom: 20px; max-width: 80%; text-align: center;">Anda mencapai target.</p>
+                    <button class="btn btn-action" style="width: auto; padding: 10px 30px;" onclick="nextGame()">Tutup & Main Lagi</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">📚 Ringkasan Karakteristik Fisika (Terisolasi)</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Besaran</th>
+                            <th>Persamaan Dasar</th>
+                            <th>Jenis Besaran</th>
+                            <th>Karakteristik Utama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color: var(--cyan-neon); font-weight: bold;">Momentum ($\vec{p}$)</td>
+                            <td style="font-family: var(--font-mono);">$\vec{p} = m \cdot \vec{v}$</td>
+                            <td>Vektor</td>
+                            <td>Ukuran kesukaran untuk menghentikan benda yang sedang bergerak. Arahnya selalu sama dengan arah kecepatan ($\vec{v}$).</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--yellow-neon); font-weight: bold;">Impuls ($\vec{I}$)</td>
+                            <td style="font-family: var(--font-mono);">$\vec{I} = \vec{F} \cdot \Delta t$</td>
+                            <td>Vektor</td>
+                            <td>Hasil kali gaya impulsif dengan lamanya gaya bekerja. Arahnya selalu sama dengan arah gaya ($\vec{F}$).</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-main); font-weight: bold;">Luas Grafik $F-t$</td>
+                            <td style="font-family: var(--font-mono);">$\text{Luas} = \int F \, dt$</td>
+                            <td>Skalar (Nilai)</td>
+                            <td>Memvisualisasikan akumulasi impuls. Bentuk kurva bisa berubah, namun jika luasnya sama, nilai Impulsnya sama.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // UTILITY FUNCTIONS & CANVAS SETUP
+        // ==========================================
+        function resizeCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            return canvas.getContext('2d');
+        }
+
+        // Draw an arrow vector
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width=3) {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        // MathJax live renderer helper
+        let mathRenderTimeout;
+        function updateMath() {
+            if (window.MathJax) {
+                clearTimeout(mathRenderTimeout);
+                mathRenderTimeout = setTimeout(() => {
+                    MathJax.typesetPromise().catch(err => console.log(err.message));
+                }, 100);
+            }
+        }
+
+        // ==========================================
+        // CANVAS 1: APERSEPSI (PEMUKUL & BOLA)
+        // ==========================================
+        const ctxAper = resizeCanvas('apersepsiCanvas');
+        let aperMode = 'hard'; // 'hard' or 'soft'
+        let aperState = {
+            playing: false, time: 0, ballX: 70, hitPhase: 0,
+            graphData: []
+        };
+
+        function setBatType(type) {
+            aperMode = type;
+            // Reset state
+            aperState.playing = false;
+            aperState.ballX = 70;
+            aperState.time = 0;
+            aperState.hitPhase = 0;
+            aperState.graphData = [];
+            document.getElementById('apersepsi-popup').style.display = 'none';
+            drawApersepsi();
+        }
+
+        function playApersepsi() {
+            if (aperState.playing) return; // Mencegah double-klik
+            setBatType(aperMode);
+            aperState.playing = true;
+            document.getElementById('apersepsi-popup').style.display = 'block';
+            
+            if(aperMode === 'hard') {
+                document.getElementById('apersepsi-desc').innerHTML = "Benda keras saling berbenturan. Durasi kontak ($\\Delta t$) sangat singkat, <strong>Gaya ($F$) melonjak ekstrem!</strong> Namun luas area (Impuls) tetap sama.";
+                document.getElementById('apersepsi-desc').style.color = "var(--red-crimson)";
+            } else {
+                document.getElementById('apersepsi-desc').innerHTML = "Benda lunak menyerap benturan. Durasi kontak ($\\Delta t$) lebih lama, <strong>Gaya ($F$) terdistribusi merata</strong>. Luas area (Impuls) tetap sama.";
+                document.getElementById('apersepsi-desc').style.color = "var(--cyan-neon)";
+            }
+            // Trigger animation loop
+            requestAnimationFrame(apersepsiLoop);
+        }
+
+        function apersepsiLoop() {
+            if(aperState.playing) {
+                drawApersepsi();
+                requestAnimationFrame(apersepsiLoop);
+            }
+        }
+
+        function drawApersepsi() {
+            const w = ctxAper.canvas.width;
+            const h = ctxAper.canvas.height;
+            if (w === 0 || h === 0) return;
+            ctxAper.clearRect(0, 0, w, h);
+
+            // Simulation Config
+            let isHard = aperMode === 'hard';
+            let batColor = isHard ? '#8B4513' : '#3b82f6'; // Kayu vs Busa
+            let maxF = isHard ? 160 : 40;
+            let dtContact = isHard ? 0.1 : 0.4;
+            let startHitTime = 0.3; // Waktu ayunan sebelum kontak
+
+            if(aperState.playing) {
+                aperState.time += 0.015;
+                
+                // State Machine Animasi Fisika
+                if (aperState.time < startHitTime) {
+                    aperState.hitPhase = 0; // Pre-hit (ayun ke belakang)
+                } else if (aperState.time < startHitTime + dtContact) {
+                    aperState.hitPhase = 1; // Contact (bersentuhan)
+                    
+                    let tRel = (aperState.time - startHitTime) / dtContact;
+                    let currentF = maxF * Math.sin(tRel * Math.PI);
+                    aperState.graphData.push({ t: aperState.time, f: currentF });
+                    
+                    // Efek visual kompresi bola ringan pada busa
+                    if (!isHard) aperState.ballX = 70 + (Math.sin(tRel * Math.PI) * 4);
+                } else {
+                    aperState.hitPhase = 2; // Post-hit (bola melesat)
+                    aperState.ballX += 8; // Laju bola (konstan karena impuls identik)
+                    
+                    // Pastikan kurva grafik tertutup menyentuh nol
+                    if (aperState.graphData.length > 0 && aperState.graphData[aperState.graphData.length-1].f > 0) {
+                        aperState.graphData.push({ t: aperState.time, f: 0 });
+                    }
+                }
+                
+                // Stop animasi jika bola keluar dari kanvas area kiri
+                if(aperState.ballX > w/2 - 20) {
+                    aperState.playing = false;
+                }
+            }
+
+            // Draw Scene (Left Half: Bat & Ball)
+            ctxAper.fillStyle = '#1e293b';
+            ctxAper.fillRect(0, h/2 + 15, w/2, 4); // Lantai lintasan
+
+            // Bat Animation Logic
+            let batAngle = -Math.PI/6; // Standby angle
+            if(aperState.playing || aperState.hitPhase === 2) {
+                if (aperState.hitPhase === 0) {
+                    let p = aperState.time / startHitTime;
+                    batAngle = -Math.PI/6 - (p * Math.PI/6); // Tarik ke belakang
+                } else if (aperState.hitPhase === 1) {
+                    let p = (aperState.time - startHitTime) / dtContact;
+                    batAngle = -Math.PI/3 * (1 - p); // Ayun ke depan
+                } else {
+                    let p = (aperState.time - startHitTime - dtContact) / 0.5;
+                    batAngle = Math.min(p * Math.PI/4, Math.PI/4); // Follow through
+                }
+            }
+
+            ctxAper.save();
+            ctxAper.translate(45, h/2 - 20); // Pivot point bat
+            ctxAper.rotate(batAngle);
+            ctxAper.fillStyle = batColor;
+            // Draw Bat Handle & Barrel
+            ctxAper.fillRect(-4, -40, 8, 40); // Handle
+            ctxAper.fillRect(-7, 0, 14, 45); // Barrel
+            
+            // Soft foam padding visual
+            if(!isHard) {
+                ctxAper.fillStyle = '#60a5fa';
+                ctxAper.fillRect(-9, 5, 18, 35);
+            }
+            ctxAper.restore();
+
+            // Draw Ball
+            ctxAper.beginPath();
+            ctxAper.arc(aperState.ballX, h/2 + 5, 10, 0, Math.PI*2);
+            ctxAper.fillStyle = '#f8fafc';
+            ctxAper.fill();
+            ctxAper.strokeStyle = '#94a3b8';
+            ctxAper.lineWidth = 2;
+            ctxAper.stroke();
+
+            // Draw F-t Graph (Right Half)
+            const gx = w/2 + 30; const gy = h - 20; const gw = w/2 - 50; const gh = h - 50;
+            
+            // Background Grid Grafik
+            ctxAper.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctxAper.lineWidth = 1;
+            ctxAper.beginPath();
+            for(let i=1; i<5; i++) {
+                ctxAper.moveTo(gx, gy - i*(gh/4));
+                ctxAper.lineTo(gx + gw, gy - i*(gh/4));
+            }
+            ctxAper.stroke();
+
+            // Axes
+            ctxAper.strokeStyle = '#64748b'; ctxAper.lineWidth = 2;
+            ctxAper.beginPath(); 
+            ctxAper.moveTo(gx, gy - gh - 10); ctxAper.lineTo(gx, gy); // Y-axis (F)
+            ctxAper.lineTo(gx + gw + 10, gy); // X-axis (t)
+            ctxAper.stroke();
+            
+            ctxAper.fillStyle = '#94a3b8'; ctxAper.font = '12px monospace';
+            ctxAper.fillText("F", gx - 15, gy - gh);
+            ctxAper.fillText("t", gx + gw + 5, gy + 15);
+
+            // Plot Graph Data
+            if (aperState.graphData.length > 0) {
+                let mapT = (t) => gx + (t * (gw / 1.2)); // Skala t max ~1.2s
+                let mapF = (f) => gy - (f / 160) * gh;   // Skala F max ~160N
+                
+                let plotColor = isHard ? 'var(--red-crimson)' : 'var(--cyan-neon)';
+                let fillColor = isHard ? 'rgba(255, 51, 51, 0.4)' : 'rgba(0, 229, 255, 0.4)';
+
+                ctxAper.strokeStyle = plotColor;
+                ctxAper.fillStyle = fillColor;
+                ctxAper.lineWidth = 3;
+                
+                ctxAper.beginPath();
+                ctxAper.moveTo(mapT(aperState.graphData[0].t), gy);
+                
+                aperState.graphData.forEach(pt => {
+                    ctxAper.lineTo(mapT(pt.t), mapF(pt.f));
+                });
+                
+                let lastT = aperState.graphData[aperState.graphData.length-1].t;
+                ctxAper.lineTo(mapT(lastT), gy);
+                ctxAper.stroke();
+                ctxAper.fill();
+
+                // Text Luas = Impuls
+                if(aperState.hitPhase === 2) {
+                    ctxAper.fillStyle = plotColor;
+                    ctxAper.font = 'bold 12px sans-serif';
+                    ctxAper.textAlign = 'center';
+                    let midT = isHard ? startHitTime + dtContact/2 : startHitTime + dtContact/2;
+                    ctxAper.fillText("Luas Area = Impuls Konstan", mapT(midT), gy - gh/2);
+                    ctxAper.textAlign = 'left';
+                }
+            }
+        }
+
+        // ==========================================
+        // CANVAS 2: SIMULATOR MOMENTUM
+        // ==========================================
+        const ctxMom = resizeCanvas('momentumCanvas');
+        let momState = { m: 5, v: 10, x: 150 };
+
+        function updateMomentum() {
+            momState.m = parseFloat(document.getElementById('slider-m').value);
+            momState.v = parseFloat(document.getElementById('slider-v').value);
+            
+            document.getElementById('val-m').innerText = momState.m.toFixed(1) + " kg";
+            let vStr = (momState.v > 0 ? "+" : "") + momState.v.toFixed(1);
+            document.getElementById('val-v').innerText = vStr + " m/s";
+            
+            let p = momState.m * momState.v;
+            let pStr = (p > 0 ? "+" : "") + p.toFixed(1);
+            document.getElementById('calc-p-val').innerText = pStr + " kg·m/s";
+            
+            // Color logic
+            document.getElementById('val-v').className = momState.v < 0 ? "value val-red" : "value val-cyan";
+            document.getElementById('calc-p-val').className = p < 0 ? "val-red" : "val-cyan";
+        }
+
+        function drawMomentum() {
+            if(ctxMom.canvas.width === 0) return; // Prevent hidden draw
+            const w = ctxMom.canvas.width;
+            const h = ctxMom.canvas.height;
+            ctxMom.clearRect(0, 0, w, h);
+
+            // Move block
+            momState.x += momState.v * 0.05;
+            if (momState.x > w + 50) momState.x = -50;
+            if (momState.x < -50) momState.x = w + 50;
+
+            let cx = momState.x; let cy = h/2;
+
+            // Draw Block (Size relates to mass)
+            let boxSize = 20 + momState.m * 2;
+            ctxMom.fillStyle = '#475569';
+            ctxMom.fillRect(cx - boxSize/2, cy - boxSize/2, boxSize, boxSize);
+            ctxMom.strokeStyle = '#94a3b8'; ctxMom.lineWidth = 2;
+            ctxMom.strokeRect(cx - boxSize/2, cy - boxSize/2, boxSize, boxSize);
+
+            // Draw Velocity Vector (Small arrow below)
+            let vLen = momState.v * 2; 
+            if(Math.abs(vLen) > 1) {
+                drawArrow(ctxMom, cx, cy + boxSize/2 + 10, cx + vLen, cy + boxSize/2 + 10, '#f8fafc', 2);
+                ctxMom.fillStyle = '#f8fafc'; ctxMom.font = '10px monospace';
+                ctxMom.fillText("v", cx + vLen/2 - 5, cy + boxSize/2 + 25);
+            }
+
+            // Draw Momentum Vector (Main arrow from center)
+            let p = momState.m * momState.v;
+            let pLen = p; // Visual scale
+            // Cap visual length
+            if(pLen > w/2 - 20) pLen = w/2 - 20;
+            if(pLen < -(w/2 - 20)) pLen = -(w/2 - 20);
+
+            if(Math.abs(pLen) > 2) {
+                let pColor = p > 0 ? 'var(--cyan-neon)' : 'var(--red-crimson)';
+                drawArrow(ctxMom, cx, cy, cx + pLen, cy, pColor, 4);
+                ctxMom.fillStyle = pColor; ctxMom.font = 'bold 12px monospace';
+                ctxMom.fillText("p", cx + pLen/2 - 5, cy - 10);
+            }
+
+            requestAnimationFrame(drawMomentum);
+        }
+
+        // ==========================================
+        // CANVAS 3: SIMULATOR IMPULS
+        // ==========================================
+        const ctxImp = resizeCanvas('impulseCanvas');
+        let impState = { f: 200, t: 0.1 };
+
+        function updateImpulse() {
+            impState.f = parseFloat(document.getElementById('slider-f').value);
+            impState.t = parseFloat(document.getElementById('slider-t').value);
+            
+            let fStr = (impState.f > 0 ? "+" : "") + impState.f.toFixed(0);
+            document.getElementById('val-f').innerText = fStr + " N";
+            document.getElementById('val-t').innerText = impState.t.toFixed(3) + " s";
+            
+            let i = impState.f * impState.t;
+            let iStr = (i > 0 ? "+" : "") + i.toFixed(2);
+            document.getElementById('calc-i-val').innerText = iStr + " N·s";
+            
+            // Color logic
+            document.getElementById('val-f').className = impState.f < 0 ? "value val-red" : "value val-yellow";
+            document.getElementById('calc-i-val').className = i < 0 ? "val-red" : "val-yellow";
+
+            drawImpulseAndGraph(); // Sync graph drawing
+        }
+
+        function drawImpulseAndGraph() {
+            // Draw Canvas 3 (Vectors)
+            const w = ctxImp.canvas.width;
+            const h = ctxImp.canvas.height;
+            ctxImp.clearRect(0, 0, w, h);
+
+            let cx = w/2; let cy = h/2;
+
+            // Draw Block (Static)
+            ctxImp.fillStyle = '#334155';
+            ctxImp.fillRect(cx - 20, cy - 20, 40, 40);
+
+            // Draw Force Vector F
+            let fLen = (impState.f / 500) * (w/2 - 40);
+            if(Math.abs(fLen) > 2) {
+                let fCol = impState.f > 0 ? 'var(--yellow-neon)' : 'var(--red-crimson)';
+                drawArrow(ctxImp, cx, cy - 10, cx + fLen, cy - 10, fCol, 4);
+                ctxImp.fillStyle = fCol; ctxImp.font = 'bold 12px monospace';
+                ctxImp.fillText("F", cx + fLen/2 - 5, cy - 15);
+            }
+
+            // Draw Impulse Vector I (Same direction, scaled visually)
+            // Visual scale: max I = 500 * 0.5 = 250. Let's map 250 to w/2-40
+            let iVal = impState.f * impState.t;
+            let iLen = (iVal / 250) * (w/2 - 40);
+            if(Math.abs(iLen) > 2) {
+                let iCol = impState.f > 0 ? '#fde047' : '#fca5a5'; // Slightly lighter color to differentiate
+                drawArrow(ctxImp, cx, cy + 10, cx + iLen, cy + 10, iCol, 3);
+                ctxImp.fillStyle = iCol; ctxImp.font = 'bold 12px monospace';
+                ctxImp.fillText("I", cx + iLen/2 - 5, cy + 25);
+            }
+
+            const ctxGraph = document.getElementById('graphCanvas').getContext('2d');
+            const gw = ctxGraph.canvas.width;
+            const gh = ctxGraph.canvas.height;
+            ctxGraph.clearRect(0, 0, gw, gh);
+
+            const padding = 40;
+            const graphW = gw - padding*2;
+            const graphH = gh - padding*2;
+            const originX = padding;
+            const originY = gh - padding; // origin zero is at bottom
+
+            // Draw Axes
+            ctxGraph.strokeStyle = '#94a3b8'; ctxGraph.lineWidth = 2;
+            ctxGraph.beginPath(); 
+            ctxGraph.moveTo(originX, padding); ctxGraph.lineTo(originX, originY); // Y-axis
+            ctxGraph.lineTo(gw - padding, originY); // X-axis
+            ctxGraph.stroke();
+            
+            ctxGraph.fillStyle = '#cbd5e1'; ctxGraph.font = '12px sans-serif';
+            ctxGraph.fillText("F (N)", originX - 35, padding + 10);
+            ctxGraph.fillText("t (s)", gw - padding + 5, originY + 5);
+
+            // Scale mappings
+            // max t = 0.5s, max F = 500N
+            let mapT = (t) => originX + (t / 0.5) * graphW;
+            // Abs value of F for drawing height (we draw graph magnitude)
+            let absF = Math.abs(impState.f);
+            let mapF = (f) => originY - (f / 500) * graphH; 
+
+            let rectWidth = mapT(impState.t) - originX;
+            let rectY = mapF(absF);
+            let rectHeight = originY - rectY;
+
+            // Draw Area (Impulse)
+            if(rectWidth > 0 && rectHeight > 0) {
+                let fillColor = impState.f > 0 ? 'rgba(250, 204, 21, 0.4)' : 'rgba(255, 51, 51, 0.4)';
+                let strokeColor = impState.f > 0 ? 'var(--yellow-neon)' : 'var(--red-crimson)';
+                
+                ctxGraph.fillStyle = fillColor;
+                ctxGraph.fillRect(originX, rectY, rectWidth, rectHeight);
+                
+                ctxGraph.strokeStyle = strokeColor; ctxGraph.lineWidth = 2;
+                ctxGraph.strokeRect(originX, rectY, rectWidth, rectHeight);
+
+                // Label Area
+                ctxGraph.fillStyle = '#fff'; ctxGraph.textAlign = 'center';
+                let fontSize = gw < 400 ? 10 : 12;
+                ctxGraph.font = `${fontSize}px sans-serif`;
+                let textStr = gw < 400 ? `I=${Math.abs(iVal).toFixed(1)}` : `Luas = I = ${Math.abs(iVal).toFixed(1)}`;
+                ctxGraph.fillText(textStr, originX + rectWidth/2, rectY + rectHeight/2 + 5);
+            }
+        }
+
+        // ==========================================
+        // MINI-GAME LOGIC
+        // ==========================================
+        let gameState = { targetI: 50, maxF: 300, currentF: 100, currentT: 0.1 };
+
+        function initGame() {
+            // Random target I between 10 and 100
+            gameState.targetI = Math.floor(Math.random() * 90) + 10;
+            document.getElementById('game-target-i').innerText = gameState.targetI.toFixed(1) + " N·s";
+            updateGameUI();
+        }
+
+        function updateGameUI() {
+            gameState.currentF = parseFloat(document.getElementById('game-slider-f').value);
+            gameState.currentT = parseFloat(document.getElementById('game-slider-t').value);
+            
+            document.getElementById('game-val-f').innerText = gameState.currentF.toFixed(0) + " N";
+            document.getElementById('game-val-t').innerText = gameState.currentT.toFixed(2) + " s";
+            
+            let i = gameState.currentF * gameState.currentT;
+            document.getElementById('game-current-i').innerText = i.toFixed(2) + " N·s";
+        }
+
+        function checkGame() {
+            let i = gameState.currentF * gameState.currentT;
+            let error = Math.abs(i - gameState.targetI);
+            
+            let msgBox = document.getElementById('game-msg');
+            let descBox = document.getElementById('game-desc');
+            let overlay = document.getElementById('game-overlay');
+
+            if (gameState.currentF > gameState.maxF) {
+                msgBox.innerText = "💥 MESIN RUSAK!";
+                msgBox.style.color = "var(--red-crimson)";
+                descBox.innerText = `Gaya F (${gameState.currentF} N) melampaui batas toleransi 300 N. Gunakan Gaya lebih kecil dan waktu lebih lama!`;
+            } else if (error <= 2.0) { // Tolerance 2 Ns
+                msgBox.innerText = "✅ PELUNCURAN SEMPURNA!";
+                msgBox.style.color = "var(--cyan-neon)";
+                descBox.innerText = `Anda mencapai target Impuls dengan presisi tinggi tanpa merusak alat.`;
+            } else if (i < gameState.targetI) {
+                msgBox.innerText = "❌ GAGAL: Terlalu Lemah";
+                msgBox.style.color = "var(--yellow-neon)";
+                descBox.innerText = `Impuls yang dihasilkan (${i.toFixed(1)} Ns) kurang dari target (${gameState.targetI} Ns). Objek jatuh sebelum sampai.`;
+            } else {
+                msgBox.innerText = "❌ GAGAL: Terlalu Kuat";
+                msgBox.style.color = "var(--yellow-neon)";
+                descBox.innerText = `Impuls yang dihasilkan (${i.toFixed(1)} Ns) melebihi target (${gameState.targetI} Ns). Objek melampaui sasaran.`;
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function nextGame() {
+            document.getElementById('game-overlay').classList.remove('active');
+            initGame();
+        }
+
+        // ==========================================
+        // INITIALIZATION & RESIZE HANDLING
+        // ==========================================
+        function handleResize() {
+            resizeCanvas('apersepsiCanvas');
+            resizeCanvas('momentumCanvas');
+            resizeCanvas('impulseCanvas');
+            resizeCanvas('graphCanvas');
+            drawApersepsi();
+            drawImpulseAndGraph();
+            // momentum is continuously drawn in loop
+        }
+
+        window.onload = () => {
+            handleResize();
+            window.addEventListener('resize', handleResize);
+            
+            // Init all logic
+            updateMomentum();
+            updateImpulse();
+            initGame();
+
+            // Start animation loop for momentum
+            requestAnimationFrame(drawMomentum);
+            // Draw Apersepsi initial state
+            drawApersepsi();
+        };
+
+    </script>
+</body>
+</html>
