@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optics Master: Simulasi Sifat Cahaya</title>
+    
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* CSS Variables - Dark Optical Bench Theme */
+        :root {
+            --bg-base: #0a0a0a;
+            --bg-panel: #141414;
+            --bg-glass: rgba(20, 20, 20, 0.85);
+            --border-color: #2a2a2a;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            --accent-color: #00ffcc;
+            --accent-glow: rgba(0, 255, 204, 0.4);
+            --danger-color: #ff3366;
+            --panel-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-bottom: 3rem;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #0a0a0a 70%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1250px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+        .title-box h1 {
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        .title-box p {
+            color: var(--accent-color);
+            font-weight: 500;
+            letter-spacing: 1px;
+            font-size: 0.95rem;
+        }
+
+        .btn-capture {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .btn-capture:hover {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #222;
+            padding-bottom: 10px;
+            overflow-x: auto;
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.3s;
+            white-space: nowrap;
+        }
+        .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-btn.active {
+            color: var(--accent-color);
+            background: rgba(0, 255, 204, 0.1);
+            box-shadow: inset 0 -2px 0 var(--accent-color);
+        }
+
+        /* Module Sections */
+        .module { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .module.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-color);
+            border-radius: var(--panel-radius);
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-group { margin-bottom: 1.2rem; }
+        .control-header {
+            display: flex; justify-content: space-between;
+            font-size: 0.9rem; color: #bbb; margin-bottom: 0.5rem;
+        }
+        .control-val { font-family: monospace; font-weight: bold; color: #fff; font-size: 1.05rem; }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%; height: 6px; background: #333; border-radius: 3px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--accent-color); cursor: pointer;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+        input[type=range].laser-slider::-webkit-slider-thumb {
+            background: #fff; /* Akan di-update via JS */
+        }
+
+        .select-input {
+            width: 100%; padding: 10px; background: #222; color: #fff;
+            border: 1px solid #444; border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+        }
+
+        /* Math/Formula Box */
+        .math-box {
+            background: #000; border-left: 4px solid var(--accent-color);
+            padding: 1.2rem; margin-top: 1.5rem; border-radius: 0 6px 6px 0;
+            overflow-x: auto; color: var(--accent-color);
+        }
+
+        /* Canvas Panel */
+        .canvas-panel {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: var(--panel-radius);
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+            height: 450px;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .canvas-label {
+            position: absolute; padding: 5px 10px; background: rgba(0,0,0,0.6);
+            border-radius: 4px; font-size: 0.8rem; color: #aaa; border: 1px solid #333;
+            pointer-events: none;
+        }
+
+        /* Theory Footer */
+        .theory-section {
+            margin-top: 3rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--panel-radius);
+            padding: 2rem;
+        }
+        .theory-section h3 {
+            color: var(--accent-color); margin-bottom: 1.5rem;
+            border-bottom: 1px solid #333; padding-bottom: 10px;
+        }
+        .theory-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;
+        }
+        .theory-card { font-size: 0.95rem; color: #ccc; }
+        .theory-card h4 { color: #fff; margin-bottom: 0.5rem; font-size: 1.05rem; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="title-box">
+            <h1>Optics Master</h1>
+            <p>Laboratorium Cahaya Terintegrasi</p>
+        </div>
+        <button class="btn-capture" id="btnCapture" title="Simpan hasil pengamatan">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            Screen Capture
+        </button>
+    </header>
+
+    <nav class="nav-tabs" id="mainNav">
+        <button class="nav-btn active" data-target="mod-geometry">Optika Geometri</button>
+        <button class="nav-btn" data-target="mod-interference">Interferensi & Difraksi</button>
+        <button class="nav-btn" data-target="mod-polarization">Polarisasi & Dispersi</button>
+    </nav>
+
+    <!-- MODUL 1: OPTIKA GEOMETRI -->
+    <div id="mod-geometry" class="module active">
+        <div class="grid-layout">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Panjang Gelombang (Warna Laser)</span>
+                        <span class="control-val" id="val-geo-wl">532 nm</span>
+                    </div>
+                    <input type="range" class="laser-slider" id="sl-geo-wl" min="400" max="700" value="532">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Medium 1 (Atas) - $n_1$</span>
+                        <span class="control-val" id="val-geo-n1">1.00</span>
+                    </div>
+                    <input type="range" id="sl-geo-n1" min="1.0" max="2.5" step="0.01" value="1.0">
+                    <small style="color:#777;">Contoh: Udara (1.0), Air (1.33)</small>
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Medium 2 (Bawah) - $n_2$</span>
+                        <span class="control-val" id="val-geo-n2">1.50</span>
+                    </div>
+                    <input type="range" id="sl-geo-n2" min="1.0" max="2.5" step="0.01" value="1.5">
+                    <small style="color:#777;">Contoh: Kaca (1.5), Intan (2.4)</small>
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Sudut Datang ($\theta_i$)</span>
+                        <span class="control-val" id="val-geo-theta">45°</span>
+                    </div>
+                    <input type="range" id="sl-geo-theta" min="0" max="90" step="1" value="45">
+                </div>
+                
+                <div class="math-box">
+                    <div style="font-size: 0.9rem; color:#aaa; margin-bottom:5px;">Hukum Snellius:</div>
+                    $$n_1 \sin \theta_1 = n_2 \sin \theta_2$$
+                    <div id="geo-result" style="margin-top:10px; font-size:1rem; color:#fff;"></div>
+                </div>
+            </div>
+            <div class="canvas-panel">
+                <canvas id="cvs-geometry"></canvas>
+                <div class="canvas-label" style="top:10px; left:10px;" id="lbl-med1">Medium 1</div>
+                <div class="canvas-label" style="bottom:10px; left:10px;" id="lbl-med2">Medium 2</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 2: INTERFERENSI & DIFRAKSI -->
+    <div id="mod-interference" class="module">
+        <div class="grid-layout">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <div class="control-header"><span>Mode Eksperimen</span></div>
+                    <select class="select-input" id="sel-int-mode">
+                        <option value="double">Celah Ganda Young</option>
+                        <option value="single">Difraksi Celah Tunggal</option>
+                        <option value="grating">Kisi Difraksi</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Panjang Gelombang ($\lambda$)</span>
+                        <span class="control-val" id="val-int-wl">650 nm</span>
+                    </div>
+                    <input type="range" class="laser-slider" id="sl-int-wl" min="400" max="700" value="650">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span id="lbl-int-param">Jarak Antar Celah ($d$)</span>
+                        <span class="control-val" id="val-int-param">2.0 µm</span>
+                    </div>
+                    <!-- Nilai disimulasikan agar visual terbentuk bagus -->
+                    <input type="range" id="sl-int-param" min="0.5" max="5.0" step="0.1" value="2.0">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Jarak Celah ke Layar ($L$)</span>
+                        <span class="control-val" id="val-int-L">1.0 m</span>
+                    </div>
+                    <input type="range" id="sl-int-L" min="0.5" max="3.0" step="0.1" value="1.0">
+                </div>
+                
+                <div class="math-box">
+                    <div id="int-formula"></div>
+                </div>
+            </div>
+            <div class="canvas-panel">
+                <canvas id="cvs-interference"></canvas>
+                <div class="canvas-label" style="top:10px; right:10px;">Layar (Fringe Pattern)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 3: POLARISASI & DISPERSI -->
+    <div id="mod-polarization" class="module">
+        <div class="grid-layout">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <div class="control-header"><span>Topik Eksperimen</span></div>
+                    <select class="select-input" id="sel-pol-mode">
+                        <option value="pol">Polarisasi Cahaya (Hukum Malus)</option>
+                        <option value="disp">Dispersi Prisma (Polikromatik)</option>
+                    </select>
+                </div>
+                
+                <!-- Controls for Polarization -->
+                <div id="controls-pol">
+                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:1rem; margin-top:1rem;">Visualisasi polarisasi cahaya yang melewati dua filter polaroid (Polarisator dan Analisator). Intensitas berkurang mengikuti <strong>Hukum Malus</strong>.</p>
+                    
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Warna Sumber Cahaya</span>
+                            <span class="control-val" id="val-pol-wl">500 nm</span>
+                        </div>
+                        <input type="range" class="laser-slider" id="sl-pol-wl" min="400" max="700" value="500">
+                    </div>
+                    <div class="control-group" style="margin-top: 2rem;">
+                        <div class="control-header">
+                            <span style="color:#00ffcc;">Sudut Analisator ($\theta$)</span>
+                            <span class="control-val" id="val-pol-theta">45°</span>
+                        </div>
+                        <input type="range" id="sl-pol-theta" min="0" max="180" step="1" value="45">
+                    </div>
+                </div>
+
+                <!-- Controls for Dispersion -->
+                <div id="controls-disp" class="hidden">
+                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:1rem; margin-top:1rem;">Cahaya putih (polikromatik) diuraikan menjadi spektrum warna saat melewati prisma karena setiap panjang gelombang memiliki indeks bias berbeda.</p>
+                    
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Sudut Pembias Prisma ($\beta$)</span>
+                            <span class="control-val" id="val-disp-beta">60°</span>
+                        </div>
+                        <input type="range" id="sl-disp-beta" min="30" max="80" step="1" value="60">
+                    </div>
+                </div>
+                
+                <div class="math-box">
+                    <div id="pol-formula">
+                        <div style="font-size: 0.9rem; color:#aaa; margin-bottom:5px;">Hukum Malus:</div>
+                        $$I_1 = \frac{1}{2} I_0$$
+                        $$I_2 = I_1 \cos^2 \theta$$
+                        <div id="pol-result" style="margin-top:15px; font-size:1.1rem; color:#fff; font-weight:bold;"></div>
+                    </div>
+                    <div id="disp-formula" class="hidden">
+                        <div style="font-size: 0.9rem; color:#aaa; margin-bottom:5px;">Sudut Deviasi (Prisma):</div>
+                        $$\delta = (i_1 + r_2) - \beta$$
+                        $$\text{Sudut Dispersi } \Phi = \delta_{ungu} - \delta_{merah}$$
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-panel" style="background: #111;">
+                <canvas id="cvs-polarization"></canvas>
+                <div class="canvas-label" style="bottom:10px; right:10px;" id="lbl-intensity-bar">Intensitas Transmisi</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PENGUASAAN KONSEP (THEORY) -->
+    <div class="theory-section">
+        <h3>Ringkasan Matematis & Penguasaan Konsep</h3>
+        <div class="theory-grid">
+            <div class="theory-card">
+                <h4>1. Optika Geometri (Hukum Snellius)</h4>
+                <p>Cahaya akan membias (berbelok) mendekati garis normal jika memasuki medium yang lebih rapat (indeks bias $n$ lebih besar). <strong>Pemantulan Sempurna (TIR)</strong> terjadi bila cahaya merambat dari medium rapat ke renggang dengan sudut datang melebihi sudut kritis ($\theta_c$).</p>
+                $$\sin \theta_c = \frac{n_2}{n_1}$$
+            </div>
+            <div class="theory-card">
+                <h4>2. Interferensi Celah Ganda & Kisi Difraksi</h4>
+                <p>Syarat terjadinya pita terang (konstruktif) untuk celah ganda dan kisi difraksi (dengan jarak celah $d$ atau konstanta kisi $d=1/N$):</p>
+                $$d \sin \theta = n \lambda \quad (n = 0, 1, 2, \dots)$$
+                <p>Pita gelap (destruktif):</p>
+                $$d \sin \theta = \left(n - \frac{1}{2}\right) \lambda \quad (n = 1, 2, 3, \dots)$$
+            </div>
+            <div class="theory-card">
+                <h4>3. Difraksi Celah Tunggal</h4>
+                <p>Cahaya menyebar saat melewati celah sempit (lebar $w$). Pola gelap (destruktif):</p>
+                $$w \sin \theta = n \lambda \quad (n = 1, 2, 3, \dots)$$
+                <p>Pola terang (konstruktif) selain terang pusat:</p>
+                $$w \sin \theta = \left(n + \frac{1}{2}\right) \lambda \quad (n = 1, 2, 3, \dots)$$
+            </div>
+            <div class="theory-card">
+                <h4>4. Dispersi & Interferensi Lapisan Tipis</h4>
+                <p><strong>Dispersi:</strong> Terurainya cahaya polikromatik menjadi monokromatik karena indeks bias medium ($n$) bergantung pada panjang gelombang ($\lambda$).</p>
+                <p><strong>Lapisan Tipis:</strong> Sinar memantul dari medium rapat mengalami fase $180^\circ$. Syarat terang (konstruktif):</p>
+                $$2nt = \left(m + \frac{1}{2}\right)\lambda$$
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* ==========================================
+       UTILITY: Wavelength (nm) to RGB Color
+       ========================================== */
+    function waveLengthToRGB(wavelength) {
+        let R, G, B, alpha;
+        let wl = wavelength;
+        
+        if (wl >= 380 && wl < 440) { R = -(wl - 440) / (440 - 380); G = 0.0; B = 1.0; }
+        else if (wl >= 440 && wl < 490) { R = 0.0; G = (wl - 440) / (490 - 440); B = 1.0; }
+        else if (wl >= 490 && wl < 510) { R = 0.0; G = 1.0; B = -(wl - 510) / (510 - 490); }
+        else if (wl >= 510 && wl < 580) { R = (wl - 510) / (580 - 510); G = 1.0; B = 0.0; }
+        else if (wl >= 580 && wl < 645) { R = 1.0; G = -(wl - 645) / (645 - 580); B = 0.0; }
+        else if (wl >= 645 && wl <= 780) { R = 1.0; G = 0.0; B = 0.0; }
+        else { R = 0.0; G = 0.0; B = 0.0; }
+
+        if (wl >= 380 && wl < 420) alpha = 0.3 + 0.7 * (wl - 380) / (420 - 380);
+        else if (wl >= 420 && wl <= 700) alpha = 1.0;
+        else if (wl > 700 && wl <= 780) alpha = 0.3 + 0.7 * (780 - wl) / (780 - 700);
+        else alpha = 0.0;
+
+        // Enhance color for dark background (make it brighter/glowy)
+        R = Math.min(255, Math.round(R * alpha * 255) + 30);
+        G = Math.min(255, Math.round(G * alpha * 255) + 30);
+        B = Math.min(255, Math.round(B * alpha * 255) + 30);
+
+        return `rgb(${R}, ${G}, ${B})`;
+    }
+
+    // Update thumb color of all laser sliders dynamically
+    function updateSliderThumbColor(sliderId, wavelength) {
+        const color = waveLengthToRGB(wavelength);
+        const styleId = 'style-' + sliderId;
+        let styleEl = document.getElementById(styleId);
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+        }
+        styleEl.innerHTML = `#${sliderId}::-webkit-slider-thumb { background: ${color} !important; box-shadow: 0 0 10px ${color} !important; }`;
+    }
+
+    /* ==========================================
+       NAVIGATION LOGIC
+       ========================================== */
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const modules = document.querySelectorAll('.module');
+    let currentActiveModule = 'mod-geometry';
+
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            navBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const target = btn.getAttribute('data-target');
+            modules.forEach(mod => {
+                if(mod.id === target) {
+                    mod.classList.add('active');
+                    currentActiveModule = target;
+                } else {
+                    mod.classList.remove('active');
+                }
+            });
+            // Trigger resize/redraw to fix canvas issues
+            window.dispatchEvent(new Event('resize'));
+        });
+    });
+
+    /* ==========================================
+       MODULE 1: OPTIKA GEOMETRI
+       ========================================== */
+    const ModGeo = {
+        cvs: document.getElementById('cvs-geometry'),
+        ctx: document.getElementById('cvs-geometry').getContext('2d'),
+        wl: 532, n1: 1.0, n2: 1.5, thetaI_deg: 45,
+        
+        init() {
+            document.getElementById('sl-geo-wl').addEventListener('input', e => {
+                this.wl = parseFloat(e.target.value);
+                document.getElementById('val-geo-wl').innerText = this.wl + " nm";
+                updateSliderThumbColor('sl-geo-wl', this.wl);
+                this.draw();
+            });
+            document.getElementById('sl-geo-n1').addEventListener('input', e => {
+                this.n1 = parseFloat(e.target.value);
+                document.getElementById('val-geo-n1').innerText = this.n1.toFixed(2);
+                this.draw();
+            });
+            document.getElementById('sl-geo-n2').addEventListener('input', e => {
+                this.n2 = parseFloat(e.target.value);
+                document.getElementById('val-geo-n2').innerText = this.n2.toFixed(2);
+                this.draw();
+            });
+            document.getElementById('sl-geo-theta').addEventListener('input', e => {
+                this.thetaI_deg = parseFloat(e.target.value);
+                document.getElementById('val-geo-theta').innerText = this.thetaI_deg + "°";
+                this.draw();
+            });
+            updateSliderThumbColor('sl-geo-wl', this.wl);
+        },
+
+        draw() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+
+            let cx = width / 2;
+            let cy = height / 2;
+            let rayLength = Math.max(width, height);
+
+            // Draw Mediums
+            this.ctx.fillStyle = `rgba(255,255,255, ${this.n1 * 0.05})`;
+            this.ctx.fillRect(0, 0, width, cy);
+            this.ctx.fillStyle = `rgba(0, 150, 255, ${this.n2 * 0.1})`;
+            this.ctx.fillRect(0, cy, width, cy);
+            
+            // Interface Line
+            this.ctx.beginPath(); this.ctx.moveTo(0, cy); this.ctx.lineTo(width, cy);
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.3)'; this.ctx.lineWidth = 2; this.ctx.stroke();
+
+            // Normal Line
+            this.ctx.beginPath(); this.ctx.setLineDash([5, 5]);
+            this.ctx.moveTo(cx, 0); this.ctx.lineTo(cx, height);
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.5)'; this.ctx.lineWidth = 1; this.ctx.stroke();
+            this.ctx.setLineDash([]);
+
+            let thetaI_rad = this.thetaI_deg * Math.PI / 180;
+            let color = waveLengthToRGB(this.wl);
+            this.ctx.shadowBlur = 15; this.ctx.shadowColor = color;
+            this.ctx.lineWidth = 4; this.ctx.strokeStyle = color;
+
+            // Incident Ray (from top left)
+            let incX = cx - rayLength * Math.sin(thetaI_rad);
+            let incY = cy - rayLength * Math.cos(thetaI_rad);
+            this.ctx.beginPath(); this.ctx.moveTo(incX, incY); this.ctx.lineTo(cx, cy); this.ctx.stroke();
+
+            // Calculations
+            let sinT = (this.n1 / this.n2) * Math.sin(thetaI_rad);
+            let TIR = false;
+            let thetaT_rad = 0;
+
+            if (sinT > 1 || sinT < -1) { TIR = true; }
+            else { thetaT_rad = Math.asin(sinT); }
+
+            // Reflected Ray
+            let refX = cx + rayLength * Math.sin(thetaI_rad);
+            let refY = cy - rayLength * Math.cos(thetaI_rad);
+            this.ctx.beginPath(); 
+            this.ctx.globalAlpha = TIR ? 1.0 : 0.3; // Dim reflection if not TIR
+            this.ctx.moveTo(cx, cy); this.ctx.lineTo(refX, refY); this.ctx.stroke();
+            this.ctx.globalAlpha = 1.0;
+
+            // Result Text Update
+            let resText = "";
+
+            if (TIR) {
+                resText = `<span style="color:var(--danger-color)">Pemantulan Sempurna (Total Internal Reflection)!</span><br>Sudut Kritis terlampaui.`;
+            } else {
+                // Refracted Ray
+                let transX = cx + rayLength * Math.sin(thetaT_rad);
+                let transY = cy + rayLength * Math.cos(thetaT_rad);
+                this.ctx.beginPath(); this.ctx.moveTo(cx, cy); this.ctx.lineTo(transX, transY); this.ctx.stroke();
+                
+                let thetaT_deg = thetaT_rad * 180 / Math.PI;
+                resText = `Sudut Bias ($\\theta_2$): ${thetaT_deg.toFixed(2)}°`;
+            }
+
+            document.getElementById('geo-result').innerHTML = resText;
+            if (window.MathJax) MathJax.typesetPromise([document.getElementById('geo-result')]);
+            
+            this.ctx.shadowBlur = 0;
+            
+            // Draw Protractor arcs
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.2)'; this.ctx.lineWidth = 1;
+            this.ctx.beginPath(); this.ctx.arc(cx, cy, 60, -Math.PI/2, -Math.PI/2 + thetaI_rad); this.ctx.stroke();
+            if(!TIR) {
+                this.ctx.beginPath(); this.ctx.arc(cx, cy, 60, Math.PI/2, Math.PI/2 - thetaT_rad, true); this.ctx.stroke();
+            }
+        }
+    };
+
+    /* ==========================================
+       MODULE 2: INTERFERENSI & DIFRAKSI
+       ========================================== */
+    const ModInt = {
+        cvs: document.getElementById('cvs-interference'),
+        ctx: document.getElementById('cvs-interference').getContext('2d'),
+        mode: 'double', wl: 650, param: 2.0, L: 1.0,
+        
+        init() {
+            document.getElementById('sel-int-mode').addEventListener('change', e => {
+                this.mode = e.target.value;
+                let sl = document.getElementById('sl-int-param');
+                
+                if (this.mode === 'grating') {
+                    document.getElementById('lbl-int-param').innerText = 'Konstanta Kisi (N)';
+                    sl.min = 100; sl.max = 1000; sl.step = 10; sl.value = 300;
+                    this.param = 300;
+                    document.getElementById('val-int-param').innerText = "300 garis/mm";
+                } else {
+                    document.getElementById('lbl-int-param').innerText = this.mode === 'double' ? 'Jarak Antar Celah (d)' : 'Lebar Celah (w)';
+                    sl.min = 0.5; sl.max = 5.0; sl.step = 0.1; sl.value = 2.0;
+                    this.param = 2.0;
+                    document.getElementById('val-int-param').innerText = "2.0 µm";
+                }
+                this.updateFormula();
+                this.draw();
+            });
+            document.getElementById('sl-int-wl').addEventListener('input', e => {
+                this.wl = parseFloat(e.target.value);
+                document.getElementById('val-int-wl').innerText = this.wl + " nm";
+                updateSliderThumbColor('sl-int-wl', this.wl);
+                this.draw();
+            });
+            document.getElementById('sl-int-param').addEventListener('input', e => {
+                this.param = parseFloat(e.target.value);
+                if (this.mode === 'grating') {
+                    document.getElementById('val-int-param').innerText = this.param + " garis/mm";
+                } else {
+                    document.getElementById('val-int-param').innerText = this.param.toFixed(1) + " µm";
+                }
+                this.draw();
+            });
+            document.getElementById('sl-int-L').addEventListener('input', e => {
+                this.L = parseFloat(e.target.value);
+                document.getElementById('val-int-L').innerText = this.L.toFixed(1) + " m";
+                this.draw();
+            });
+            updateSliderThumbColor('sl-int-wl', this.wl);
+            this.updateFormula();
+        },
+
+        updateFormula() {
+            let formula = '';
+            if(this.mode === 'double') {
+                formula = `$$\\text{Pita Terang: } d \\sin \\theta = n\\lambda$$
+                           $$\\text{Pita Gelap: } d \\sin \\theta = (n - \\frac{1}{2})\\lambda$$`;
+            } else if (this.mode === 'single') {
+                formula = `$$\\text{Pita Gelap: } w \\sin \\theta = n\\lambda$$
+                           $$\\text{Pita Terang: } w \\sin \\theta = (n + \\frac{1}{2})\\lambda$$`;
+            } else {
+                formula = `$$d = \\frac{1}{N}$$
+                           $$\\text{Pita Terang (Utama): } d \\sin \\theta = n\\lambda$$
+                           $$\\text{Pita Gelap: } d \\sin \\theta = (n - \\frac{1}{2})\\lambda$$`;
+            }
+            document.getElementById('int-formula').innerHTML = formula;
+            if (window.MathJax) MathJax.typesetPromise([document.getElementById('int-formula')]);
+        },
+
+        draw() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+
+            let color = waveLengthToRGB(this.wl);
+            
+            // Draw physical setup (Top down view)
+            this.ctx.fillStyle = color;
+            this.ctx.globalAlpha = 0.2;
+            this.ctx.fillRect(0, height/2 - 20, 100, 40);
+            this.ctx.globalAlpha = 1.0;
+
+            // Slit Barrier
+            let barrierX = 100;
+            this.ctx.fillStyle = '#555';
+            if (this.mode === 'double') {
+                let gap = this.param * 10; 
+                this.ctx.fillRect(barrierX, 0, 10, height/2 - gap - 5);
+                this.ctx.fillRect(barrierX, height/2 - gap + 5, 10, gap*2 - 10);
+                this.ctx.fillRect(barrierX, height/2 + gap + 5, 10, height/2 - gap - 5);
+            } else if (this.mode === 'single') {
+                let slitW = this.param * 10; 
+                this.ctx.fillRect(barrierX, 0, 10, height/2 - slitW);
+                this.ctx.fillRect(barrierX, height/2 + slitW, 10, height/2 - slitW);
+            } else {
+                // Grating visual (multiple slits)
+                this.ctx.fillRect(barrierX, 0, 10, height);
+                this.ctx.fillStyle = color;
+                for(let i = -10; i <= 10; i++) {
+                    this.ctx.fillRect(barrierX, height/2 + i*8 - 1, 10, 2);
+                }
+            }
+
+            // Screen
+            let screenX = width - 50;
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillRect(screenX, 0, 5, height);
+
+            // Draw Interference Pattern on Screen
+            let lambdaScaled = this.wl / 1000; 
+            let center = height / 2;
+            
+            let imgData = this.ctx.createImageData(screenX - barrierX - 10, height);
+            let data = imgData.data;
+
+            let rgbMatch = color.match(/\d+/g);
+            let rC = parseInt(rgbMatch[0]), gC = parseInt(rgbMatch[1]), bC = parseInt(rgbMatch[2]);
+
+            for (let y = 0; y < height; y++) {
+                let yDist = (y - center) / 100; 
+                let intensity = 0;
+                let theta = Math.atan(yDist / this.L);
+
+                if (this.mode === 'double') {
+                    let phase = (Math.PI * this.param * Math.sin(theta)) / lambdaScaled;
+                    let slitW = 0.5; 
+                    let envPhase = (Math.PI * slitW * Math.sin(theta)) / lambdaScaled;
+                    let sinc = envPhase === 0 ? 1 : Math.sin(envPhase)/envPhase;
+                    intensity = Math.pow(Math.cos(phase), 2) * Math.pow(sinc, 2);
+                } else if (this.mode === 'single') {
+                    let phase = (Math.PI * this.param * Math.sin(theta)) / lambdaScaled;
+                    let sinc = phase === 0 ? 1 : Math.sin(phase)/phase;
+                    intensity = Math.pow(sinc, 2);
+                } else {
+                    // Grating
+                    let d = 1000 / this.param; // in um
+                    let phase = (Math.PI * d * Math.sin(theta)) / lambdaScaled;
+                    let N_slits = 8; 
+                    let num = Math.sin(N_slits * phase);
+                    let den = Math.sin(phase);
+                    let sinc = (Math.abs(den) < 0.001) ? N_slits : num / den;
+                    intensity = Math.pow(sinc / N_slits, 2);
+                }
+
+                for (let x = 0; x < imgData.width; x++) {
+                    let idx = (y * imgData.width + x) * 4;
+                    let xFade = Math.pow((x / imgData.width), 3); 
+                    
+                    data[idx] = rC;
+                    data[idx+1] = gC;
+                    data[idx+2] = bC;
+                    data[idx+3] = Math.floor(intensity * xFade * 255);
+                }
+            }
+            this.ctx.putImageData(imgData, barrierX + 10, 0);
+
+            // Draw bright fringe pattern directly on the screen line
+            for (let y = 0; y < height; y++) {
+                let yDist = (y - center) / 100;
+                let theta = Math.atan(yDist / this.L);
+                let intensity = 0;
+                
+                if (this.mode === 'double') {
+                    let phase = (Math.PI * this.param * Math.sin(theta)) / lambdaScaled;
+                    intensity = Math.pow(Math.cos(phase), 2);
+                } else if (this.mode === 'single') {
+                    let phase = (Math.PI * this.param * Math.sin(theta)) / lambdaScaled;
+                    let sinc = phase === 0 ? 1 : Math.sin(phase)/phase;
+                    intensity = Math.pow(sinc, 2);
+                } else {
+                    let d = 1000 / this.param;
+                    let phase = (Math.PI * d * Math.sin(theta)) / lambdaScaled;
+                    let N_slits = 8;
+                    let num = Math.sin(N_slits * phase);
+                    let den = Math.sin(phase);
+                    let sinc = (Math.abs(den) < 0.001) ? N_slits : num / den;
+                    intensity = Math.pow(sinc / N_slits, 2);
+                }
+
+                this.ctx.fillStyle = `rgba(${rC},${gC},${bC}, ${intensity})`;
+                this.ctx.fillRect(screenX + 5, y, 20, 1); 
+            }
+        }
+    };
+
+    /* ==========================================
+       MODULE 3: POLARISASI & DISPERSI
+       ========================================== */
+    const ModPol = {
+        cvs: document.getElementById('cvs-polarization'),
+        ctx: document.getElementById('cvs-polarization').getContext('2d'),
+        mode: 'pol', wl: 500, theta: 45, dispBeta: 60,
+        time: 0,
+        
+        init() {
+            document.getElementById('sel-pol-mode').addEventListener('change', e => {
+                this.mode = e.target.value;
+                if (this.mode === 'pol') {
+                    document.getElementById('controls-pol').classList.remove('hidden');
+                    document.getElementById('controls-disp').classList.add('hidden');
+                    document.getElementById('pol-formula').classList.remove('hidden');
+                    document.getElementById('disp-formula').classList.add('hidden');
+                    document.getElementById('lbl-intensity-bar').style.display = 'block';
+                } else {
+                    document.getElementById('controls-pol').classList.add('hidden');
+                    document.getElementById('controls-disp').classList.remove('hidden');
+                    document.getElementById('pol-formula').classList.add('hidden');
+                    document.getElementById('disp-formula').classList.remove('hidden');
+                    document.getElementById('lbl-intensity-bar').style.display = 'none';
+                }
+            });
+
+            document.getElementById('sl-pol-wl').addEventListener('input', e => {
+                this.wl = parseFloat(e.target.value);
+                document.getElementById('val-pol-wl').innerText = this.wl + " nm";
+                updateSliderThumbColor('sl-pol-wl', this.wl);
+            });
+            document.getElementById('sl-pol-theta').addEventListener('input', e => {
+                this.theta = parseFloat(e.target.value);
+                document.getElementById('val-pol-theta').innerText = this.theta + "°";
+            });
+            document.getElementById('sl-disp-beta').addEventListener('input', e => {
+                this.dispBeta = parseFloat(e.target.value);
+                document.getElementById('val-disp-beta').innerText = this.dispBeta + "°";
+            });
+            
+            updateSliderThumbColor('sl-pol-wl', this.wl);
+            
+            const loop = () => {
+                if(currentActiveModule === 'mod-polarization') this.draw();
+                requestAnimationFrame(loop);
+            }
+            loop();
+        },
+
+        draw() {
+            if (this.mode === 'pol') {
+                this.drawPolarization();
+            } else {
+                this.drawDispersion();
+            }
+        },
+
+        drawDispersion() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+
+            let cx = width / 2;
+            let cy = height / 2;
+            
+            let prismSize = 100;
+            this.ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            this.ctx.lineWidth = 2;
+            
+            let halfBetaRad = (this.dispBeta / 2) * Math.PI / 180;
+            let baseHalf = prismSize * Math.tan(halfBetaRad);
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(cx, cy - prismSize + 20);
+            this.ctx.lineTo(cx - baseHalf, cy + prismSize - 20);
+            this.ctx.lineTo(cx + baseHalf, cy + prismSize - 20);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = '#ffffff';
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            
+            let hitX = cx - (baseHalf * 0.5); 
+            let hitY = cy; 
+            this.ctx.moveTo(0, hitY);
+            this.ctx.lineTo(hitX, hitY);
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
+
+            this.ctx.lineWidth = 2;
+            for (let wl = 400; wl <= 700; wl += 10) {
+                let col = waveLengthToRGB(wl);
+                this.ctx.strokeStyle = col;
+                this.ctx.shadowColor = col;
+                this.ctx.shadowBlur = 5;
+                
+                let refractRatio = (700 - wl) / 300; 
+                
+                let endInsideX = cx + (baseHalf * 0.5);
+                let endInsideY = hitY + 10 + (refractRatio * 20);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(hitX, hitY);
+                this.ctx.lineTo(endInsideX, endInsideY);
+                this.ctx.stroke();
+                
+                let exitAngle = 0.2 + (refractRatio * 0.4); 
+                let exitLen = width;
+                let finalX = endInsideX + exitLen * Math.cos(exitAngle);
+                let finalY = endInsideY + exitLen * Math.sin(exitAngle);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(endInsideX, endInsideY);
+                this.ctx.lineTo(finalX, finalY);
+                this.ctx.stroke();
+            }
+            this.ctx.shadowBlur = 0;
+        },
+
+        drawPolarization() {
+            let width = this.cvs.clientWidth;
+            let height = this.cvs.clientHeight;
+            if(this.cvs.width !== width) this.cvs.width = width;
+            if(this.cvs.height !== height) this.cvs.height = height;
+
+            this.ctx.clearRect(0, 0, width, height);
+            this.time += 0.05;
+
+            let color = waveLengthToRGB(this.wl);
+            let cy = height / 2;
+            let pol1X = width * 0.33;
+            let pol2X = width * 0.66;
+            let radius = 60;
+
+            let rad = this.theta * Math.PI / 180;
+            let intensityFinal = Math.pow(Math.cos(rad), 2);
+            let percent = (intensityFinal * 100).toFixed(1);
+            document.getElementById('pol-result').innerText = `Intensitas Akhir (I₂) = ${percent}% dari I₁`;
+
+            this.ctx.beginPath(); this.ctx.moveTo(0, cy); this.ctx.lineTo(width, cy);
+            this.ctx.strokeStyle = '#333'; this.ctx.stroke();
+
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.globalAlpha = 0.5;
+            for(let x = 0; x < pol1X; x+=2) {
+                let y1 = 30 * Math.sin(x*0.05 - this.time*2);
+                let y2 = 30 * Math.cos(x*0.05 - this.time*2.5);
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(x, cy + y1, 2, 2);
+                this.ctx.fillRect(x, cy + y2, 2, 2);
+            }
+            
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.beginPath();
+            for(let x = pol1X; x < pol2X; x+=2) {
+                let y = 40 * Math.sin((x-pol1X)*0.05 - this.time*2);
+                if(x===pol1X) this.ctx.moveTo(x, cy + y);
+                else this.ctx.lineTo(x, cy + y);
+            }
+            this.ctx.stroke();
+
+            let ampFinal = 40 * Math.cos(rad); 
+            this.ctx.beginPath();
+            this.ctx.globalAlpha = intensityFinal < 0.05 ? 0 : 1; 
+            for(let x = pol2X; x < width; x+=2) {
+                let y = ampFinal * Math.sin((x-pol2X)*0.05 - this.time*2);
+                if(x===pol2X) this.ctx.moveTo(x, cy + y);
+                else this.ctx.lineTo(x, cy + y);
+            }
+            this.ctx.stroke();
+
+            const drawDisk = (x, angleDeg, label) => {
+                this.ctx.fillStyle = 'rgba(0, 150, 255, 0.15)';
+                this.ctx.strokeStyle = '#00ffcc';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.ellipse(x, cy, 20, radius, 0, 0, Math.PI*2);
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                let radAxis = angleDeg * Math.PI / 180;
+                let dy = radius * Math.cos(radAxis);
+                let dx = 20 * Math.sin(radAxis);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(x - dx, cy - dy);
+                this.ctx.lineTo(x + dx, cy + dy);
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+
+                this.ctx.fillStyle = '#aaa';
+                this.ctx.font = '12px sans-serif';
+                this.ctx.fillText(label, x - 25, cy + radius + 20);
+            };
+
+            this.ctx.globalAlpha = 1.0;
+            drawDisk(pol1X, 0, "Polarisator (0°)");
+            drawDisk(pol2X, this.theta, `Analisator (${this.theta}°)`);
+
+            let barW = 150, barH = 15;
+            let barX = width - barW - 20;
+            let barY = height - barH - 30;
+            
+            this.ctx.fillStyle = '#333';
+            this.ctx.fillRect(barX, barY, barW, barH);
+            this.ctx.fillStyle = color;
+            this.ctx.shadowBlur = 10; this.ctx.shadowColor = color;
+            this.ctx.fillRect(barX, barY, barW * intensityFinal, barH);
+            this.ctx.shadowBlur = 0;
+        }
+    };
+
+    /* ==========================================
+       SCREEN CAPTURE FEATURE
+       ========================================== */
+    document.getElementById('btnCapture').addEventListener('click', () => {
+        let activeCanvasId = '';
+        if(currentActiveModule === 'mod-geometry') activeCanvasId = 'cvs-geometry';
+        else if(currentActiveModule === 'mod-interference') activeCanvasId = 'cvs-interference';
+        else activeCanvasId = 'cvs-polarization';
+
+        const canvas = document.getElementById(activeCanvasId);
+        const dataURL = canvas.toDataURL('image/png');
+        
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = `OpticsMaster_Capture_${new Date().getTime()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+
+    /* ==========================================
+       INITIALIZATION
+       ========================================== */
+    window.addEventListener('load', () => {
+        ModGeo.init();
+        ModInt.init();
+        ModPol.init();
+        
+        // Initial draw for static modules
+        window.dispatchEvent(new Event('resize'));
+    });
+
+    window.addEventListener('resize', () => {
+        if(currentActiveModule === 'mod-geometry') ModGeo.draw();
+        if(currentActiveModule === 'mod-interference') ModInt.draw();
+        // ModPol draws continuously via requestAnimationFrame
+    });
+
+</script>
+</body>
+</html>
