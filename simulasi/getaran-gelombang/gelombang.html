@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waves Virtual Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0a0e1a;
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #0d1320;
+            --bg-panel: rgba(15, 23, 42, 0.9);
+            --cyan: #00f3ff;
+            --magenta: #ff00ff;
+            --green: #00ff9d;
+            --yellow: #ffc800;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { height: 100%; font-family: 'Outfit', sans-serif; background: var(--bg-main); color: var(--slate-300); overflow-x: hidden; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Background & Container */
+        .app-wrapper { min-height: 100vh; background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-grad-1) 40%, var(--bg-grad-2) 100%); position: relative; }
+        .bg-grid { position: fixed; inset: 0; pointer-events: none; opacity: 0.03; background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 40px 40px; z-index: 0; }
+        .container { max-width: 1152px; margin: 0 auto; padding: 1.5rem 1rem; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* Panels & Glows */
+        .panel { background: var(--bg-panel); border-radius: 0.75rem; border: 1px solid rgba(0,243,255,0.1); }
+        .glow-box { box-shadow: 0 0 30px rgba(0,243,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05); }
+        .glow-blue { text-shadow: 0 0 20px rgba(0,243,255,0.6); }
+
+        /* Header */
+        .header { text-align: center; padding: 1.25rem; border-color: rgba(0,243,255,0.15); }
+        .header-top { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.25rem; }
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); animation: pulse-dot 1.5s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+        .subtitle-top { font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--slate-500); }
+        .title { font-size: 2.25rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cyan); margin-top: 0.5rem; }
+        @media (min-width: 768px) { .title { font-size: 2.5rem; } }
+        .subtitle-bottom { font-size: 0.875rem; color: var(--slate-500); margin-top: 0.5rem; }
+
+        /* Navigation Tabs */
+        .nav-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .tab-btn { background: transparent; border: 1px solid rgba(100,116,139,0.3); color: var(--slate-400); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.35rem; font-family: inherit; }
+        .tab-btn:hover { border-color: rgba(100,116,139,0.6); }
+        .tab-btn.active { background: rgba(0,243,255,0.15); border-color: var(--cyan); color: var(--cyan); }
+        .icon { width: 16px; height: 16px; display: inline-block; vertical-align: middle; }
+
+        /* Main Layout Grid */
+        .main-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+        @media (min-width: 1024px) { .main-grid { grid-template-columns: 2fr 1fr; } }
+        .left-col, .right-col { display: flex; flex-direction: column; gap: 1rem; }
+
+        /* Canvas Area */
+        .canvas-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .canvas-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-500); }
+        .canvas-actions { display: flex; gap: 0.5rem; }
+        .btn-action { padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; transition: 0.2s; }
+        .btn-play { background: rgba(0,243,255,0.15); color: var(--cyan); border: 1px solid rgba(0,243,255,0.3); }
+        .btn-play:hover { background: rgba(0,243,255,0.3); }
+        .btn-step { background: rgba(255,200,0,0.1); color: var(--yellow); border: 1px solid rgba(255,200,0,0.3); }
+        .btn-step:hover { background: rgba(255,200,0,0.3); }
+        .btn-reset { background: rgba(255,0,255,0.1); color: var(--magenta); border: 1px solid rgba(255,0,255,0.3); }
+        .btn-reset:hover { background: rgba(255,0,255,0.3); }
+        canvas { display: block; width: 100%; height: 350px; }
+
+        /* Formula Display */
+        .formula-box { background: rgba(0,0,0,0.5); border: 1px dashed rgba(0,243,255,0.3); padding: 1rem; text-align: center; border-radius: 0.75rem; min-height: 80px; display: flex; flex-direction: column; justify-content: center;}
+        .formula-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-500); margin-bottom: 0.5rem; }
+        .formula-text { font-size: 1.125rem; color: var(--green); overflow-x: auto; }
+        .formula-text mjx-container { color: var(--cyan) !important; }
+        
+        /* Hidden Buffer for MathJax */
+        .math-buffer { position: absolute; visibility: hidden; pointer-events: none; top: -9999px; }
+
+        /* Info Cards */
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        @media (min-width: 768px) { .info-grid { grid-template-columns: repeat(4, 1fr); } }
+        .info-card { padding: 0.75rem; text-align: center; border-radius: 0.5rem; background: var(--bg-panel); }
+        .info-card-title { font-size: 0.75rem; color: var(--slate-500); margin-bottom: 0.25rem; }
+        .info-card-value { font-size: 1.25rem; font-weight: bold; }
+
+        /* Right Panel Sections */
+        .section-panel { padding: 1.25rem; border-radius: 0.75rem; }
+        .section-title { font-size: 1rem; font-weight: bold; padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.35rem; }
+        
+        /* Sliders & Controls */
+        .control-group { margin-bottom: 1rem; }
+        .control-label { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.25rem; color: var(--slate-400); }
+        .control-val { font-weight: bold; }
+        input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.08); height: 6px; border-radius: 3px; outline: none; width: 100%; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--thumb-color, var(--cyan)); cursor: pointer; box-shadow: 0 0 12px var(--thumb-color, var(--cyan)); }
+        select.dropdown { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--slate-300); padding: 0.5rem; border-radius: 0.25rem; font-family: inherit; margin-bottom: 1rem; outline: none; }
+
+        /* Options */
+        .checkbox-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--slate-400); cursor: pointer; }
+        input[type=checkbox] { accent-color: var(--cyan); width: 16px; height: 16px; cursor: pointer; }
+
+        /* Presets */
+        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .preset-btn { padding: 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.2); color: var(--cyan); transition: all 0.2s; font-family: inherit; }
+        .preset-btn:hover { background: rgba(0,243,255,0.15); }
+        .preset-2 { color: var(--magenta); border-color: rgba(255,0,255,0.2); background: rgba(255,0,255,0.08); }
+        .preset-3 { color: var(--green); border-color: rgba(0,255,157,0.2); background: rgba(0,255,157,0.08); }
+        .preset-4 { color: var(--yellow); border-color: rgba(255,200,0,0.2); background: rgba(255,200,0,0.08); }
+
+        /* Theory */
+        .theory-grid { display: grid; gap: 1rem; font-size: 0.875rem; color: var(--slate-300); }
+        @media (min-width: 768px) { .theory-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
+        .theory-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 0.5rem; }
+        .theory-box h3 { margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: bold; }
+        .theory-box p { line-height: 1.5; }
+        .theory-box ul { margin-top: 0.5rem; margin-left: 1.25rem; }
+        
+        footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--slate-500); }
+
+        /* Utility specific colors */
+        .c-cyan { color: var(--cyan); }
+        .c-magenta { color: var(--magenta); }
+        .c-green { color: var(--green); }
+        .c-yellow { color: var(--yellow); }
+        .bc-cyan { border-color: rgba(0,243,255,0.15); }
+        .bc-magenta { border-color: rgba(255,0,255,0.15); }
+        .bc-green { border-color: rgba(0,255,157,0.15); }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <div class="bg-grid"></div>
+        <div class="container">
+            
+            <!-- Header -->
+            <header class="panel glow-box header bc-cyan">
+                <div class="header-top">
+                    <div class="pulse-dot"></div>
+                    <p class="subtitle-top">Virtual Laboratory</p>
+                    <div class="pulse-dot"></div>
+                </div>
+                <h1 class="title glow-blue">Waves Virtual Lab</h1>
+                <p class="subtitle-bottom">Menembus Dimensi Getaran & Penjalaran Energi</p>
+            </header>
+
+            <!-- Wave Type Tabs -->
+            <nav class="nav-tabs" id="tabNav">
+                <button class="tab-btn active" data-wave="transversal" onclick="switchWave('transversal')">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6 0 1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6s1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6"/><path d="M2 12c.6 0 1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6s1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6"/><path d="M2 18c.6 0 1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6s1.2-.2 1.7-.6l2-1.7c1-.9 2.5-.9 3.5 0l2 1.7c.5.4 1.1.6 1.7.6"/></svg>
+                    Transversal
+                </button>
+                <button class="tab-btn" data-wave="longitudinal" onclick="switchWave('longitudinal')">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Longitudinal
+                </button>
+                <button class="tab-btn" data-wave="standing" onclick="switchWave('standing')">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Gelombang Berdiri
+                </button>
+                <button class="tab-btn" data-wave="interference" onclick="switchWave('interference')">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Interferensi
+                </button>
+            </nav>
+
+            <!-- Main Content Grid -->
+            <div class="main-grid">
+                
+                <!-- LEFT COLUMN -->
+                <div class="left-col">
+                    
+                    <!-- Canvas Box -->
+                    <div class="panel glow-box">
+                        <div class="canvas-header">
+                            <span class="canvas-title">Simulasi Gelombang</span>
+                            <div class="canvas-actions">
+                                <button id="btnPlay" onclick="togglePlay()" class="btn-action btn-play">
+                                    <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    Play
+                                </button>
+                                <button onclick="stepForward()" class="btn-action btn-step" title="Maju 0.05">
+                                    <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 8 4 4-4 4"/><path d="m7 8 4 4-4 4"/></svg>
+                                    Step (+0.05)
+                                </button>
+                                <button onclick="resetSim()" class="btn-action btn-reset">
+                                    <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="waveCanvas"></canvas>
+                    </div>
+
+                    <!-- Formula -->
+                    <div class="formula-box glow-box mono">
+                        <p class="formula-title">Persamaan Gelombang Real-time</p>
+                        <div id="formulaDisplay" class="formula-text">
+                            <!-- Formula LaTeX akan dirender di sini dengan transisi mulus -->
+                        </div>
+                    </div>
+
+                    <!-- Info Cards -->
+                    <div class="info-grid">
+                        <div class="info-card" style="border: 1px solid rgba(0,243,255,0.1);">
+                            <p class="info-card-title">Panjang Gel. ($\lambda$)</p>
+                            <p id="valLambda" class="info-card-value mono c-cyan">2.0 m</p>
+                        </div>
+                        <div class="info-card" style="border: 1px solid rgba(255,0,255,0.1);">
+                            <p class="info-card-title">Periode ($T$)</p>
+                            <p id="valPeriod" class="info-card-value mono c-magenta">1.0 s</p>
+                        </div>
+                        <div class="info-card" style="border: 1px solid rgba(0,255,157,0.1);">
+                            <p class="info-card-title">Cepat Rambat ($v$)</p>
+                            <p id="valSpeed" class="info-card-value mono c-green">2.0 m/s</p>
+                        </div>
+                        <div class="info-card" style="border: 1px solid rgba(255,200,0,0.1);">
+                            <p class="info-card-title">Energi ($E$)</p>
+                            <p id="valEnergy" class="info-card-value mono c-yellow">0.500 J</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="right-col">
+                    
+                    <!-- PANEL: Eksplorasi Kecepatan -->
+                    <div class="panel section-panel glow-box bc-green">
+                        <h2 class="section-title c-green" style="border-bottom-color: rgba(0,255,157,0.2);">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                            Eksplorasi Kecepatan
+                        </h2>
+                        <div class="checkbox-group" style="margin-bottom: 0.75rem;">
+                            <label class="checkbox-label" title="Sifat medium tetap, sehingga kecepatan gelombang konstan.">
+                                <input type="checkbox" id="chkLockSpeed" onchange="toggleSpeedLock()"> 🔒 Kunci Cepat Rambat (Medium Tetap)
+                            </label>
+                        </div>
+                        <div class="formula-box" style="padding: 0.75rem; background: rgba(0,255,157,0.05); border-color: rgba(0,255,157,0.2); min-height: 80px;" id="speedFormulaDisplay">
+                            <!-- Formula Kecepatan LaTeX dirender di sini dengan transisi mulus -->
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="panel section-panel glow-box bc-magenta">
+                        <h2 class="section-title c-magenta" style="border-bottom-color: rgba(255,0,255,0.2);">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
+                            Kontrol Parameter
+                        </h2>
+
+                        <!-- NEW: Mode Generator (Kontinyu vs Pulsa) -->
+                        <div class="control-group">
+                            <div class="control-label"><span>Mode Generator</span></div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <button class="tab-btn active" style="flex:1; justify-content:center;" id="btnCont" onclick="setGenMode('continuous')">Kontinyu</button>
+                                <button class="tab-btn" style="flex:1; justify-content:center;" id="btnPulse" onclick="setGenMode('pulse')">Pulsa Tunggal</button>
+                            </div>
+                            <button id="btnFirePulse" class="btn-action btn-play glow-box" style="width: 100%; justify-content:center; display:none; padding: 0.6rem; border-color: var(--cyan);" onclick="firePulse()">
+                                <svg class="icon" style="width:16px;height:16px;margin-right:5px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>
+                                Tembakkan Pulsa
+                            </button>
+                        </div>
+                        
+                        <!-- Physics Specific Controls -->
+                        <div id="extraControls" style="display:none; margin-top: 1rem;">
+                            <label class="control-label">Arah Rambat / Ujung Pantulan</label>
+                            <select id="simMode" class="dropdown" onchange="updateParams()">
+                                <option value="1">Rambat Kanan (+x)</option>
+                                <option value="-1">Rambat Kiri (-x)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <div class="control-label"><span>Amplitudo ($A$)</span> <span id="ampVal" class="control-val mono c-cyan">50 px</span></div>
+                            <input type="range" id="sliderAmplitude" min="10" max="120" value="50" style="--thumb-color: var(--cyan);" oninput="updateParams()">
+                        </div>
+                        <div class="control-group">
+                            <div class="control-label"><span>Frekuensi ($f$)</span> <span id="freqVal" class="control-val mono c-magenta">1.0 Hz</span></div>
+                            <input type="range" id="sliderFrequency" min="0.1" max="5" value="1" step="0.1" style="--thumb-color: var(--magenta);" oninput="onFreqChange()">
+                        </div>
+                        <div class="control-group">
+                            <div class="control-label"><span>Panjang Gel. ($\lambda$)</span> <span id="waveVal" class="control-val mono c-green">200 px</span></div>
+                            <input type="range" id="sliderWavelength" min="50" max="500" value="200" style="--thumb-color: var(--green);" oninput="onWaveChange()">
+                        </div>
+                        <div class="control-group" id="dampingControl">
+                            <div class="control-label"><span>Redaman ($\beta$)</span> <span id="dampVal" class="control-val mono c-yellow">0.000</span></div>
+                            <input type="range" id="sliderDamping" min="0" max="0.01" value="0" step="0.0005" style="--thumb-color: var(--yellow);" oninput="updateParams()">
+                        </div>
+                    </div>
+
+                    <!-- Visualization Toggles -->
+                    <div class="panel section-panel glow-box bc-cyan">
+                        <h2 class="section-title c-cyan" style="border-bottom-color: rgba(0,243,255,0.2);">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Visualisasi
+                        </h2>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label"><input type="checkbox" id="chkParticles" checked onchange="drawFrame()"> Tampilkan Partikel</label>
+                            <label class="checkbox-label"><input type="checkbox" id="chkGrid" onchange="drawFrame()"> Tampilkan Grid</label>
+                            <label class="checkbox-label"><input type="checkbox" id="chkLabels" checked onchange="drawFrame()"> Tampilkan Label</label>
+                            <label class="checkbox-label"><input type="checkbox" id="chkTrail" onchange="drawFrame()"> Jejak Gelombang</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Theory -->
+            <div class="panel section-panel glow-box" style="border-color: rgba(255,255,255,0.05);">
+                <h2 class="section-title c-magenta" style="border-bottom-color: rgba(255,0,255,0.2);">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Ringkasan Teori & Persamaan Gelombang
+                </h2>
+                
+                <div class="theory-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                    <!-- Penjelasan Konvensi -->
+                    <div class="theory-box" style="grid-column: 1 / -1; background: rgba(0,243,255,0.05); padding: 1.25rem; border-color: rgba(0,243,255,0.2);">
+                        <h3 class="c-cyan" style="font-size: 1.1rem; margin-bottom: 0.75rem;">Konvensi Tanda: $(\omega t - kx)$ vs $(kx - \omega t)$</h3>
+                        <p>Secara matematis, baik $\sin(kx - \omega t)$ maupun $\sin(\omega t - kx)$ mendeskripsikan gelombang yang <b>merambat ke arah Kanan (sumbu X positif)</b>. Perbedaannya murni pada <i>fase awal</i> (berbeda tepat $180^\circ$), di mana $\sin(kx - \omega t) = -\sin(\omega t - kx)$.</p>
+                        <p style="margin-top: 0.5rem;">Pada kurikulum Fisika di Indonesia, bentuk baku yang sering digunakan adalah $$y = \pm A \sin(\omega t \pm kx)$$ dengan aturan praktis:</p>
+                        <ul>
+                            <li>Tanda $(\omega t)$ dan $(kx)$ <b>BERBEDA</b> ➔ Gelombang merambat ke <b>Kanan (+x)</b>. <i>(Contoh: $\omega t - kx$)</i></li>
+                            <li>Tanda $(\omega t)$ dan $(kx)$ <b>SAMA</b> ➔ Gelombang merambat ke <b>Kiri (-x)</b>. <i>(Contoh: $\omega t + kx$)</i></li>
+                        </ul>
+                    </div>
+
+                    <div class="theory-box">
+                        <h3 class="c-magenta">Gel. Transversal & Longitudinal</h3>
+                        <p><b>Transversal:</b> Arah getar tegak lurus arah rambat (membentuk Bukit & Lembah).<br>
+                        Rumus: $$y = A \sin(\omega t \pm kx)$$</p>
+                        <hr style="border:0; border-top:1px dashed rgba(255,255,255,0.1); margin: 0.75rem 0;">
+                        <p><b>Longitudinal:</b> Arah getar sejajar arah rambat (membentuk Rapatan & Renggangan).<br>
+                        Rumus simpangan: $$s = A \sin(\omega t - kx)$$</p>
+                    </div>
+
+                    <div class="theory-box">
+                        <h3 class="c-green">Gelombang Berdiri (Stasioner)</h3>
+                        <p>Merupakan superposisi gelombang datang dan pantul.</p>
+                        <p style="margin-top: 0.5rem;"><b>Ujung Terikat:</b> Terjadi pembalikan fase. Terdapat <i>Simpul</i> di ujung pantulan.<br>
+                        $$y = 2A \sin(kx) \cos(\omega t)$$</p>
+                        <hr style="border:0; border-top:1px dashed rgba(255,255,255,0.1); margin: 0.75rem 0;">
+                        <p><b>Ujung Bebas:</b> Tidak terjadi pembalikan fase. Terdapat <i>Perut</i> di ujung pantulan.<br>
+                        $$y = 2A \cos(kx) \sin(\omega t)$$</p>
+                    </div>
+
+                    <div class="theory-box">
+                        <h3 class="c-yellow">Interferensi Gelombang</h3>
+                        <p>Perpaduan (superposisi) dua gelombang atau lebih yang merambat pada medium yang sama.<br>
+                        $$y = y_1 + y_2$$</p>
+                        <p style="margin-top: 0.5rem;">Jika beda fase nol ($\Delta\varphi = 0$), terjadi interferensi <b>Konstruktif</b> (puncak bertemu puncak, saling menguatkan). Jika berlawanan fase ($\Delta\varphi = 180^\circ$), terjadi <b>Destruktif</b> (puncak bertemu lembah, saling melemahkan).</p>
+                    </div>
+                </div>
+            </div>
+
+            <footer>
+                Waves Virtual Lab — Simulasi Interaktif Gelombang (Physics Standard Edition)
+            </footer>
+
+            <!-- HIDDEN DOUBLE BUFFERS FOR MATHJAX TO PREVENT FLASHING -->
+            <div id="formulaBuffer" class="math-buffer"></div>
+            <div id="speedBuffer" class="math-buffer"></div>
+        </div>
+    </div>
+
+    <script>
+        // System and MathJax helper (Double Buffering)
+        let isRenderingMath = false;
+        let pendingMathUpdate = false;
+
+        function initMath() {
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise().catch((err) => console.log('MathJax init error: ', err.message));
+            }
+        }
+
+        // Rendering MathJax secara live dengan teknik Double Buffer
+        function renderMathLive() {
+            if (!window.MathJax || typeof MathJax.typesetPromise !== 'function') return;
+            
+            if (isRenderingMath) {
+                pendingMathUpdate = true;
+                return;
+            }
+            
+            isRenderingMath = true;
+            const fBuffer = document.getElementById('formulaBuffer');
+            const sBuffer = document.getElementById('speedBuffer');
+            
+            MathJax.typesetPromise([fBuffer, sBuffer]).then(() => {
+                document.getElementById('formulaDisplay').innerHTML = fBuffer.innerHTML;
+                document.getElementById('speedFormulaDisplay').innerHTML = sBuffer.innerHTML;
+                isRenderingMath = false;
+                
+                if (pendingMathUpdate) {
+                    pendingMathUpdate = false;
+                    renderMathLive(); 
+                }
+            }).catch((err) => {
+                console.log('MathJax error: ', err.message);
+                isRenderingMath = false;
+            });
+        }
+
+        // State Simulator
+        let playing = false;
+        let time = 0;
+        let animId = null;
+        let currentWave = 'transversal';
+        let trailData = [];
+        
+        // Generator Mode Logic
+        let genMode = 'continuous'; // 'continuous' atau 'pulse'
+        let pulses = []; // Menyimpan array waktu penembakan pulsa
+
+        // Speed Locking Logic
+        let isSpeedLocked = false;
+        let lockedSpeed = 2.0;
+
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dynamic Canvas Sizing
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth || 800;
+            canvas.height = 350;
+            if(!playing) drawFrame();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Generator Mode Toggle
+        function setGenMode(mode) {
+            genMode = mode;
+            document.getElementById('btnCont').classList.toggle('active', mode === 'continuous');
+            document.getElementById('btnPulse').classList.toggle('active', mode === 'pulse');
+            document.getElementById('btnFirePulse').style.display = mode === 'pulse' ? 'flex' : 'none';
+            
+            // Sembunyikan Redaman saat mode Pulsa agar bentuk paket gelombang terjaga utuh
+            document.getElementById('dampingControl').style.display = mode === 'pulse' ? 'none' : 'block';
+            if (mode === 'pulse') document.getElementById('sliderDamping').value = 0;
+            
+            pulses = [];
+            if (mode === 'pulse') {
+                if (!playing) togglePlay(); 
+            }
+            updateParams();
+        }
+
+        function firePulse() {
+            if (pulses.length > 10) pulses.shift(); // Hindari penumpukan memory
+            pulses.push(time);
+            if (!playing) togglePlay();
+        }
+
+        // Speed Lock Integration
+        function toggleSpeedLock() {
+            isSpeedLocked = document.getElementById('chkLockSpeed').checked;
+            if (isSpeedLocked) {
+                const p = getParams();
+                lockedSpeed = (p.wavelength / 100) * p.frequency;
+            }
+        }
+
+        function onFreqChange() {
+            if (isSpeedLocked) {
+                let f = parseFloat(document.getElementById('sliderFrequency').value);
+                let newW = (lockedSpeed / f) * 100;
+                
+                if (newW > 500) { newW = 500; f = lockedSpeed / (newW / 100); }
+                if (newW < 50) { newW = 50; f = lockedSpeed / (newW / 100); }
+                
+                document.getElementById('sliderWavelength').value = newW;
+                document.getElementById('sliderFrequency').value = f;
+            }
+            updateParams();
+        }
+
+        function onWaveChange() {
+            if (isSpeedLocked) {
+                let w = parseFloat(document.getElementById('sliderWavelength').value);
+                let newF = lockedSpeed / (w / 100);
+
+                if (newF > 5) { newF = 5; w = (lockedSpeed / newF) * 100; }
+                if (newF < 0.1) { newF = 0.1; w = (lockedSpeed / newF) * 100; }
+
+                document.getElementById('sliderFrequency').value = newF;
+                document.getElementById('sliderWavelength').value = w;
+            }
+            updateParams();
+        }
+
+        // Parameters
+        function getParams() {
+            return {
+                amplitude: parseFloat(document.getElementById('sliderAmplitude').value),
+                frequency: parseFloat(document.getElementById('sliderFrequency').value),
+                wavelength: parseFloat(document.getElementById('sliderWavelength').value),
+                damping: genMode === 'pulse' ? 0 : parseFloat(document.getElementById('sliderDamping').value),
+                mode: document.getElementById('simMode').value,
+                particles: document.getElementById('chkParticles').checked,
+                grid: document.getElementById('chkGrid').checked,
+                labels: document.getElementById('chkLabels').checked,
+                trail: document.getElementById('chkTrail').checked
+            };
+        }
+
+        function updateParams() {
+            const p = getParams();
+            document.getElementById('ampVal').textContent = p.amplitude.toFixed(0) + ' px';
+            document.getElementById('freqVal').textContent = p.frequency.toFixed(1) + ' Hz';
+            document.getElementById('waveVal').textContent = p.wavelength.toFixed(0) + ' px';
+            document.getElementById('dampVal').textContent = p.damping.toFixed(4);
+
+            // Derived values
+            const lambda = (p.wavelength / 100).toFixed(2);
+            const T = (1 / p.frequency).toFixed(2);
+            const v = (p.wavelength / 100 * p.frequency).toFixed(2);
+            const E = (0.5 * Math.pow(p.amplitude / 50, 2) * Math.pow(p.frequency, 2)).toFixed(3);
+
+            document.getElementById('valLambda').textContent = lambda + ' m';
+            document.getElementById('valPeriod').textContent = T + ' s';
+            document.getElementById('valSpeed').textContent = v + ' m/s';
+            document.getElementById('valEnergy').textContent = E + ' J';
+
+            // Update Eksplorasi Kecepatan (Kirim ke Buffer Tersembunyi)
+            const speedFormulaStr = `
+                $$ v = \\lambda \\cdot f $$
+                $$ ${v} \\text{ m/s} = ${lambda} \\text{ m} \\times ${p.frequency.toFixed(1)} \\text{ Hz} $$
+            `;
+            document.getElementById('speedBuffer').innerHTML = speedFormulaStr;
+
+            // Physics Formula Logic (Indonesian Standard: wt ± kx) via LaTeX
+            const omega = (2 * Math.PI * p.frequency).toFixed(2);
+            const k = (2 * Math.PI / (p.wavelength / 100)).toFixed(2);
+            
+            let formulaStr = '';
+            const dampTex = p.damping > 0 ? ` \\cdot e^{-${p.damping.toFixed(4)}t}` : '';
+
+            if (currentWave === 'transversal') {
+                let sign = p.mode == "1" ? "-" : "+"; // 1 = Rambat Kanan (-kx)
+                formulaStr = `$$ y = ${p.amplitude.toFixed(0)} \\sin(${omega}t ${sign} ${k}x)${dampTex} $$`;
+            } else if (currentWave === 'longitudinal') {
+                formulaStr = `$$ s = ${p.amplitude.toFixed(0)} \\sin(${omega}t - ${k}x)${dampTex} $$`;
+            } else if (currentWave === 'standing') {
+                if(p.mode === 'fixed') {
+                    formulaStr = `$$ y = ${2 * p.amplitude.toFixed(0)} \\sin(${k}x) \\cos(${omega}t)${dampTex} $$`;
+                } else {
+                    formulaStr = `$$ y = ${2 * p.amplitude.toFixed(0)} \\cos(${k}x) \\sin(${omega}t)${dampTex} $$`;
+                }
+            } else {
+                formulaStr = `$$ y = ${p.amplitude.toFixed(0)} [\\sin(${omega}t - ${k}x) + \\sin(${omega}t - ${k}x + \\frac{\\pi}{3})]${dampTex} $$`;
+            }
+
+            // Kirim ke Buffer Tersembunyi
+            document.getElementById('formulaBuffer').innerHTML = formulaStr;
+            
+            // Panggil fungsi Double Buffer untuk MathJax
+            renderMathLive(); 
+
+            if (!playing) drawFrame();
+        }
+
+        function applyPreset(a, f, w, d) {
+            document.getElementById('chkLockSpeed').checked = false;
+            isSpeedLocked = false;
+            setGenMode('continuous'); // Reset ke kontinyu tiap preset diklik
+
+            document.getElementById('sliderAmplitude').value = a;
+            document.getElementById('sliderFrequency').value = f;
+            document.getElementById('sliderWavelength').value = w;
+            document.getElementById('sliderDamping').value = d;
+            updateParams();
+        }
+
+        function switchWave(type) {
+            currentWave = type;
+            
+            const tabs = document.getElementById('tabNav').children;
+            for(let i=0; i<tabs.length; i++) {
+                tabs[i].classList.toggle('active', tabs[i].getAttribute('data-wave') === type);
+            }
+
+            const extraControls = document.getElementById('extraControls');
+            const simMode = document.getElementById('simMode');
+            
+            if(type === 'transversal') {
+                extraControls.style.display = 'block';
+                simMode.innerHTML = `<option value="1">Rambat Kanan (+x)</option><option value="-1">Rambat Kiri (-x)</option>`;
+            } else if (type === 'standing') {
+                extraControls.style.display = 'block';
+                simMode.innerHTML = `<option value="fixed">Ujung Terikat (Simpul di Dinding)</option><option value="free">Ujung Bebas (Perut di Dinding)</option>`;
+            } else {
+                extraControls.style.display = 'none';
+            }
+
+            pulses = [];
+            time = 0; 
+            updateParams();
+        }
+
+        function togglePlay() {
+            playing = !playing;
+            const btn = document.getElementById('btnPlay');
+            if (playing) {
+                btn.innerHTML = `<svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+                animate();
+            } else {
+                btn.innerHTML = `<svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play`;
+                if (animId) cancelAnimationFrame(animId);
+            }
+        }
+
+        function stepForward() {
+            if (playing) togglePlay(); 
+            time += 0.05;
+            drawFrame();
+        }
+
+        function resetSim() {
+            playing = false;
+            time = 0;
+            pulses = [];
+            const btn = document.getElementById('btnPlay');
+            btn.innerHTML = `<svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play`;
+            if (animId) cancelAnimationFrame(animId);
+            drawFrame();
+        }
+
+        function animate() {
+            if (!playing) return;
+            time += 0.03;
+            drawFrame();
+            animId = requestAnimationFrame(animate);
+        }
+
+        // ==========================================
+        // MAIN DRAWING ENGINE
+        // ==========================================
+        function drawFrame() {
+            const p = getParams();
+            const W = canvas.width;
+            const H = canvas.height;
+            const midY = H / 2;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // Background canvas
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid
+            if (p.grid) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < W; x += 40) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+                }
+                for (let y = 0; y < H; y += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+                }
+            }
+
+            // Center line
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            const dampFactor = Math.exp(-p.damping * time * 100);
+            const omega = 2 * Math.PI * p.frequency;
+            const k = 2 * Math.PI / p.wavelength; 
+            const v = omega / k;
+
+            // Physics Math Data Extractor (Mendukung Pulsa & Kontinyu)
+            function getWaveData(x) {
+                function calculateRawWave(x, t) {
+                    let wt = omega * t;
+                    let kx = k * x;
+                    let res = { y: 0, yInc: 0, yRef: 0 };
+                    
+                    if (currentWave === 'transversal') {
+                        let dirPhase = p.mode == "-1" ? 1 : -1; // 1 = Kiri (+kx), -1 = Kanan (-kx)
+                        res.y = p.amplitude * Math.sin(wt + (dirPhase * kx)) * dampFactor;
+                    } else if (currentWave === 'longitudinal') {
+                        res.y = p.amplitude * Math.sin(wt - kx) * dampFactor;
+                    } else if (currentWave === 'standing') {
+                        // Asumsi sumber dinding di x=0. Gel. datang dari kanan (W) merambat ke kiri (+kx)
+                        res.yInc = p.amplitude * Math.sin(wt + kx) * dampFactor;
+                        // Gel. pantul dari dinding (x=0) merambat ke kanan (-kx)
+                        res.yRef = (p.mode === 'fixed') 
+                                ? -p.amplitude * Math.sin(wt - kx) * dampFactor 
+                                : p.amplitude * Math.sin(wt - kx) * dampFactor;
+                        res.y = res.yInc + res.yRef;
+                    } else if (currentWave === 'interference') {
+                        let y1 = p.amplitude * Math.sin(wt - kx);
+                        let y2 = p.amplitude * Math.sin(wt - kx + Math.PI / 3);
+                        res.y = (y1 + y2) * dampFactor;
+                    }
+                    return res;
+                }
+
+                if (genMode === 'continuous') {
+                    return calculateRawWave(x, time);
+                } else {
+                    // PULSE MODE: Superposisi dari sekumpulan tembakan pulsa
+                    let total = { y: 0, yInc: 0, yRef: 0 };
+                    for (let i = 0; i < pulses.length; i++) {
+                        let pt = time - pulses[i];
+                        if (pt < 0) continue;
+                        
+                        let raw = calculateRawWave(x, pt);
+                        let sigma = p.wavelength / 3; // Lebar selubung Gaussian disamakan dgn 1 gelombang
+                        let env = 0, envInc = 0, envRef = 0;
+                        
+                        if (currentWave === 'transversal') {
+                            let dir = p.mode == "-1" ? -1 : 1; // -1 untuk Kiri, 1 untuk Kanan
+                            let xc = dir === 1 ? v * pt : W - v * pt;
+                            env = Math.exp(-Math.pow(x - xc, 2) / (2 * sigma * sigma));
+                            total.y += raw.y * env;
+                        } 
+                        else if (currentWave === 'longitudinal' || currentWave === 'interference') {
+                            let xc = v * pt;
+                            env = Math.exp(-Math.pow(x - xc, 2) / (2 * sigma * sigma));
+                            total.y += raw.y * env;
+                        } 
+                        else if (currentWave === 'standing') {
+                            // Pulsa datang merambat dari Kanan (W) ke Kiri
+                            let xcInc = W - v * pt;
+                            envInc = Math.exp(-Math.pow(x - xcInc, 2) / (2 * sigma * sigma));
+                            
+                            // Pulsa pantul muncul setelah menabrak dinding (x=0)
+                            let tRef = pt - (W / v);
+                            if (tRef > 0) {
+                                let xcRef = v * tRef;
+                                envRef = Math.exp(-Math.pow(x - xcRef, 2) / (2 * sigma * sigma));
+                            }
+                            
+                            total.yInc += raw.yInc * envInc;
+                            total.yRef += raw.yRef * envRef;
+                            total.y += (raw.yInc * envInc) + (raw.yRef * envRef);
+                        } 
+                    }
+                    return total;
+                }
+            }
+
+            // Trail rendering (Visual Artistik)
+            if (p.trail && playing && currentWave !== 'longitudinal' && currentWave !== 'standing') {
+                const currentFrame = [];
+                for (let x = 0; x <= W; x += 3) currentFrame.push(getWaveData(x).y);
+                
+                trailData.push(currentFrame);
+                if (trailData.length > 8) trailData.shift();
+
+                trailData.forEach((frame, idx) => {
+                    const alpha = (idx + 1) / trailData.length * 0.15;
+                    ctx.strokeStyle = `rgba(0,243,255,${alpha})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    frame.forEach((y, i) => {
+                        const px = i * 3;
+                        if (i === 0) ctx.moveTo(px, midY - y);
+                        else ctx.lineTo(px, midY - y);
+                    });
+                    ctx.stroke();
+                });
+            }
+
+            // Main Wave Rendering Logic
+            if (currentWave === 'longitudinal') {
+                const spacing = 20;
+                const numDots = Math.floor(W / spacing);
+                for (let i = 0; i < numDots; i++) {
+                    const baseX = i * spacing;
+                    const displacement = getWaveData(baseX).y * 0.5;
+                    const dx = baseX + displacement;
+                    const compressionFactor = 1 - (displacement / (p.amplitude * 0.5 + 1)) * 0.5;
+                    
+                    const size = Math.max(2, 5 * compressionFactor);
+                    const alpha = 0.3 + compressionFactor * 0.7;
+
+                    ctx.beginPath();
+                    ctx.arc(dx, midY, size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,243,255,${alpha})`;
+                    ctx.fill();
+
+                    if (p.labels && i % 5 === 0) {
+                        ctx.strokeStyle = `rgba(255,0,255,${alpha * 0.3})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(dx, midY - 30); ctx.lineTo(dx, midY + 30);
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.strokeStyle = 'rgba(0,243,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 3) {
+                    const y = getWaveData(x).y;
+                    x === 0 ? ctx.moveTo(x, midY - y) : ctx.lineTo(x, midY - y);
+                }
+                ctx.stroke();
+
+            } else if (currentWave === 'standing') {
+                
+                // Incident Wave (Blue) 
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 2) {
+                    let y = getWaveData(x).yInc;
+                    x === 0 ? ctx.moveTo(x, midY - y) : ctx.lineTo(x, midY - y);
+                }
+                ctx.stroke();
+
+                // Reflected Wave (Yellow)
+                ctx.strokeStyle = 'rgba(255, 200, 0, 0.4)';
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 2) {
+                    let y = getWaveData(x).yRef;
+                    x === 0 ? ctx.moveTo(x, midY - y) : ctx.lineTo(x, midY - y);
+                }
+                ctx.stroke();
+
+                // Resultant Wave (Magenta)
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 2) {
+                    const y = getWaveData(x).y;
+                    x === 0 ? ctx.moveTo(x, midY - y) : ctx.lineTo(x, midY - y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Wall at x=0
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillRect(0, 0, 6, H);
+
+            } else {
+                // Transversal & Interference
+                const grad = ctx.createLinearGradient(0, midY - p.amplitude, 0, midY + p.amplitude);
+                grad.addColorStop(0, '#00f3ff');
+                grad.addColorStop(0.5, '#ff00ff');
+                grad.addColorStop(1, '#00f3ff');
+
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#00f3ff';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 2) {
+                    const y = getWaveData(x).y;
+                    x === 0 ? ctx.moveTo(x, midY - y) : ctx.lineTo(x, midY - y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Particles
+                if (p.particles) {
+                    const particleSpacing = Math.max(30, p.wavelength / 6);
+                    for (let x = 0; x < W; x += particleSpacing) {
+                        const y = getWaveData(x).y;
+                        ctx.beginPath();
+                        ctx.arc(x, midY - y, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.shadowColor = '#ff00ff';
+                        ctx.shadowBlur = 10;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            }
+
+            // Labels for amplitude & wavelength (Only useful in Continuous Mode typically)
+            if (p.labels && currentWave !== 'longitudinal' && genMode === 'continuous') {
+                const peakX = Math.floor(p.wavelength / 4);
+                const peakY = p.amplitude * dampFactor;
+                
+                // Amp Label
+                if (Math.abs(peakY) > 10) {
+                    ctx.strokeStyle = 'rgba(0,255,157,0.6)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath(); ctx.moveTo(peakX, midY); ctx.lineTo(peakX, midY - peakY); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#00ff9d';
+                    ctx.font = '12px "JetBrains Mono"';
+                    ctx.fillText('A', peakX + 6, midY - peakY / 2);
+                }
+
+                // Lambda Label
+                ctx.strokeStyle = 'rgba(255,200,0,0.5)';
+                ctx.lineWidth = 1;
+                const labelY = midY + p.amplitude + 35;
+                ctx.beginPath(); ctx.moveTo(0, labelY); ctx.lineTo(p.wavelength, labelY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, labelY - 4); ctx.lineTo(0, labelY + 4); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(p.wavelength, labelY - 4); ctx.lineTo(p.wavelength, labelY + 4); ctx.stroke();
+                
+                ctx.fillStyle = '#ffc800';
+                ctx.font = '12px "JetBrains Mono"';
+                ctx.textAlign = 'center';
+                ctx.fillText('λ', p.wavelength / 2, labelY - 8);
+                ctx.textAlign = 'left'; 
+            }
+        }
+
+        // Init App
+        setTimeout(() => {
+            initMath(); 
+            resizeCanvas();
+            switchWave('transversal'); 
+        }, 100);
+
+    </script>
+</body>
+</html>
