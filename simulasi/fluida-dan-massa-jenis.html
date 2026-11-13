@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fluida: Rahasia Wujud dan Massa Jenis</title>
+    <style>
+        /* === VARIABEL WARNA & TEMA === */
+        :root {
+            --bg-main: #070B19; /* Deep Navy */
+            --bg-panel: rgba(16, 25, 48, 0.7);
+            --border-glow: rgba(0, 255, 255, 0.3);
+            
+            --neon-cyan: #00FFFF; /* Cair */
+            --neon-green: #39FF14; /* UI / Melayang */
+            --neon-orange: #FFA500; /* Padat */
+            --neon-white: #F8F9FA; /* Gas */
+            --neon-red: #FF3366; /* Tenggelam */
+            
+            --text-main: #E0E1DD;
+            --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* === RESET & BASE STYLES === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding: 20px;
+            background-image: radial-gradient(circle at 50% 0%, #101c38 0%, transparent 70%);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* === TYPOGRAPHY === */
+        h1, h2, h3 { font-weight: 700; letter-spacing: 0.5px; }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #A0AABF;
+            margin-bottom: 30px;
+        }
+        h2 { font-size: 1.5rem; margin-bottom: 15px; color: var(--neon-white); }
+        
+        /* === PANELS & CARDS === */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        /* === KONTROL BUTTONS === */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        button {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-family: var(--font-family);
+        }
+        button:hover { transform: translateY(-2px); color: #000 !important; }
+        
+        .btn-padat { border-color: var(--neon-orange); color: var(--neon-orange); }
+        .btn-padat:hover { background: var(--neon-orange); box-shadow: 0 0 15px var(--neon-orange); }
+        
+        .btn-cair { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .btn-cair:hover { background: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); }
+        
+        .btn-gas { border-color: var(--neon-white); color: var(--neon-white); }
+        .btn-gas:hover { background: var(--neon-white); box-shadow: 0 0 15px var(--neon-white); }
+        
+        .btn-reset { border-color: #555; color: #CCC; }
+        .btn-reset:hover { background: #CCC; color: #000 !important; box-shadow: 0 0 15px #CCC; }
+
+        /* === CANVAS AREA === */
+        canvas {
+            width: 100%;
+            height: 250px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: block;
+        }
+
+        /* === INFO PANELS (GRID 2 COL) === */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-card {
+            background: linear-gradient(145deg, rgba(20,30,50,0.8), rgba(10,15,30,0.8));
+            border-left: 4px solid var(--neon-cyan);
+            padding: 15px 20px;
+            border-radius: 8px;
+        }
+        .info-card h3 { color: var(--neon-cyan); margin-bottom: 8px; font-size: 1.2rem; }
+        .info-card p { font-size: 0.95rem; color: #D0D5E0; }
+
+        /* === VISUAL MENGALIR === */
+        .flow-showcase {
+            margin-bottom: 30px;
+            background: var(--bg-panel);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+        }
+        .flow-title {
+            color: var(--neon-cyan);
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .flow-pipe {
+            height: 25px;
+            width: 100%;
+            background: rgba(0, 15, 30, 0.8);
+            border: 1px solid #008888;
+            border-radius: 12.5px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .flow-liquid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(0, 255, 255, 0.05) 0px,
+                rgba(0, 255, 255, 0.6) 50px,
+                rgba(0, 255, 255, 0.05) 100px
+            );
+            animation: flowing 2s linear infinite;
+        }
+        .flow-particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #FFF;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #FFF, 0 0 15px var(--neon-cyan);
+            animation: flowParticleAnim linear infinite;
+        }
+        @keyframes flowing {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100px); }
+        }
+        @keyframes flowParticleAnim {
+            0% { left: -5%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { left: 105%; opacity: 0; }
+        }
+
+        /* === LABORATORIUM KERAPATAN === */
+        .density-lab {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        /* Visual Box Kerapatan */
+        .density-visual-box {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            min-height: 150px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .box-sample {
+            width: 80px;
+            height: 80px;
+            border: 2px solid;
+            position: relative;
+            border-radius: 4px;
+        }
+        .box-emas { border-color: #FFD700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .box-kayu { border-color: #8B4513; box-shadow: 0 0 10px rgba(139,69,19,0.3); }
+        .box-custom { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
+        .box-label {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Kalkulator UI */
+        .calculator { padding: 15px; }
+        .slider-group { margin-bottom: 20px; }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #A0AABF;
+        }
+        .val-display { color: var(--neon-white); }
+        
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #2A3B5C;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .digital-display {
+            background: #000;
+            border: 2px solid var(--neon-green);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.2);
+        }
+        .digital-display span { display: block; }
+        .digital-value {
+            font-size: 2.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* === SIMULATOR UTAMA (TANGKI) === */
+        .tank-container {
+            width: 100%;
+            height: 350px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid #2A3B5C;
+            border-radius: 12px 12px 4px 4px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .water-level {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 175px; /* Setengah dari tank (350px) */
+            background: linear-gradient(180deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 200, 255, 0.5) 100%);
+            border-top: 2px solid rgba(0, 255, 255, 0.6);
+            box-shadow: 0 -5px 20px rgba(0, 255, 255, 0.2);
+            z-index: 1;
+        }
+        .water-text {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+        
+        /* Balok Simulasi */
+        #sim-block {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #A8B8D8, #607090);
+            border: 2px solid #FFF;
+            border-radius: 6px;
+            z-index: 3;
+            transition: top 1.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+
+        .btn-raksasa {
+            width: 100%;
+            font-size: 1.2rem;
+            padding: 15px;
+            background: rgba(57, 255, 20, 0.1);
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        .btn-raksasa:hover {
+            background: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+
+        /* === KONTROL FLUIDA === */
+        .fluid-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .fluid-btn {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #555;
+            color: #A0AABF;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        #status-box {
+            text-align: center;
+            padding: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 8px;
+            min-height: 60px;
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed #555;
+            transition: all 0.3s;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .info-grid, .density-lab { grid-template-columns: 1fr; }
+            h1 { font-size: 1.8rem; }
+            .controls { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Tahap 1.1: Mengenal Jati Diri Fluida</h1>
+        <p class="subtitle">Laboratorium Virtual Interaktif: Wujud Zat & Rahasia Massa Jenis</p>
+    </header>
+
+    <!-- BAGIAN 1: LENSA PARTIKEL -->
+    <section class="panel">
+        <h2>🔬 Lensa Partikel: Observasi Wujud Zat</h2>
+        <p style="margin-bottom: 15px; font-size: 0.9rem; color: #A0AABF;">Amati bagaimana perilaku partikel (molekul) pada ketiga wujud zat di dalam gelas virtual. Perhatikan perbedaan susunan dan kebebasan geraknya.</p>
+        
+        <canvas id="canvas-partikel"></canvas>
+        
+        <div class="controls">
+            <button class="btn-padat" onclick="tambahPartikel('padat')">1. Masukkan Batu (Padat)</button>
+            <button class="btn-cair" onclick="tambahPartikel('cair')">2. Tuang Air (Cair)</button>
+            <button class="btn-gas" onclick="tambahPartikel('gas')">3. Tiupkan Gas (Asap)</button>
+            <button class="btn-reset" onclick="resetPartikel()">Reset Wadah</button>
+        </div>
+    </section>
+
+    <!-- BAGIAN 2: INFO PANEL -->
+    <section class="info-grid">
+        <div class="info-card">
+            <h3>Apa yang membuat air disebut "Fluida"?</h3>
+            <p>Fluida adalah zat yang dapat <strong>mengalir</strong> dan berubah bentuk menyesuaikan wadahnya. Hal ini terjadi karena ikatan antar partikelnya (seperti pada zat cair dan gas) cukup longgar, sehingga partikel bebas bergeser dan bergerak.</p>
+        </div>
+        <div class="info-card">
+            <h3>Apa itu Massa Jenis (ρ)?</h3>
+            <p>Massa Jenis atau Kerapatan adalah ukuran seberapa padat materi terkumpul dalam suatu ruang. Rumusnya adalah <strong>ρ = Massa / Volume</strong>. Semakin rapat partikelnya, semakin besar massa jenis zat tersebut.</p>
+        </div>
+    </section>
+
+    <!-- VISUALISASI SIFAT MENGALIR (TAMBAHAN) -->
+    <section class="flow-showcase">
+        <div class="flow-title">🌊 Bukti Visual: Partikel Fluida (Cair & Gas) Secara Alami Mengalir dan Berpindah</div>
+        <div class="flow-pipe">
+            <div class="flow-liquid"></div>
+            <!-- Partikel untuk efek visual ekstra -->
+            <div class="flow-particle" style="animation-duration: 2.5s; top: 30%;"></div>
+            <div class="flow-particle" style="animation-duration: 3.2s; top: 70%; animation-delay: 0.5s;"></div>
+            <div class="flow-particle" style="animation-duration: 2.8s; top: 50%; animation-delay: 1.2s;"></div>
+            <div class="flow-particle" style="animation-duration: 3.5s; top: 40%; animation-delay: 2s;"></div>
+            <div class="flow-particle" style="animation-duration: 2.1s; top: 20%; animation-delay: 1.8s;"></div>
+        </div>
+    </section>
+
+    <!-- BAGIAN 3: KALKULATOR KERAPATAN -->
+    <section class="panel density-lab">
+        <div class="density-visual-box">
+            <div style="text-align: center; color: #FFF; font-size: 0.9rem;">
+                <p style="margin-bottom: 10px;">Visualisasi Kerapatan (Volume Sama)</p>
+                <div style="display: flex; gap: 30px; justify-content: center;">
+                    <div class="box-sample box-emas" id="box-emas">
+                        <div class="box-label" style="color:#FFD700">Emas (Rapat)</div>
+                    </div>
+                    <div class="box-sample box-custom" id="box-custom">
+                        <div class="box-label" style="color:var(--neon-green)">Blok Uji</div>
+                    </div>
+                    <div class="box-sample box-kayu" id="box-kayu">
+                        <div class="box-label" style="color:#8B4513">Kayu (Renggang)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="calculator">
+            <div class="slider-group">
+                <label>Massa Blok (m) <span class="val-display" id="val-massa">1000 kg</span></label>
+                <input type="range" id="slider-massa" min="1" max="2000" step="1" value="1000">
+            </div>
+            <div class="slider-group">
+                <label>Volume Blok (V) <span class="val-display" id="val-volume">1.0 m³</span></label>
+                <input type="range" id="slider-volume" min="0.1" max="2.0" step="0.1" value="1.0">
+            </div>
+            
+            <div class="digital-display">
+                <span style="font-size: 0.9rem; color: #A0AABF; text-transform: uppercase; letter-spacing: 1px;">Massa Jenis (ρ) Terhitung</span>
+                <span class="digital-value" id="display-densitas">1000</span>
+                <span style="font-size: 1rem; color: #FFF;">kg/m³</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- BAGIAN 4: SIMULATOR UTAMA -->
+    <section class="panel">
+        <h2>🌊 Simulator: Tenggelam atau Mengapung?</h2>
+        <p style="margin-bottom: 15px; font-size: 0.9rem; color: #A0AABF;">Massa jenis air murni adalah <strong>1000 kg/m³</strong>. Ubah massa dan volume balok di atas, lalu masukkan untuk melihat hukum Archimedes bekerja!</p>
+        
+        <div class="fluid-controls">
+            <button class="fluid-btn" id="btn-fluida-minyak" onclick="ubahFluida('minyak')">Minyak Goreng (ρ=900)</button>
+            <button class="fluid-btn active" id="btn-fluida-air" onclick="ubahFluida('air')" style="background: #00FFFF; border-color: #00FFFF; box-shadow: 0 0 10px #00FFFF; color: #000;">Air Murni (ρ=1000)</button>
+            <button class="fluid-btn" id="btn-fluida-laut" onclick="ubahFluida('laut')">Air Laut (ρ=1030)</button>
+            <button class="fluid-btn" id="btn-fluida-madu" onclick="ubahFluida('madu')">Madu (ρ=1420)</button>
+        </div>
+
+        <div class="tank-container">
+            <div class="water-level" id="sim-water"></div>
+            <div class="water-text" id="sim-water-text">Air Murni (ρ = 1000 kg/m³)</div>
+            <div id="sim-block"><span id="sim-label" style="position:relative; z-index: 10; text-shadow: 0px 0px 4px #000; color:#FFF;">Blok Uji</span></div>
+        </div>
+        
+        <button class="btn-raksasa" id="btn-cemplung" onclick="cemplungkan()">Masukkan Blok ke Cairan!</button>
+        <div id="status-box">Status: Menunggu instruksi...</div>
+    </section>
+
+</div>
+
+<script>
+    /* ==========================================
+       LOGIKA CANVAS 1: LENSA PARTIKEL
+       ========================================== */
+    const canvas = document.getElementById('canvas-partikel');
+    const ctx = canvas.getContext('2d');
+    
+    let particles = [];
+    let animationId;
+    
+    // Dimensi canvas responsif
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        // Tinggi tetap 250px sesuai CSS
+        canvas.height = 250;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Data 3 Gelas Wadah
+    const wadah = {
+        padat: { index: 0, color: '#FFA500', active: false },
+        cair:  { index: 1, color: '#00FFFF', active: false },
+        gas:   { index: 2, color: '#FFFFFF', active: false }
+    };
+
+    class Partikel {
+        constructor(tipe, x, y, targetX, targetY) {
+            this.tipe = tipe;
+            this.x = x;
+            this.y = y;
+            this.targetX = targetX;
+            this.targetY = targetY;
+            this.radius = 3;
+            
+            // Kecepatan khusus Gas
+            this.vx = (Math.random() - 0.5) * 8;
+            this.vy = (Math.random() - 0.5) * 8;
+        }
+
+        update(wZ, wX, wY, wWidth, wHeight) {
+            if (this.tipe === 'padat') {
+                // Getar pelan di tempat
+                this.x = this.targetX + (Math.random() - 0.5) * 1.5;
+                this.y = this.targetY + (Math.random() - 0.5) * 1.5;
+            } 
+            else if (this.tipe === 'cair') {
+                // Jatuh dan menyesuaikan wadah (easing)
+                let dy = this.targetY - this.y;
+                let dx = this.targetX - this.x;
+                
+                if (Math.abs(dy) > 1) this.y += dy * 0.05; // jatuh pelan
+                else {
+                    // Bergeser/meluncur sedikit saat di bawah
+                    this.y = this.targetY + Math.sin(Date.now()*0.005 + this.x)*1;
+                    this.x = this.targetX + Math.cos(Date.now()*0.003 + this.y)*1;
+                }
+                if (Math.abs(dx) > 1 && this.y > this.targetY - 50) this.x += dx * 0.05;
+            }
+            else if (this.tipe === 'gas') {
+                // Mantul cepat ke segala arah di dalam wadah
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x - this.radius < wX) { this.x = wX + this.radius; this.vx *= -1; }
+                if (this.x + this.radius > wX + wWidth) { this.x = wX + wWidth - this.radius; this.vx *= -1; }
+                if (this.y - this.radius < wY) { this.y = wY + this.radius; this.vy *= -1; }
+                if (this.y + this.radius > wY + wHeight) { this.y = wY + wHeight - this.radius; this.vy *= -1; }
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = wadah[this.tipe].color;
+            ctx.fill();
+            // Glow effect
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = wadah[this.tipe].color;
+        }
+    }
+
+    function tambahPartikel(tipe) {
+        if (wadah[tipe].active) return; // Mencegah duplikasi
+        wadah[tipe].active = true;
+        
+        let areaWidth = canvas.width / 3;
+        let wWidth = Math.min(100, areaWidth * 0.8);
+        let wHeight = 160;
+        let wX = (areaWidth * wadah[tipe].index) + (areaWidth/2) - (wWidth/2);
+        let wY = canvas.height - wHeight - 20;
+
+        if (tipe === 'padat') {
+            // Susun rapi berbentuk kotak
+            let rows = 12, cols = 12;
+            let spacing = 6;
+            let startX = wX + (wWidth - (cols*spacing))/2;
+            let startY = wY + wHeight - (rows*spacing) - 5;
+            for(let i=0; i<rows; i++){
+                for(let j=0; j<cols; j++){
+                    particles.push(new Partikel(tipe, startX + j*spacing, startY + i*spacing, startX + j*spacing, startY + i*spacing));
+                }
+            }
+        }
+        else if (tipe === 'cair') {
+            // Target susunan padat di bawah, tapi spawn dari atas
+            let rows = 10, cols = 16;
+            let spacing = 5;
+            let startX = wX + (wWidth - (cols*spacing))/2;
+            let startY = wY + wHeight - (rows*spacing) - 5;
+            for(let i=0; i<rows; i++){
+                for(let j=0; j<cols; j++){
+                    let spawnX = wX + wWidth/2 + (Math.random()-0.5)*20;
+                    let spawnY = wY - 20 - Math.random()*50; // Dari atas gelas
+                    particles.push(new Partikel(tipe, spawnX, spawnY, startX + j*spacing, startY + i*spacing));
+                }
+            }
+        }
+        else if (tipe === 'gas') {
+            // Partikel sedikit, posisi random
+            let count = 30;
+            for(let i=0; i<count; i++){
+                let spawnX = wX + Math.random()*wWidth;
+                let spawnY = wY + Math.random()*wHeight;
+                particles.push(new Partikel(tipe, spawnX, spawnY, spawnX, spawnY));
+            }
+        }
+    }
+
+    function resetPartikel() {
+        particles = [];
+        wadah.padat.active = false;
+        wadah.cair.active = false;
+        wadah.gas.active = false;
+    }
+
+    function drawWadah() {
+        let areaWidth = canvas.width / 3;
+        let labels = ["Wadah Padat", "Wadah Cair", "Wadah Gas"];
+        
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.shadowBlur = 0;
+        
+        for(let i=0; i<3; i++) {
+            let wWidth = Math.min(100, areaWidth * 0.8);
+            let wHeight = 160;
+            let wX = (areaWidth * i) + (areaWidth/2) - (wWidth/2);
+            let wY = canvas.height - wHeight - 20;
+
+            // Gambar Gelas (Hanya Kiri, Kanan, Bawah)
+            ctx.beginPath();
+            ctx.moveTo(wX, wY);
+            ctx.lineTo(wX, wY + wHeight);
+            ctx.lineTo(wX + wWidth, wY + wHeight);
+            ctx.lineTo(wX + wWidth, wY);
+            ctx.stroke();
+            
+            // Label Gelas
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.font = "12px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(labels[i], wX + wWidth/2, wY + wHeight + 15);
+        }
+    }
+
+    function animatePartikel() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawWadah();
+        
+        let areaWidth = canvas.width / 3;
+        
+        particles.forEach(p => {
+            let wWidth = Math.min(100, areaWidth * 0.8);
+            let wHeight = 160;
+            let wX = (areaWidth * wadah[p.tipe].index) + (areaWidth/2) - (wWidth/2);
+            let wY = canvas.height - wHeight - 20;
+            
+            p.update(wadah[p.tipe].index, wX, wY, wWidth, wHeight);
+            p.draw();
+        });
+        
+        animationId = requestAnimationFrame(animatePartikel);
+    }
+    animatePartikel(); // Mulai loop
+
+
+    /* ==========================================
+       LOGIKA DOM: VISUALISASI KERAPATAN (EMAS VS KAYU)
+       ========================================== */
+    function gambarTitikKerapatan() {
+        const boxEmas = document.getElementById('box-emas');
+        const boxKayu = document.getElementById('box-kayu');
+        
+        // Emas = Rapat (banyak titik)
+        for(let i=0; i<150; i++) {
+            let dot = document.createElement('div');
+            dot.style.position = 'absolute';
+            dot.style.width = '3px';
+            dot.style.height = '3px';
+            dot.style.backgroundColor = '#FFD700';
+            dot.style.borderRadius = '50%';
+            dot.style.left = (Math.random() * 90) + '%';
+            dot.style.top = (Math.random() * 90) + '%';
+            boxEmas.appendChild(dot);
+        }
+
+        // Kayu = Renggang (sedikit titik)
+        for(let i=0; i<20; i++) {
+            let dot = document.createElement('div');
+            dot.style.position = 'absolute';
+            dot.style.width = '4px';
+            dot.style.height = '4px';
+            dot.style.backgroundColor = '#8B4513';
+            dot.style.borderRadius = '50%';
+            dot.style.left = (Math.random() * 85) + '%';
+            dot.style.top = (Math.random() * 85) + '%';
+            boxKayu.appendChild(dot);
+        }
+    }
+    gambarTitikKerapatan();
+
+
+    /* ==========================================
+       LOGIKA DOM: KALKULATOR & SIMULATOR UTAMA
+       ========================================== */
+    const sliderMassa = document.getElementById('slider-massa');
+    const sliderVolume = document.getElementById('slider-volume');
+    const valMassa = document.getElementById('val-massa');
+    const valVolume = document.getElementById('val-volume');
+    const displayDensitas = document.getElementById('display-densitas');
+    const simBlock = document.getElementById('sim-block');
+    const statusBox = document.getElementById('status-box');
+    const btnCemplung = document.getElementById('btn-cemplung');
+    
+    let isDropped = false;
+    let densitasSekarang = 1000;
+    
+    // Konfigurasi Jenis Fluida
+    let densitasFluida = 1000;
+    let namaFluidaSekarang = "Air Murni";
+    const dataFluida = {
+        minyak: { nama: "Minyak Goreng", rho: 900, bg1: "rgba(255, 215, 0, 0.2)", bg2: "rgba(255, 200, 0, 0.5)", border: "rgba(255, 215, 0, 0.6)", neon: "#FFD700" },
+        air: { nama: "Air Murni", rho: 1000, bg1: "rgba(0, 255, 255, 0.2)", bg2: "rgba(0, 200, 255, 0.5)", border: "rgba(0, 255, 255, 0.6)", neon: "#00FFFF" },
+        laut: { nama: "Air Laut", rho: 1030, bg1: "rgba(0, 105, 148, 0.3)", bg2: "rgba(0, 80, 120, 0.7)", border: "rgba(0, 105, 148, 0.8)", neon: "#00BFFF" },
+        madu: { nama: "Madu", rho: 1420, bg1: "rgba(218, 165, 32, 0.4)", bg2: "rgba(184, 134, 11, 0.8)", border: "rgba(218, 165, 32, 0.9)", neon: "#DAA520" }
+    };
+
+    function ubahFluida(jenis) {
+        const f = dataFluida[jenis];
+        densitasFluida = f.rho;
+        namaFluidaSekarang = f.nama;
+
+        // Update style semua tombol menjadi tidak aktif
+        document.querySelectorAll('.fluid-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.background = 'rgba(0,0,0,0.4)';
+            btn.style.borderColor = '#555';
+            btn.style.boxShadow = 'none';
+            btn.style.color = '#A0AABF';
+        });
+
+        // Update style tombol yang dipilih
+        const activeBtn = document.getElementById(`btn-fluida-${jenis}`);
+        activeBtn.classList.add('active');
+        activeBtn.style.background = f.neon;
+        activeBtn.style.borderColor = f.neon;
+        activeBtn.style.boxShadow = `0 0 10px ${f.neon}`;
+        activeBtn.style.color = '#000';
+
+        // Update visual air di tangki
+        const waterLevel = document.getElementById('sim-water');
+        const waterText = document.getElementById('sim-water-text');
+        
+        waterLevel.style.background = `linear-gradient(180deg, ${f.bg1} 0%, ${f.bg2} 100%)`;
+        waterLevel.style.borderTop = `2px solid ${f.border}`;
+        waterLevel.style.boxShadow = `0 -5px 20px ${f.bg1}`;
+        waterText.innerText = `${f.nama} (ρ = ${f.rho} kg/m³)`;
+
+        // Update clue visual blok terhadap fluida baru
+        updateSimBlockVisuals(parseFloat(sliderMassa.value), parseFloat(sliderVolume.value), densitasSekarang);
+
+        // Tarik kembali blok jika sedang berada di dalam air
+        if (isDropped) resetSimulator();
+    }
+
+    function hitungKerapatan() {
+        let m = parseFloat(sliderMassa.value);
+        let v = parseFloat(sliderVolume.value);
+        
+        densitasSekarang = Math.round(m / v);
+        
+        // Update Teks
+        valMassa.innerText = m + " kg";
+        valVolume.innerText = v.toFixed(1) + " m³";
+        displayDensitas.innerText = densitasSekarang;
+        
+        // Update Ukuran Balok (Skala berdasarkan volume: 0.1 -> 30px, 2.0 -> 120px)
+        let baseSize = 30 + (v * 45); 
+        simBlock.style.width = baseSize + 'px';
+        simBlock.style.height = baseSize + 'px';
+        
+        // Panggil fungsi visualisasi partikel dinamis
+        updateSimBlockVisuals(m, v, densitasSekarang);
+
+        // Reset posisi jika slider digerakkan setelah dijatuhkan
+        if (isDropped) {
+            resetSimulator();
+        }
+    }
+
+    function updateSimBlockVisuals(massa, volume, densitas) {
+        // 1. Update Box Visual 'Blok Uji' (Perbandingan Kerapatan dengan Volume Tetap)
+        const boxCustom = document.getElementById('box-custom');
+        if (boxCustom) {
+            // Bersihkan partikel lama, sisakan label
+            Array.from(boxCustom.children).forEach(child => {
+                if (!child.classList.contains('box-label')) boxCustom.removeChild(child);
+            });
+            
+            // Karena ini area "Volume Sama", titik mewakili Kerapatan (Massa Jenis)
+            let dotCount = Math.min(250, Math.max(1, Math.floor(densitas / 30)));
+            for(let i=0; i<dotCount; i++) {
+                let dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.width = '3px';
+                dot.style.height = '3px';
+                dot.style.backgroundColor = 'var(--neon-green)';
+                dot.style.borderRadius = '50%';
+                dot.style.left = (Math.random() * 85) + 5 + '%';
+                dot.style.top = (Math.random() * 85) + 5 + '%';
+                boxCustom.appendChild(dot);
+            }
+        }
+
+        // 2. Update Partikel di Dalam Balok Air (Ukuran wadah membesar, titik mewakili Massa)
+        Array.from(simBlock.children).forEach(child => {
+            if (child.id !== 'sim-label') simBlock.removeChild(child);
+        });
+
+        // Jumlah titik mewakili Massa (Jumlah materi). 
+        // Jika Volume digeser naik (balok membesar) tapi Massa tetap, titik akan terlihat menyebar (renggang).
+        let simDotCount = Math.min(150, Math.max(1, Math.floor(massa / 15)));
+        for(let i=0; i<simDotCount; i++) {
+            let dot = document.createElement('div');
+            dot.style.position = 'absolute';
+            dot.style.width = '2px';
+            dot.style.height = '2px';
+            dot.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            dot.style.borderRadius = '50%';
+            dot.style.left = (Math.random() * 90) + 5 + '%';
+            dot.style.top = (Math.random() * 90) + 5 + '%';
+            simBlock.appendChild(dot);
+        }
+        
+        // 3. Ubah warna dasar blok simulator berdasarkan kondisinya untuk clue visual (terhadap densitasFluida aktif)
+        if(densitas > densitasFluida) {
+            simBlock.style.background = `linear-gradient(135deg, #FF4C4C, #8B0000)`; // Merah Padat (Lebih berat dari cairan)
+            simBlock.style.borderColor = "#FFF";
+        } else if (densitas < densitasFluida) {
+            simBlock.style.background = `linear-gradient(135deg, #4DD0E1, #006064)`; // Biru Renggang (Lebih ringan dari cairan)
+            simBlock.style.borderColor = "#FFF";
+        } else {
+            simBlock.style.background = `linear-gradient(135deg, #81C784, #1B5E20)`; // Hijau (Sama dengan cairan)
+            simBlock.style.borderColor = "#FFF";
+        }
+    }
+
+    function resetSimulator() {
+        isDropped = false;
+        simBlock.style.top = '20px'; // Kembali ke atas
+        statusBox.innerHTML = "Status: Menunggu instruksi...";
+        statusBox.style.borderColor = "#555";
+        statusBox.style.color = varTextMain();
+        statusBox.style.boxShadow = "none";
+        btnCemplung.innerText = "Masukkan Blok ke Cairan!";
+        btnCemplung.style.borderColor = "var(--neon-green)";
+        btnCemplung.style.color = "var(--neon-green)";
+    }
+    
+    function varTextMain() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim();
+    }
+
+    function cemplungkan() {
+        if (isDropped) {
+            resetSimulator();
+            return;
+        }
+
+        isDropped = true;
+        btnCemplung.innerText = "Tarik Kembali Blok (Reset)";
+        btnCemplung.style.borderColor = "#FFD700";
+        btnCemplung.style.color = "#FFD700";
+
+        // Tinggi total tangki: 350px.
+        // Permukaan air ada di (350 - 175) = 175px dari atas tangki.
+        // Dasar tangki ada di 350px.
+        
+        const tankHeight = 350;
+        const waterTop = 175; 
+        const blockHeight = parseFloat(simBlock.style.height);
+        
+        let targetY = 20; // Default awal
+
+        if (densitasSekarang > densitasFluida) {
+            // TENGGELAM: Jatuh ke dasar
+            targetY = tankHeight - blockHeight - 5; // -5 border margin
+            setTimeout(() => {
+                statusBox.innerHTML = `TENGGELAM!<br><span style='font-size:0.9rem'>Balok lebih rapat dari <strong>${namaFluidaSekarang}</strong>.</span>`;
+                statusBox.style.color = "var(--neon-red)";
+                statusBox.style.borderColor = "var(--neon-red)";
+                statusBox.style.boxShadow = "0 0 15px rgba(255, 51, 102, 0.4)";
+            }, 1500);
+        } 
+        else if (densitasSekarang < densitasFluida) {
+            // MENGAPUNG: Sebagian tenggelam (sesuai rasio)
+            let rasioTenggelam = densitasSekarang / densitasFluida;
+            let bagianTenggelam = blockHeight * rasioTenggelam;
+            targetY = waterTop - (blockHeight - bagianTenggelam);
+            
+            setTimeout(() => {
+                statusBox.innerHTML = `MENGAPUNG!<br><span style='font-size:0.9rem'>Balok lebih renggang dari <strong>${namaFluidaSekarang}</strong>.</span>`;
+                statusBox.style.color = "var(--neon-cyan)";
+                statusBox.style.borderColor = "var(--neon-cyan)";
+                statusBox.style.boxShadow = "0 0 15px rgba(0, 255, 255, 0.4)";
+            }, 1500);
+        }
+        else {
+            // MELAYANG SEMPURNA (ρ = ρ fluida)
+            targetY = waterTop + ((175 - blockHeight) / 2); // Di tengah cairan
+            setTimeout(() => {
+                statusBox.innerHTML = `MELAYANG (SEMPURNA)!<br><span style='font-size:0.9rem'>Kerapatan balok persis sama dengan <strong>${namaFluidaSekarang}</strong>.</span>`;
+                statusBox.style.color = "var(--neon-green)";
+                statusBox.style.borderColor = "var(--neon-green)";
+                statusBox.style.boxShadow = "0 0 15px rgba(57, 255, 20, 0.4)";
+            }, 1500);
+        }
+
+        // Jalankan Animasi CSS
+        simBlock.style.top = targetY + 'px';
+        statusBox.innerHTML = "Mengamati pergerakan...";
+        statusBox.style.color = "#FFF";
+    }
+
+    // Event Listeners Slider
+    sliderMassa.addEventListener('input', hitungKerapatan);
+    sliderVolume.addEventListener('input', hitungKerapatan);
+
+    // Inisialisasi awal
+    hitungKerapatan();
+
+</script>
+</body>
+</html>
