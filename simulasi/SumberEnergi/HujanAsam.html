@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Atmosfer: Krisis Hujan Asam</title>
+    
+    <!-- MathJax untuk Rendering Persamaan Kimia & Matematika -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: CHEMICAL FALLOUT / ENVIRONMENTAL DASHBOARD
+           ======================================================== */
+        :root {
+            --bg-base: #0d1117;
+            --bg-panel: #161b22;
+            --bg-card: #21262d;
+            --neon-yellow: #eab308;   /* Polutan SOx/NOx */
+            --acid-purple: #c026d3;   /* Hujan Asam Ekstrem */
+            --acid-red: #ef4444;      /* Bahaya */
+            --nature-green: #10b981;  /* Ekosistem Sehat */
+            --water-blue: #0ea5e9;    /* Air Bersih */
+            --text-main: #c9d1d9;
+            --text-white: #ffffff;
+            --border-glow: rgba(234, 179, 8, 0.2);
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(234, 179, 8, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER & GLOBAL DASHBOARD */
+        header {
+            text-align: center; padding: 25px 20px; background: var(--bg-panel);
+            border: 1px solid var(--border-glow); border-radius: 12px; border-top: 4px solid var(--neon-yellow);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        header h1 { color: var(--neon-yellow); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(234, 179, 8, 0.4); margin-bottom: 5px; }
+        header p { color: #8b949e; font-size: 1.05rem; }
+
+        .ph-dashboard {
+            display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 20px;
+            background: rgba(0,0,0,0.4); padding: 15px 30px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
+            display: inline-flex;
+        }
+        .ph-label { font-size: 1.1rem; color: var(--text-white); text-transform: uppercase; letter-spacing: 1px; }
+        .ph-value {
+            font-family: var(--font-mono); font-size: 2.5rem; font-weight: bold;
+            color: var(--nature-green); text-shadow: 0 0 15px var(--nature-green);
+            transition: color 0.5s, text-shadow 0.5s;
+        }
+        .ph-status { font-size: 1rem; font-weight: bold; padding: 5px 15px; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: var(--nature-green); border: 1px solid var(--nature-green); }
+
+        /* PANELS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+            padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+        .panel-title { font-size: 1.3rem; color: var(--text-white); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        
+        .info-box { background: rgba(234, 179, 8, 0.05); border-left: 3px solid var(--neon-yellow); padding: 12px; font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--text-white); }
+
+        /* CANVAS CONTAINERS */
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #30363d; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* BUTTONS & CONTROLS */
+        .btn {
+            width: 100%; padding: 12px; background: #1f2937; color: var(--text-white); 
+            border: 1px solid #374151; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: #374151; }
+        .btn-emisi { border-color: var(--neon-yellow); color: var(--neon-yellow); background: rgba(234, 179, 8, 0.1); }
+        .btn-emisi:hover { background: rgba(234, 179, 8, 0.2); box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+
+        .slider-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold; }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; background: #21262d; border-radius: 4px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--neon-yellow); cursor: pointer; box-shadow: 0 0 10px var(--neon-yellow); }
+
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .checkbox-label:hover { background: rgba(255,255,255,0.05); }
+        input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--nature-green); cursor: pointer; }
+
+        /* CHEMISTRY PANEL */
+        .chem-panel { background: #000; border: 1px dashed var(--neon-yellow); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; overflow-x: auto; }
+        
+        /* MINI GAME */
+        .game-panel { border-color: var(--water-blue); background: linear-gradient(180deg, var(--bg-panel), #001524); position: relative; }
+        .game-stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .game-target { color: var(--water-blue); font-size: 0.9rem; margin-bottom: 10px; }
+
+        .overlay-text { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; color: #fff; pointer-events: none; }
+
+        /* LAYOUT TWEAKS */
+        .main-lab-layout { display: flex; gap: 20px; flex-wrap: wrap; }
+        .lab-visual { flex: 2; min-width: 350px; }
+        .lab-controls { flex: 1; min-width: 300px; }
+
+        /* CONCEPT BOX */
+        .concept-box { margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .concept-box h3 { font-size: 1rem; color: var(--water-blue); margin-bottom: 10px; }
+        .concept-box ul { font-size: 0.85rem; color: var(--text-muted); padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+        @media (max-width: 768px) {
+            .grid-2, .main-lab-layout { grid-template-columns: 1fr; flex-direction: column; }
+            .ph-dashboard { flex-direction: column; gap: 10px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HEADER & GLOBAL STATUS -->
+        <header>
+            <h1>Laboratorium Atmosfer</h1>
+            <p>Simulasi Interaktif: Krisis Hujan Asam & Dampak Ekologis</p>
+            <div class="ph-dashboard">
+                <div class="ph-label">pH Hujan Global:</div>
+                <div class="ph-value" id="global-ph">5.60</div>
+                <div class="ph-status" id="global-status">Alami / Normal</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                Konsentrasi ion Hidrogen $[H^+]$: <span id="global-h-ion" style="font-family: monospace;">2.51 × 10⁻⁶ M</span>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- MODUL 1: APERSEPSI -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--neon-yellow);">🏭 Siklus Emisi ke Awan</h2>
+                <div class="info-box">
+                    <strong>Prekursor Hujan Asam:</strong> Asap dari cerobong pabrik (mengandung Sulfur Dioksida / $SO_2$) dan knalpot kendaraan (mengandung Nitrogen Oksida / $NO_x$) naik ke atmosfer.
+                </div>
+                
+                <div class="canvas-container" style="height: 220px;">
+                    <canvas id="emissionCanvas"></canvas>
+                    <div class="overlay-text" id="emission-status">Status: Menunggu Emisi...</div>
+                </div>
+                
+                <button class="btn btn-emisi" id="btn-emit" onclick="triggerEmission()">LEPASKAN EMISI!</button>
+            </div>
+
+            <!-- MODUL 3: PANEL KIMIA -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--text-white);">🧪 Reaksi Pembentukan Asam</h2>
+                <div class="info-box">
+                    Hujan alami bersifat sedikit asam (pH $\approx$ 5.6) karena $CO_2$. Namun, ketika polutan $SO_x$ dan $NO_x$ bereaksi dengan uap air ($H_2O$) di awan, mereka membentuk <b>Asam Kuat</b> yang menurunkan pH secara drastis (< 5.0).
+                </div>
+                
+                <div class="chem-panel">
+                    <div style="color: var(--neon-yellow); margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">Reaksi Pembentukan Asam Sulfat:</div>
+                    $$ SO_2 + H_2O \rightarrow H_2SO_3 $$
+                    $$ 2SO_2 + O_2 + 2H_2O \rightarrow 2H_2SO_4 $$
+                </div>
+                
+                <div class="chem-panel">
+                    <div style="color: #f97316; margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">Reaksi Pembentukan Asam Nitrat:</div>
+                    $$ 3NO_2 + H_2O \rightarrow 2HNO_3 + NO $$
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 2: LABORATORIUM UTAMA -->
+        <div class="panel" style="border-color: var(--neon-yellow);">
+            <h2 class="panel-title" style="color: var(--neon-yellow);">🌍 Ekosistem & Dampak Presipitasi</h2>
+            
+            <div class="main-lab-layout">
+                <!-- Visual Ekosistem -->
+                <div class="lab-visual">
+                    <div class="canvas-container" style="height: 400px; margin-bottom:0;">
+                        <canvas id="ecoCanvas"></canvas>
+                        <div class="overlay-text">Simulasi Dampak Ekologis & Korosi (Real-time)</div>
+                    </div>
+                </div>
+
+                <!-- Kontrol & Mitigasi -->
+                <div class="lab-controls">
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>Konsentrasi Polutan Dasar ($SO_x$ & $NO_x$)</span>
+                            <span id="val-pollutant" style="color: var(--neon-yellow); font-family: monospace;">0 %</span>
+                        </div>
+                        <input type="range" id="slider-pollutant" min="0" max="100" value="0" oninput="updateLab()">
+                        
+                        <div id="eco-feedback" style="margin-top:15px; font-size:0.85rem; padding:10px; background:rgba(16,185,129,0.1); border-left:3px solid var(--nature-green); border-radius:4px; color:var(--text-main);">
+                            Kondisi Alam Sehat.
+                        </div>
+                    </div>
+
+                    <!-- Keterangan Konsep Sains Terapan -->
+                    <div class="concept-box">
+                        <h3>🔬 Keterangan Konsep Sains:</h3>
+                        <ul>
+                            <li><b style="color: var(--neon-yellow);">Klorosis Daun (Tumbuhan):</b> Hujan asam membasuh (<i>leaching</i>) nutrisi penting seperti Kalsium & Magnesium dari tanah, merusak klorofil sehingga daun menguning dan mati.</li>
+                            <li><b style="color: var(--acid-red);">Toksisitas Akuatik (Ikan):</b> Penurunan pH memicu pelepasan ion Aluminium ($Al^{3+}$) dari sedimen ke danau. Ion beracun ini menyumbat insang ikan hingga mereka mati lemas.</li>
+                            <li><b style="color: var(--text-main);">Korosi Kimia (Marmer/Batu):</b> Kalsium Karbonat ($CaCO_3$) pada monumen bereaksi dengan asam membentuk Gipsum ($CaSO_4$) yang sangat rapuh dan luruh terbawa air hujan.</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="font-size: 1rem; color: var(--nature-green); margin-bottom: 10px;">🛡️ Teknologi Pengendalian (Mitigasi)</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Teknologi ini menekan emisi berbahaya sebelum lepas ke udara meskipun aktivitas industri sangat tinggi.</p>
+                        
+                        <div class="checkbox-group">
+                            <label class="checkbox-label" style="border-color: rgba(16, 185, 129, 0.3);">
+                                <input type="checkbox" id="chk-scrubber" onchange="updateLab()">
+                                <div>
+                                    <div style="font-weight: bold; color: var(--text-white);">Pasang Scrubber (FGD)</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Menyemprotkan zat kapur cair di cerobong pabrik untuk mengikat Sulfur (Efisiensi 80%).</div>
+                                </div>
+                            </label>
+                            <label class="checkbox-label" style="border-color: rgba(14, 165, 233, 0.3);">
+                                <input type="checkbox" id="chk-catalyst" onchange="updateLab()">
+                                <div>
+                                    <div style="font-weight: bold; color: var(--text-white);">Konverter Katalitik (Kendaraan)</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Mengubah gas $NO_x$ beracun dari knalpot menjadi gas $N_2$ yang aman (Efisiensi 90%).</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 4: MINI GAME (LAKE NEUTRALIZER) -->
+        <div class="panel game-panel">
+            <h2 class="panel-title" style="color: var(--water-blue);">🎮 Mini-Game: Lake Neutralizer (Pemulihan)</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+                Hujan asam telah membuat danau ini mencapai tingkat keasaman mematikan (pH 4.0). 
+                <b>Tugas Anda:</b> Lakukan proses <i>"Liming"</i> dengan <b>meng-klik area danau</b> untuk menaburkan serbuk kapur ($CaCO_3$). Kembalikan pH ke zona aman ekosistem!
+            </p>
+            
+            <div class="game-target">Target Netral: pH 6.5 - 7.0</div>
+            
+            <div class="game-stats">
+                <div>Kondisi Danau: <span id="game-status" style="color: var(--acid-red);">Kritis (Ikan Mati)</span></div>
+                <div style="font-family: monospace; font-size: 1.2rem;">pH Danau: <span id="game-ph" style="color: var(--acid-red);">4.00</span></div>
+            </div>
+
+            <div class="canvas-container" style="height: 180px; margin-bottom: 10px; cursor: crosshair;">
+                <canvas id="gameCanvas"></canvas>
+                <div class="overlay-text" style="background: rgba(0,0,0,0.3);">Klik di sini untuk menabur $CaCO_3$</div>
+            </div>
+
+            <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                Reaksi Netralisasi: $H_2SO_4 + CaCO_3 \rightarrow CaSO_4 + H_2O + CO_2$
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // UTILITY FUNCTIONS (Lerp & Colors)
+        // ==========================================
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        
+        function lerpColor(r1, g1, b1, r2, g2, b2, t) {
+            let r = Math.round(lerp(r1, r2, t));
+            let g = Math.round(lerp(g1, g2, t));
+            let b = Math.round(lerp(b1, b2, t));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // T: 0 = Healthy (pH 5.6), 1 = Dead (pH 3.0)
+        // Tahapan Biologi: Hijau -> Klorosis (Kuning) -> Nekrosis (Cokelat)
+        function getTreeColor(t) {
+            if (t < 0.4) {
+                // Sehat ke Klorosis ringan
+                let localT = t / 0.4;
+                return lerpColor(16, 185, 129, 234, 179, 8, localT); // Green to Yellow
+            } else {
+                // Klorosis ke Nekrosis/Mati
+                let localT = (t - 0.4) / 0.6;
+                return lerpColor(234, 179, 8, 120, 53, 15, localT); // Yellow to Dark Brown
+            }
+        }
+
+        function getWaterColor(t) {
+            // Biru Jernih -> Hijau Keruh -> Cokelat Beracun
+            if (t < 0.5) {
+                return lerpColor(14, 165, 233, 85, 107, 47, t * 2); // Blue to Olive Green
+            } else {
+                return lerpColor(85, 107, 47, 60, 50, 30, (t-0.5)*2); // Olive Green to Toxic Mud
+            }
+        }
+
+        function getRainColor(t) {
+            // Hujan semakin asam semakin kekuningan
+            return lerpColor(255, 255, 255, 234, 179, 8, t);
+        }
+
+        function getStatueDamage(t) {
+            return t * 0.8; 
+        }
+
+        // ==========================================
+        // MODUL 1: APERSEPSI EMISI (CANVAS 1)
+        // ==========================================
+        const cvs1 = document.getElementById('emissionCanvas');
+        const ctx1 = cvs1.getContext('2d');
+        let emParticles = [];
+        let reactionTexts = [];
+        let appRainDrops = [];
+        let isEmitting = false;
+        let cloudPollution = 0; // 0 to 1
+        let carX = -50;
+
+        function resizeCanvas1() {
+            cvs1.width = cvs1.parentElement.clientWidth;
+            cvs1.height = cvs1.parentElement.clientHeight;
+        }
+
+        class EmParticle {
+            constructor(x, y, isNox) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = -1.5 - Math.random() * 2;
+                this.size = Math.random() * 5 + 4;
+                this.life = 1.0;
+                this.isNox = isNox; // true = NOx (Orange), false = SO2 (Yellowish Gray)
+                this.growth = Math.random() * 0.15 + 0.05;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.size += this.growth;
+                this.life -= 0.006;
+                
+                // Add wind effect
+                this.vx += 0.015;
+                
+                if(this.y < 60 && this.life > 0) {
+                    cloudPollution += 0.002; 
+                    if(cloudPollution > 1) cloudPollution = 1;
+                    
+                    if(Math.random() < 0.03) {
+                        reactionTexts.push(new ReactionText(this.x, this.y, this.isNox ? "NOx + H₂O → HNO₃" : "SO₂ + H₂O → H₂SO₄"));
+                    }
+                    this.life = 0; 
+                }
+            }
+            draw(ctx) {
+                if(this.life <= 0) return;
+                ctx.globalAlpha = this.life * 0.6;
+                ctx.fillStyle = this.isNox ? '#ea580c' : '#ca8a04';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class ReactionText {
+            constructor(x, y, text) {
+                this.x = x; this.y = y; this.text = text; this.life = 1.0;
+            }
+            update() { this.y -= 0.6; this.life -= 0.015; }
+            draw(ctx) {
+                if(this.life<=0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = '#fef08a';
+                ctx.font = 'bold 13px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.textAlign = 'left';
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class AppRainDrop {
+            constructor(w) {
+                this.x = Math.random() * w;
+                this.y = 40 + Math.random() * 20; 
+                this.vy = 4 + Math.random() * 4;
+                this.length = 10 + Math.random() * 8;
+            }
+            update(h) {
+                this.y += this.vy;
+                if(this.y > h) {
+                    this.y = 40 + Math.random() * 20;
+                    this.x = Math.random() * cvs1.width;
+                }
+            }
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + 2, this.y + this.length);
+                ctx.strokeStyle = 'rgba(234, 179, 8, 0.6)'; 
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        function triggerEmission() {
+            if(isEmitting) return; 
+            isEmitting = true;
+            document.getElementById('emission-status').innerHTML = "Aktivitas Industri Tinggi! Emisi SO₂ & NOₓ terlepas...";
+            document.getElementById('emission-status').style.color = "var(--neon-yellow)";
+            
+            setTimeout(() => {
+                isEmitting = false;
+                document.getElementById('emission-status').innerHTML = "Emisi berhenti. Proses presipitasi (hujan asam) berlangsung turun ke bumi.";
+                document.getElementById('emission-status').style.color = "var(--acid-red)";
+                
+                setTimeout(() => {
+                    document.getElementById('emission-status').innerHTML = "Awan perlahan tercuci dan netral kembali...";
+                    document.getElementById('emission-status').style.color = "var(--nature-green)";
+                }, 5000);
+            }, 8000);
+        }
+
+        function renderApperception() {
+            let W = cvs1.width; let H = cvs1.height;
+            ctx1.clearRect(0, 0, W, H);
+
+            let skyR = lerp(30, 70, cloudPollution);
+            let skyG = lerp(41, 65, cloudPollution);
+            let skyB = lerp(59, 40, cloudPollution);
+            ctx1.fillStyle = `rgb(${skyR}, ${skyG}, ${skyB})`;
+            ctx1.fillRect(0,0,W,H);
+
+            ctx1.fillStyle = '#111827';
+            ctx1.beginPath(); ctx1.moveTo(0, H); ctx1.lineTo(0, H-60);
+            ctx1.lineTo(W*0.15, H-90); ctx1.lineTo(W*0.35, H-40);
+            ctx1.lineTo(W*0.6, H-110); ctx1.lineTo(W*0.8, H-60);
+            ctx1.lineTo(W, H-80); ctx1.lineTo(W, H); ctx1.fill();
+
+            ctx1.fillStyle = '#1f2937'; ctx1.fillRect(0, H-30, W, 30);
+            ctx1.fillStyle = '#374151'; ctx1.fillRect(0, H-15, W, 10);
+            
+            ctx1.fillStyle = '#9ca3af';
+            for(let i = 0; i < W; i += 40) ctx1.fillRect(i - (Date.now()*0.05)%40, H-11, 20, 2);
+
+            ctx1.fillStyle = '#374151'; ctx1.fillRect(30, H-100, 100, 70); 
+            ctx1.fillStyle = '#4b5563'; 
+            ctx1.fillRect(50, H-150, 20, 50); 
+            ctx1.fillRect(90, H-130, 15, 30); 
+            ctx1.fillStyle = '#222'; 
+            ctx1.fillRect(48, H-150, 24, 6); 
+            ctx1.fillRect(88, H-130, 19, 5); 
+
+            ctx1.fillStyle = '#9ca3af'; ctx1.fillRect(40, H-60, 20, 30); 
+            ctx1.fillStyle = '#facc15'; ctx1.fillRect(80, H-80, 15, 15); 
+            ctx1.fillRect(100, H-80, 15, 15);
+
+            carX += 2;
+            if(carX > W + 50) carX = -50;
+            
+            ctx1.fillStyle = '#9ca3af'; ctx1.fillRect(carX - 25, H-25, 50, 12); 
+            ctx1.fillStyle = '#d1d5db'; ctx1.beginPath(); ctx1.moveTo(carX-15, H-25); ctx1.lineTo(carX-5, H-35); ctx1.lineTo(carX+15, H-35); ctx1.lineTo(carX+25, H-25); ctx1.fill(); 
+            ctx1.fillStyle = '#111'; 
+            ctx1.beginPath(); ctx1.arc(carX-12, H-13, 6, 0, Math.PI*2); ctx1.fill(); 
+            ctx1.beginPath(); ctx1.arc(carX+12, H-13, 6, 0, Math.PI*2); ctx1.fill(); 
+            ctx1.fillStyle = '#ef4444'; ctx1.fillRect(carX - 25, H-22, 4, 4); 
+
+            if(isEmitting) {
+                emParticles.push(new EmParticle(60, H-150, false)); 
+                if(Math.random() < 0.6) emParticles.push(new EmParticle(97, H-130, false)); 
+                if(Math.random() < 0.4) emParticles.push(new EmParticle(carX - 28, H-18, true)); 
+            }
+
+            for(let i = emParticles.length - 1; i >= 0; i--) {
+                emParticles[i].update();
+                emParticles[i].draw(ctx1);
+                if(emParticles[i].life <= 0) emParticles.splice(i, 1);
+            }
+
+            let cR = lerp(240, 120, cloudPollution);
+            let cG = lerp(245, 110, cloudPollution);
+            let cB = lerp(255, 70, cloudPollution);
+            ctx1.fillStyle = `rgba(${cR}, ${cG}, ${cB}, 0.95)`;
+            
+            ctx1.beginPath();
+            ctx1.arc(W*0.2, 20, 50, 0, Math.PI*2);
+            ctx1.arc(W*0.4, 30, 60, 0, Math.PI*2);
+            ctx1.arc(W*0.6, 25, 55, 0, Math.PI*2);
+            ctx1.arc(W*0.8, 35, 50, 0, Math.PI*2);
+            ctx1.fill();
+
+            for(let i = reactionTexts.length - 1; i >= 0; i--) {
+                reactionTexts[i].update();
+                reactionTexts[i].draw(ctx1);
+                if(reactionTexts[i].life <= 0) reactionTexts.splice(i, 1);
+            }
+
+            if (cloudPollution > 0.4) {
+                let targetDrops = Math.floor((cloudPollution - 0.4) * 200);
+                while(appRainDrops.length < targetDrops) appRainDrops.push(new AppRainDrop(W));
+                
+                for(let i = appRainDrops.length - 1; i >= 0; i--) {
+                    appRainDrops[i].update(H - 30);
+                    appRainDrops[i].draw(ctx1);
+                }
+                
+                ctx1.fillStyle = `rgba(234, 179, 8, ${Math.min(1, (cloudPollution-0.4)*2)})`;
+                ctx1.font = 'bold 18px Arial';
+                ctx1.textAlign = 'center';
+                ctx1.fillText("Hujan Asam Turun!", W/2, 60);
+                ctx1.textAlign = 'left';
+            } else {
+                appRainDrops = [];
+            }
+
+            if (!isEmitting && cloudPollution > 0) {
+                cloudPollution -= 0.001;
+                if(cloudPollution < 0) cloudPollution = 0;
+            }
+
+            requestAnimationFrame(renderApperception);
+        }
+
+        // ==========================================
+        // MODUL 2: MAIN ECOSYSTEM LAB (CANVAS 2)
+        // ==========================================
+        const cvs2 = document.getElementById('ecoCanvas');
+        const ctx2 = cvs2.getContext('2d');
+        
+        let rainDrops = [];
+        let fishArr = [];
+        let ecosystemT = 0; // 0 = Healthy (pH 5.6), 1 = Dead (pH 3.0)
+
+        function resizeCanvas2() {
+            cvs2.width = cvs2.parentElement.clientWidth;
+            cvs2.height = cvs2.parentElement.clientHeight;
+            initFish();
+        }
+
+        class RainDrop {
+            constructor(w) {
+                this.x = Math.random() * w;
+                this.y = Math.random() * 80; 
+                this.vy = 4 + Math.random() * 4;
+                this.length = 10 + Math.random() * 10;
+            }
+            update(h) {
+                this.y += this.vy;
+                if(this.y > h) {
+                    this.y = 60; 
+                    this.x = Math.random() * cvs2.width;
+                }
+            }
+            draw(ctx, t) {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.strokeStyle = getRainColor(t);
+                ctx.globalAlpha = 0.5 + t*0.3; 
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // PERBAIKAN: Membatasi Ikan agar hanya berenang di area AIR saja
+        class Fish {
+            constructor(w, h) {
+                // Wilayah air berada dari X: (W/2 + 60) sampai (W - 20)
+                // dan kedalaman Y: (H/2 + 20) sampai (H - 30)
+                this.minX = w/2 + 60;
+                this.maxX = w - 20;
+                this.minY = h/2 + 20;
+                this.maxY = h - 30;
+
+                this.x = this.minX + Math.random() * (this.maxX - this.minX);
+                this.y = this.minY + Math.random() * (this.maxY - this.minY);
+                this.vx = (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random());
+                this.originalY = this.y;
+                this.state = 'alive'; // alive, struggling, dead
+            }
+            update(w, t) {
+                if (t > 0.7) { // pH Sangat Ekstrem -> Mati mengapung
+                    this.state = 'dead';
+                    this.vy = -0.5; 
+                    this.y += this.vy;
+                    if (this.y < this.minY - 10) this.y = this.minY - 10; 
+                    this.vx = 0;
+                } else if (t > 0.42) { // pH Kritis -> Ikan lemas/struggling
+                    this.state = 'struggling';
+                    this.x += this.vx * 1.5;
+                    this.y += (Math.random() - 0.5) * 3;
+                    
+                    // Boundaries check
+                    if (this.y < this.minY) this.y = this.minY;
+                    if (this.y > this.maxY) this.y = this.maxY;
+                    if (this.x < this.minX) this.vx = Math.abs(this.vx);
+                    if (this.x > this.maxX) this.vx = -Math.abs(this.vx);
+                } else { // Kondisi Sehat -> Berenang santai
+                    this.state = 'alive';
+                    this.x += this.vx;
+                    this.y = this.originalY + Math.sin(Date.now()*0.002 + this.x)*5; 
+                    
+                    if (this.x < this.minX) this.vx = Math.abs(this.vx);
+                    if (this.x > this.maxX) this.vx = -Math.abs(this.vx);
+                }
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                if (this.state === 'dead') {
+                    ctx.rotate(Math.PI); // Mengapung terbalik
+                    ctx.fillStyle = '#888'; 
+                } else {
+                    if(this.state === 'struggling') ctx.rotate(Math.sin(Date.now()*0.01) * 0.3);
+                    ctx.fillStyle = '#f97316'; 
+                }
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Tail
+                ctx.beginPath();
+                if(this.vx > 0 || this.state === 'dead') {
+                    ctx.moveTo(-6, 0); ctx.lineTo(-12, -5); ctx.lineTo(-12, 5);
+                } else {
+                    ctx.moveTo(6, 0); ctx.lineTo(12, -5); ctx.lineTo(12, 5);
+                }
+                ctx.fill();
+                
+                // Eye (X jika mati)
+                if (this.state === 'dead') {
+                    ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(3, -2); ctx.lineTo(5, 0); ctx.moveTo(5, -2); ctx.lineTo(3, 0); ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        function initFish() {
+            fishArr = [];
+            for(let i=0; i<8; i++) fishArr.push(new Fish(cvs2.width, cvs2.height));
+            
+            rainDrops = [];
+            for(let i=0; i<150; i++) rainDrops.push(new RainDrop(cvs2.width));
+        }
+
+        function drawStatue(ctx, x, y, scale, t) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            
+            // Reaksi Kalsium Karbonat: Erosi pengubahan menjadi Gypsum (larut)
+            let erode = t * 15; 
+
+            // Base
+            ctx.fillStyle = '#64748b'; 
+            ctx.fillRect(-20 + erode/4, 0, 40 - erode/2, 10);
+            ctx.fillRect(-15 + erode/4, -30, 30 - erode/2, 30);
+            
+            // Body (Bust)
+            ctx.beginPath();
+            ctx.moveTo(-25 + erode/2, -30);
+            ctx.quadraticCurveTo(-10, -80 + erode, 0, -80 + erode);
+            ctx.quadraticCurveTo(10, -80 + erode, 25 - erode/2, -30);
+            ctx.fill();
+            
+            // Head
+            let headR = Math.max(2, 15 - erode * 0.8);
+            ctx.beginPath();
+            ctx.arc(0, -95 + erode, headR, 0, Math.PI*2);
+            ctx.fill();
+
+            // Corak karat/korosi
+            if (t > 0.2) {
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.fillStyle = `rgba(30, 30, 20, ${t * 0.6})`;
+                ctx.beginPath(); ctx.arc(-5, -60, 20, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(10, -40, 15, 0, Math.PI*2); ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            ctx.restore();
+        }
+
+        function drawTree(ctx, x, y, scale, t) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            
+            // Batang
+            ctx.fillStyle = '#4a3018';
+            ctx.fillRect(-6, -50, 12, 50);
+            
+            // Ranting
+            ctx.strokeStyle = '#4a3018';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-15, -45); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(15, -40); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(-10, -60); ctx.stroke();
+            
+            // Kanopi Daun (Rontok)
+            let canopyScale = 1.0;
+            if (t > 0.5) canopyScale = Math.max(0, 1 - ((t - 0.5) * 2)); 
+            
+            if (canopyScale > 0.05) {
+                let color = getTreeColor(t);
+                ctx.fillStyle = color;
+                
+                ctx.globalAlpha = Math.min(1, canopyScale * 1.2); 
+                
+                ctx.beginPath(); ctx.arc(-15 * canopyScale, -45 * canopyScale, 20 * canopyScale, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(15 * canopyScale, -45 * canopyScale, 20 * canopyScale, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, -65 * canopyScale, 25 * canopyScale, 0, Math.PI*2); ctx.fill();
+                
+                ctx.globalAlpha = 1.0;
+            }
+            
+            ctx.restore();
+        }
+
+        function updateLab() {
+            let basePollutant = parseFloat(document.getElementById('slider-pollutant').value);
+            document.getElementById('val-pollutant').innerText = basePollutant + "%";
+
+            let hasScrubber = document.getElementById('chk-scrubber').checked;
+            let hasCatalyst = document.getElementById('chk-catalyst').checked;
+
+            let mult = 1.0;
+            if (hasScrubber) mult -= 0.4;
+            if (hasCatalyst) mult -= 0.45;
+            
+            let effectivePollution = basePollutant * mult;
+            ecosystemT = effectivePollution / 100;
+            
+            let currentPH = 5.6 - (ecosystemT * 2.6);
+            
+            // UPDATE GLOBAL DASHBOARD
+            let phEl = document.getElementById('global-ph');
+            let statEl = document.getElementById('global-status');
+            
+            phEl.innerText = currentPH.toFixed(2);
+            let hConc = Math.pow(10, -currentPH);
+            document.getElementById('global-h-ion').innerText = hConc.toExponential(2) + " M";
+
+            // BIOLOGICAL & CHEMICAL FEEDBACK
+            let mainColor = 'var(--nature-green)';
+            let statusText = "Alami / Normal";
+            let statusBg = "rgba(16, 185, 129, 0.2)";
+            
+            let feedbackEl = document.getElementById('eco-feedback');
+            let fbColor = 'var(--nature-green)';
+            let fbText = "Kondisi Alam Sehat. Konsentrasi asam sulfat/nitrat berada di bawah ambang batas toleransi lingkungan.";
+
+            if (ecosystemT > 0.61) { // pH < 4.0
+                mainColor = 'var(--acid-purple)';
+                statusText = "Kematian Ekosistem Ekstrem";
+                statusBg = "rgba(192, 38, 211, 0.2)";
+                fbColor = 'var(--acid-purple)';
+                fbText = "<b>BAHAYA:</b> Pelepasan Ion Aluminium (Al³⁺) dari sedimen meracuni insang ikan hingga mati lemas. Patung marmer larut parah, pohon kehilangan tajuk.";
+            } else if (ecosystemT > 0.42) { // pH < 4.5
+                mainColor = 'var(--acid-red)';
+                statusText = "Hewan Air Keracunan";
+                statusBg = "rgba(239, 68, 68, 0.2)";
+                fbColor = 'var(--acid-red)';
+                fbText = "<b>KRITIS:</b> Ikan mulai gelisah (struggling). Daun mengalami nekrosis parah. Laju fotosintesis menurun drastis akibat kutikula daun yang rusak terbakar asam.";
+            } else if (ecosystemT > 0.23) { // pH < 5.0
+                mainColor = 'var(--neon-yellow)';
+                statusText = "Klorosis Daun & Korosi";
+                statusBg = "rgba(234, 179, 8, 0.2)";
+                fbColor = 'var(--neon-yellow)';
+                fbText = "<b>WASPADA:</b> Nutrisi Magnesium dan Kalsium tercuci dari tanah. Daun menguning (Klorosis). Kalsium Karbonat (CaCO₃) pada patung mulai bereaksi dengan H₂SO₄.";
+            }
+
+            phEl.style.color = mainColor;
+            phEl.style.textShadow = `0 0 15px ${mainColor}`;
+            statEl.innerText = statusText;
+            statEl.style.color = mainColor;
+            statEl.style.borderColor = mainColor;
+            statEl.style.backgroundColor = statusBg;
+            
+            feedbackEl.style.borderColor = fbColor;
+            feedbackEl.style.backgroundColor = `rgba(${mainColor === 'var(--acid-purple)' ? '192,38,211' : (mainColor === 'var(--acid-red)' ? '239,68,68' : (mainColor === 'var(--neon-yellow)' ? '234,179,8' : '16,185,129'))}, 0.1)`;
+            feedbackEl.innerHTML = fbText;
+        }
+
+        function renderEcosystem() {
+            if(cvs2.width !== cvs2.parentElement.clientWidth) resizeCanvas2();
+            let W = cvs2.width; let H = cvs2.height;
+            ctx2.clearRect(0, 0, W, H);
+
+            // 1. SKY
+            ctx2.fillStyle = `rgba(20, 30, 40, ${1 - ecosystemT*0.5})`;
+            ctx2.fillRect(0, 0, W, H);
+
+            // Cloud
+            let cR = lerp(200, 100, ecosystemT);
+            let cG = lerp(200, 90, ecosystemT);
+            let cB = lerp(200, 70, ecosystemT);
+            ctx2.fillStyle = `rgb(${cR}, ${cG}, ${cB})`;
+            ctx2.beginPath();
+            ctx2.ellipse(W/2, 20, W*0.6, 50, 0, 0, Math.PI*2);
+            ctx2.fill();
+
+            // 2. LANDSCAPE
+            let groundColor = lerpColor(30, 60, 40, 50, 40, 30, ecosystemT); 
+            ctx2.fillStyle = groundColor;
+            ctx2.beginPath();
+            ctx2.moveTo(0, H/2);
+            ctx2.lineTo(W/2, H/2); 
+            ctx2.lineTo(W/2 + 50, H - 20); 
+            ctx2.lineTo(W, H - 20);
+            ctx2.lineTo(W, H);
+            ctx2.lineTo(0, H);
+            ctx2.fill();
+
+            // Soil sub-layer (Leaching visual)
+            let soilTopColor = lerpColor(34, 139, 34, 101, 67, 33, ecosystemT); // Forest green to dead dirt
+            ctx2.fillStyle = soilTopColor;
+            ctx2.beginPath(); ctx2.moveTo(0, H/2); ctx2.lineTo(W/2, H/2); ctx2.lineTo(W/2+10, H/2+15); ctx2.lineTo(0, H/2+15); ctx2.fill();
+
+            // Lake Water
+            ctx2.fillStyle = getWaterColor(ecosystemT);
+            ctx2.beginPath();
+            ctx2.moveTo(W/2, H/2);
+            ctx2.lineTo(W, H/2);
+            ctx2.lineTo(W, H);
+            ctx2.lineTo(W/2 + 50, H);
+            ctx2.fill();
+
+            // 3. OBJECTS
+            drawStatue(ctx2, W*0.15, H/2, 1.2, ecosystemT);
+
+            drawTree(ctx2, W*0.3, H/2, 1.0, ecosystemT);
+            drawTree(ctx2, W*0.4, H/2, 0.8, ecosystemT);
+            drawTree(ctx2, W*0.45, H/2 + 10, 1.1, ecosystemT);
+
+            fishArr.forEach(f => {
+                f.update(W, ecosystemT);
+                f.draw(ctx2);
+            });
+
+            // 4. RAIN
+            rainDrops.forEach(r => {
+                r.update(H);
+                r.draw(ctx2, ecosystemT);
+            });
+
+            requestAnimationFrame(renderEcosystem);
+        }
+
+        // ==========================================
+        // MODUL 4: MINI GAME (CANVAS 3)
+        // ==========================================
+        const cvs3 = document.getElementById('gameCanvas');
+        const ctx3 = cvs3.getContext('2d');
+        let gamePH = 4.0;
+        let caco3Particles = [];
+        
+        function resizeCanvas3() {
+            cvs3.width = cvs3.parentElement.clientWidth;
+            cvs3.height = cvs3.parentElement.clientHeight;
+        }
+
+        class Powder {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vy = 2 + Math.random()*2;
+                this.active = true;
+            }
+            update(waterY) {
+                this.y += this.vy;
+                if(this.y > waterY) {
+                    this.active = false;
+                    // Neutralize effect
+                    if(gamePH < 7.5) {
+                        gamePH += 0.05; 
+                        updateGameUI();
+                    }
+                }
+            }
+            draw(ctx) {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        cvs3.addEventListener('click', (e) => {
+            const rect = cvs3.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            for(let i=0; i<15; i++) {
+                caco3Particles.push(new Powder(x + (Math.random()-0.5)*20, y + (Math.random()-0.5)*10));
+            }
+        });
+
+        function updateGameUI() {
+            const phEl = document.getElementById('game-ph');
+            const statEl = document.getElementById('game-status');
+            
+            phEl.innerText = gamePH.toFixed(2);
+            
+            if(gamePH < 5.5) {
+                phEl.style.color = 'var(--acid-red)';
+                statEl.innerText = "Kritis (Ikan Mati)"; statEl.style.color = 'var(--acid-red)';
+            } else if (gamePH < 6.5) {
+                phEl.style.color = 'var(--neon-yellow)';
+                statEl.innerText = "Mulai Pulih (Keruh)"; statEl.style.color = 'var(--neon-yellow)';
+            } else if (gamePH <= 7.0) {
+                phEl.style.color = 'var(--nature-green)';
+                statEl.innerText = "AMAN & SEHAT!"; statEl.style.color = 'var(--nature-green)';
+            } else {
+                phEl.style.color = 'var(--acid-purple)';
+                statEl.innerText = "Over-Liming (Terlalu Basa!)"; statEl.style.color = 'var(--acid-purple)';
+            }
+        }
+
+        function renderGame() {
+            if(cvs3.width !== cvs3.parentElement.clientWidth) resizeCanvas3();
+            let W = cvs3.width; let H = cvs3.height;
+            ctx3.clearRect(0, 0, W, H);
+
+            let waterY = H - 80;
+
+            ctx3.fillStyle = '#111827'; ctx3.fillRect(0,0, W, waterY);
+
+            // Calculate T based on pH mapping (4.0 -> T=1, 7.0 -> T=0)
+            let t = (7.0 - gamePH) / 3.0;
+            if (t < 0) t = 0; if (t > 1) t = 1;
+            
+            ctx3.fillStyle = getWaterColor(t);
+            ctx3.fillRect(0, waterY, W, H - waterY);
+
+            // Bubbles or happy fish if recovered
+            if (gamePH >= 6.5 && gamePH <= 7.0) {
+                ctx3.fillStyle = '#f97316';
+                let fx = (Date.now()*0.05) % W;
+                let fy = waterY + 40 + Math.sin(Date.now()*0.005)*10;
+                ctx3.beginPath(); ctx3.ellipse(fx, fy, 8, 4, 0, 0, Math.PI*2); ctx3.fill();
+                ctx3.beginPath(); ctx3.moveTo(fx-6, fy); ctx3.lineTo(fx-12, fy-5); ctx3.lineTo(fx-12, fy+5); ctx3.fill();
+            }
+
+            for(let i=caco3Particles.length-1; i>=0; i--) {
+                caco3Particles[i].update(waterY);
+                caco3Particles[i].draw(ctx3);
+                if(!caco3Particles[i].active) caco3Particles.splice(i,1);
+            }
+
+            requestAnimationFrame(renderGame);
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.onload = () => {
+            resizeCanvas1();
+            resizeCanvas2();
+            resizeCanvas3();
+
+            renderApperception();
+            updateLab(); 
+            renderEcosystem();
+            updateGameUI();
+            renderGame();
+        };
+
+        window.addEventListener('resize', () => {
+            resizeCanvas1();
+            resizeCanvas2();
+            resizeCanvas3();
+        });
+
+    </script>
+</body>
+</html>
