@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Energy Tracker: Simulasi Dampak SDA</title>
+    
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: ECO-FUTURISTIC DARK MODE
+           ======================================================== */
+        :root {
+            --bg-base: #050a08;
+            --bg-panel: #0a120f;
+            --bg-card: #111d18;
+            --emerald: #00ff66;   /* Positive / Clean Energy */
+            --sulfur: #eab308;    /* Warning / Pollution */
+            --alert: #ef4444;     /* Danger / Health Risk */
+            --electric: #e2e8f0;  /* Data / Text */
+            --cyan: #00f3ff;      /* Tech Accent */
+            --border-color: rgba(0, 255, 102, 0.2);
+            --font-main: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--electric);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 255, 102, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* HEADER & GLOBAL STATUS */
+        header {
+            text-align: center; padding: 30px 20px; background: linear-gradient(180deg, #0d1a15 0%, var(--bg-base) 100%);
+            border: 1px solid var(--border-color); border-radius: 12px; border-top: 4px solid var(--emerald);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+        }
+        header h1 { color: var(--emerald); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,255,102,0.4); margin-bottom: 5px; }
+        header p { color: #94a3b8; font-size: 1.1rem; }
+
+        .global-status {
+            display: flex; justify-content: center; gap: 30px; margin-top: 20px; flex-wrap: wrap;
+        }
+        .status-badge {
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); padding: 10px 20px;
+            border-radius: 30px; display: flex; align-items: center; gap: 10px; font-family: var(--font-mono);
+        }
+        .val-temp { color: var(--sulfur); font-size: 1.2rem; font-weight: bold; transition: color 0.5s; }
+        .val-aqi { color: var(--emerald); font-size: 1.2rem; font-weight: bold; transition: color 0.5s; }
+
+        /* PANELS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid #1a2e25; border-radius: 10px;
+            padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative;
+        }
+        .panel-title { font-size: 1.3rem; color: #fff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1a2e25; display: flex; align-items: center; gap: 10px; }
+        .info-box { background: rgba(255,255,255,0.03); border-left: 3px solid var(--cyan); padding: 12px; font-size: 0.9rem; color: #cbd5e1; margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+
+        /* MODUL 1: APERSEPSI CANVAS */
+        .canvas-container {
+            width: 100%; height: 250px; background: #000; border: 1px solid #333; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        .scenario-overlay {
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 1px solid var(--cyan);
+            padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: var(--electric);
+        }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+            flex: 1 1 30%; padding: 10px; background: #111d18; color: var(--electric); border: 1px solid #2a473a;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 0.85rem;
+        }
+        .btn:hover { background: #1a2e25; }
+        .btn.active-ap { 
+            background: rgba(0, 243, 255, 0.1); border-color: var(--cyan); 
+            color: var(--cyan); box-shadow: 0 0 10px rgba(0,243,255,0.3); 
+        }
+
+        /* MODUL 2: SDA SELECTOR */
+        .sda-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .sda-item {
+            background: var(--bg-card); border: 1px solid #2a473a; padding: 15px 10px;
+            text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 0.9rem;
+        }
+        .sda-item:hover { border-color: var(--emerald); background: #15261f; }
+        .sda-item.active { border-color: var(--emerald); background: rgba(0, 255, 102, 0.1); box-shadow: 0 0 15px rgba(0,255,102,0.2); }
+        
+        .slider-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px dashed #333; margin-bottom: 20px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 10px; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #333; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--emerald); cursor: pointer; }
+
+        /* IMPACT BARS */
+        .impact-item { margin-bottom: 15px; }
+        .impact-header { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; font-family: var(--font-mono); }
+        .bar-bg { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 50%; background: var(--emerald); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
+
+        /* LOCAL CONTEXT BOX */
+        .local-box {
+            background: linear-gradient(45deg, #0a1a15, #002211); border: 1px solid var(--emerald);
+            padding: 15px; border-radius: 8px; margin-top: 15px;
+        }
+        .local-title { font-size: 0.9rem; color: var(--emerald); margin-bottom: 5px; font-weight: bold; text-transform: uppercase;}
+
+        /* MODUL 3: EQUATIONS & THEORY */
+        .equation-box {
+            background: #000; border: 1px dashed var(--cyan); padding: 15px;
+            border-radius: 8px; text-align: center; font-size: 1.2rem; color: var(--cyan);
+            margin-bottom: 15px; overflow-x: auto;
+        }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px; }
+        th, td { border: 1px solid #2a473a; padding: 10px; text-align: left; }
+        th { background: #111d18; color: var(--cyan); }
+        td.pos { color: var(--emerald); }
+        td.neg { color: var(--alert); }
+
+        /* MINI GAME: THE ENERGY MANAGER */
+        .game-panel { border-color: var(--cyan); background: linear-gradient(180deg, var(--bg-panel), #051015); position: relative; }
+        .game-stats { display: flex; gap: 15px; margin-bottom: 20px; }
+        .game-stat-box { flex: 1; background: #000; border: 1px solid #333; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-val { font-size: 1.5rem; font-family: var(--font-mono); font-weight: bold; margin-top: 5px; }
+        
+        .game-controls { display: flex; flex-direction: column; gap: 10px; }
+        .game-row { display: flex; align-items: center; gap: 15px; }
+        .game-row label { width: 100px; font-size: 0.9rem; }
+        .game-row input { flex: 1; }
+        .game-row span { width: 60px; text-align: right; font-family: var(--font-mono); font-size: 0.9rem; }
+
+        .game-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.85); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; opacity: 0; pointer-events: none; transition: 0.5s; text-align: center; padding: 20px;
+        }
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+        .game-msg { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+
+        mjx-container { color: var(--electric) !important; }
+        
+        @media (max-width: 768px) {
+            .sda-grid { grid-template-columns: 1fr 1fr; }
+            .game-stats { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HEADER & GLOBAL STATUS -->
+        <header>
+            <h1>Eco-Energy Tracker</h1>
+            <p>Menghitung Harga Sebenarnya dari Setiap Watt Listrik di Masa Depan</p>
+            <div class="global-status">
+                <div class="status-badge">
+                    <span style="color:#94a3b8;">Suhu Global:</span> 
+                    <span class="val-temp" id="glob-temp">+1.5°C</span>
+                </div>
+                <div class="status-badge">
+                    <span style="color:#94a3b8;">Air Quality Index (AQI):</span> 
+                    <span class="val-aqi" id="glob-aqi">30 (Baik)</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- MODUL 1: APERSEPSI EFEK RUMAH KACA -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--sulfur);">🏭 Eksperimen Jejak Karbon</h2>
+                <div class="info-box">
+                    <strong>Mekanisme Pemanasan Global:</strong> Radiasi panas matahari masuk ke bumi, namun radiasi pantulannya terperangkap oleh partikel Gas Rumah Kaca ($CO_2$), meningkatkan suhu bumi secara drastis.
+                </div>
+                
+                <div class="canvas-container">
+                    <div class="scenario-overlay" id="scene-desc">Pilih sumber energi di bawah</div>
+                    <canvas id="ghgCanvas"></canvas>
+                </div>
+                
+                <!-- NEW: 6 Pilihan Sumber Energi -->
+                <div class="btn-group" id="modul-1-btns">
+                    <button class="btn" id="btn-ap-batubara" onclick="setApperception('batubara')">🏭 Batubara</button>
+                    <button class="btn" id="btn-ap-gas" onclick="setApperception('gas')">🔥 Gas Alam</button>
+                    <button class="btn" id="btn-ap-biomassa" onclick="setApperception('biomassa')">🍂 Biomassa</button>
+                    <button class="btn" id="btn-ap-panasbumi" onclick="setApperception('panasbumi')">🌋 Panas Bumi</button>
+                    <button class="btn" id="btn-ap-ombak" onclick="setApperception('ombak')">🌊 Ombak</button>
+                    <button class="btn" id="btn-ap-surya" onclick="setApperception('surya')">☀️ Surya</button>
+                </div>
+            </div>
+
+            <!-- MODUL 2: LABORATORIUM DAMPAK SDA -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--emerald);">🌱 Laboratorium Dampak Ekologis</h2>
+                
+                <div class="sda-grid">
+                    <div class="sda-item active" onclick="selectSDA('batubara')" id="sda-batubara">🏭 Batubara</div>
+                    <div class="sda-item" onclick="selectSDA('gas')" id="sda-gas">🔥 Gas Alam</div>
+                    <div class="sda-item" onclick="selectSDA('biomassa')" id="sda-biomassa">🍂 Biomassa</div>
+                    <div class="sda-item" onclick="selectSDA('panasbumi')" id="sda-panasbumi">🌋 Panas Bumi</div>
+                    <div class="sda-item" onclick="selectSDA('ombak')" id="sda-ombak">🌊 Ombak</div>
+                    <div class="sda-item" onclick="selectSDA('surya')" id="sda-surya">☀️ Tenaga Surya</div>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label">
+                        <span>Skala Operasi (Daya Output)</span>
+                        <span id="sda-scale-val" style="color: var(--cyan); font-family: var(--font-mono); font-weight: bold;">500 MW</span>
+                    </div>
+                    <input type="range" id="sda-scale" min="10" max="1000" value="500" oninput="updateImpacts()">
+                </div>
+
+                <!-- Dampak Bars -->
+                <div class="impact-item">
+                    <div class="impact-header">
+                        <span>Pertumbuhan Ekonomi (GDP)</span>
+                        <span id="val-econ">Medium</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-econ"></div></div>
+                </div>
+                <div class="impact-item">
+                    <div class="impact-header">
+                        <span>Kesehatan Pernapasan Warga</span>
+                        <span id="val-health">Bahaya</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-health"></div></div>
+                </div>
+                <div class="impact-item">
+                    <div class="impact-header">
+                        <span>Kelestarian Lingkungan & Hutan</span>
+                        <span id="val-env">Kritis</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-env"></div></div>
+                </div>
+
+                <!-- Konteks Lokal Jawa Timur -->
+                <div class="local-box" id="local-context">
+                    <div class="local-title">📍 Konteks Lokal Jawa Timur</div>
+                    <p id="local-desc" style="font-size: 0.85rem; color: #e2e8f0;">PLTU Paiton di Probolinggo adalah salah satu penyuplai listrik terbesar, namun menghasilkan limbah FABA dan emisi karbon massif.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- MODUL 3: TEORI & PERSAMAAN -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--electric);">📐 Kalkulasi Ekologis & Efisiensi</h2>
+                
+                <div class="info-box">
+                    <strong>Jejak Karbon (Carbon Footprint):</strong><br>
+                    Emisi gas $CO_2$ dihitung berdasarkan daya yang dihasilkan dikali waktu operasional dan Faktor Emisi (EF) bawaan dari jenis energi tersebut.
+                </div>
+                
+                <div class="equation-box">
+                    $$ E_{total} = P \times t \times EF $$
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 15px;">
+                    $P$ = Daya (MW), $t$ = Waktu (jam), $EF$ = Faktor Emisi (ton $CO_2$/MWh)
+                </p>
+
+                <div class="info-box">
+                    <strong>Efisiensi Konversi ($\eta$):</strong><br>
+                    Rasio antara energi listrik yang berhasil diproduksi dibandingkan energi bahan mentah yang dibakar/digunakan.
+                </div>
+                <div class="equation-box">
+                    $$ \eta = \frac{E_{listrik}}{E_{SDA}} \times 100\% $$
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table>
+                        <tr>
+                            <th>Sumber Energi</th>
+                            <th>Dampak (+)</th>
+                            <th>Dampak (-)</th>
+                        </tr>
+                        <tr>
+                            <td>Batubara</td>
+                            <td class="pos">Murah, stabil, padat energi</td>
+                            <td class="neg">Emisi $CO_2$ tinggi, limbah beracun, ISPA</td>
+                        </tr>
+                        <tr>
+                            <td>Gas Alam</td>
+                            <td class="pos">Emisi lebih rendah dari batubara, sangat efisien</td>
+                            <td class="neg">Tetap menghasilkan $CO_2$ & gas metana, energi fosil</td>
+                        </tr>
+                        <tr>
+                            <td>Biomassa</td>
+                            <td class="pos">Mengurangi limbah organik, pasokan lokal berlimpah</td>
+                            <td class="neg">Asap pembakaran lokal, membutuhkan lahan yang luas</td>
+                        </tr>
+                        <tr>
+                            <td>Panas Bumi</td>
+                            <td class="pos">Tersedia 24/7 (baseload), emisi karbon sangat rendah</td>
+                            <td class="neg">Risiko seismik minor, paparan gas belerang, biaya awal mahal</td>
+                        </tr>
+                        <tr>
+                            <td>Ombak</td>
+                            <td class="pos">Densitas energi tinggi, 100% terbarukan & bersih</td>
+                            <td class="neg">Korosi alat oleh air laut, mengganggu ekosistem pesisir</td>
+                        </tr>
+                        <tr>
+                            <td>Tenaga Surya</td>
+                            <td class="pos">Sumber tak terbatas, nol emisi saat beroperasi</td>
+                            <td class="neg">Intermittency (tergantung cuaca/siang), limbah panel beracun</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MINI GAME: THE ENERGY MANAGER -->
+            <div class="panel game-panel">
+                <h2 class="panel-title" style="color: var(--cyan);">🎮 Mini-Game: The Energy Manager</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                    <b>Misi:</b> Penuhi target listrik kota <b>1000 MW</b> menggunakan kombinasi sumber daya tanpa melebihi batas emisi dan anggaran!
+                </p>
+
+                <div class="game-stats">
+                    <div class="game-stat-box">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Daya</div>
+                        <div class="stat-val" id="gm-power" style="color: var(--cyan);">0 / 1000 MW</div>
+                    </div>
+                    <div class="game-stat-box">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Emisi $CO_2$</div>
+                        <div class="stat-val" id="gm-emissions" style="color: var(--emerald);">0 / 400 Ton</div>
+                    </div>
+                    <div class="game-stat-box">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Anggaran ($)</div>
+                        <div class="stat-val" id="gm-cost" style="color: var(--sulfur);">0 / 3000M</div>
+                    </div>
+                </div>
+
+                <div class="game-controls">
+                    <div class="game-row">
+                        <label>Batubara</label>
+                        <input type="range" id="gm-coal" min="0" max="1000" step="50" value="0" oninput="updateGame()">
+                        <span id="gm-val-coal">0 MW</span>
+                    </div>
+                    <div class="game-row">
+                        <label>Gas Alam</label>
+                        <input type="range" id="gm-gas" min="0" max="1000" step="50" value="0" oninput="updateGame()">
+                        <span id="gm-val-gas">0 MW</span>
+                    </div>
+                    <div class="game-row">
+                        <label>Panas Bumi</label>
+                        <input type="range" id="gm-geo" min="0" max="1000" step="50" value="0" oninput="updateGame()">
+                        <span id="gm-val-geo">0 MW</span>
+                    </div>
+                    <div class="game-row">
+                        <label>Tenaga Surya</label>
+                        <input type="range" id="gm-solar" min="0" max="1000" step="50" value="0" oninput="updateGame()">
+                        <span id="gm-val-solar">0 MW</span>
+                    </div>
+                </div>
+
+                <!-- OVERLAY WIN/LOSE -->
+                <div class="game-overlay" id="game-overlay">
+                    <div class="game-msg" id="game-msg-title"></div>
+                    <p id="game-msg-desc" style="font-size: 0.9rem; margin-bottom: 15px;"></p>
+                    <button style="padding: 10px 20px; background: var(--cyan); border: none; border-radius: 5px; font-weight: bold; cursor: pointer;" onclick="resetGame()">Main Lagi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 1. DATA SDA (Sumber Daya Alam)
+        // ==========================================
+        const sdaData = {
+            batubara: { 
+                name: "PLTU Batubara", ef: 1.0, cost: 1.0, 
+                ecoMult: 1.0, healthMult: -0.9, envMult: -0.9,
+                local: "PLTU Paiton di Probolinggo adalah salah satu penyuplai listrik terbesar, namun menghasilkan limbah FABA dan emisi karbon massif yang mengancam kualitas udara."
+            },
+            gas: { 
+                name: "PLT Gas Alam", ef: 0.5, cost: 1.5, 
+                ecoMult: 0.8, healthMult: -0.4, envMult: -0.5,
+                local: "PLTGU Grati beroperasi dengan siklus gabungan. Emisi CO2 setengah dari batubara, tapi tetap merupakan energi fosil tak terbarukan."
+            },
+            biomassa: { 
+                name: "PLT Biomassa", ef: 0.2, cost: 2.5, 
+                ecoMult: 0.5, healthMult: 0.5, envMult: 0.6,
+                local: "Memanfaatkan limbah tebu dan ampas pertanian dari pabrik gula di Jatim. Mengurangi sampah organik, namun pembakarannya tetap menghasilkan sedikit emisi."
+            },
+            panasbumi: { 
+                name: "PLTP Panas Bumi", ef: 0.1, cost: 4.0, 
+                ecoMult: 0.6, healthMult: 0.8, envMult: 0.4,
+                local: "Potensi besar di kawasan Gunung Arjuno-Welirang dan Ijen. Tersedia 24 jam tanpa cuaca, tapi butuh investasi sumur yang mahal dan risiko seismik minor."
+            },
+            ombak: { 
+                name: "PLT Ombak Laut", ef: 0.05, cost: 5.0, 
+                ecoMult: 0.3, healthMult: 1.0, envMult: 0.7,
+                local: "Pesisir Selatan Jawa Timur (seperti Pacitan & Malang) memiliki gelombang tinggi, sangat berpotensi, namun korosi air laut membuat biaya perawatannya mahal."
+            },
+            surya: { 
+                name: "PLTS Panel Surya", ef: 0.05, cost: 3.0, 
+                ecoMult: 0.5, healthMult: 1.0, envMult: 0.8,
+                local: "Sangat cocok untuk daerah pantura dan atap perkotaan (Surabaya). Kendala utamanya adalah 'Intermittency' (hanya siang hari) dan butuh baterai penyimpanan mahal."
+            }
+        };
+
+        let activeSDA = 'batubara';
+
+        // ==========================================
+        // 2. MODUL 1: CANVAS APERSEPSI & FISIKA
+        // ==========================================
+        const canvas = document.getElementById('ghgCanvas');
+        const ctx = canvas.getContext('2d');
+        let co2Molecules = [];
+        let photons = [];
+        let frameCount = 0;
+        let apMode = 'batubara'; 
+        let animId;
+
+        function initCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 250;
+        }
+
+        class CO2Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * (canvas.height - 80) + 20;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.r = 5;
+                this.flash = 0;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if(this.y < 10 || this.y > canvas.height - 50) this.vy *= -1;
+                if(this.flash > 0) this.flash--;
+            }
+            draw() {
+                // Molekul Karbon (Tengah)
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+                ctx.fillStyle = this.flash > 0 ? '#ef4444' : '#64748b'; // Berkedip merah saat menyerap panas
+                ctx.fill();
+                // Molekul Oksigen (Kiri & Kanan)
+                ctx.beginPath(); ctx.arc(this.x - 6, this.y, this.r - 2, 0, Math.PI*2); ctx.fillStyle = '#333'; ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x + 6, this.y, this.r - 2, 0, Math.PI*2); ctx.fillStyle = '#333'; ctx.fill();
+            }
+        }
+
+        class Photon {
+            constructor(x, y, type) {
+                this.x = x; this.y = y; this.type = type; // 'short' (matahari) atau 'long' (inframerah)
+                if(type === 'short') {
+                    // Sinar menyebar
+                    let angle = (Math.random() * 70 + 10) * (Math.PI / 180); 
+                    let speed = Math.random() * 2 + 3; 
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed; 
+                    this.color = '#facc15'; 
+                } else {
+                    this.vx = (Math.random() - 0.5) * 2;
+                    this.vy = -1.5 - Math.random(); 
+                    this.color = '#ef4444'; 
+                }
+                this.active = true;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                
+                // Konversi gelombang pendek menjadi inframerah saat mengenai bumi
+                if(this.type === 'short' && this.y > canvas.height - 40) {
+                    this.type = 'long';
+                    this.color = '#ef4444';
+                    this.vy = -Math.abs(this.vy) * 0.4 - 0.5; 
+                    this.vx = (Math.random() - 0.5) * 2;
+                }
+
+                // Terperangkap CO2
+                if(this.type === 'long') {
+                    for(let p of co2Molecules) {
+                        let dx = this.x - p.x; let dy = this.y - p.y;
+                        if(dx*dx + dy*dy < 150 && this.vy < 0) { 
+                            this.vy = Math.abs(this.vy); // Memantul kembali ke bumi
+                            this.vx += (Math.random() - 0.5);
+                            p.flash = 15; 
+                            break; 
+                        }
+                    }
+                }
+
+                if(this.y < -10 || this.y > canvas.height + 10 || this.x < -10 || this.x > canvas.width + 10) {
+                    this.active = false;
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                if(this.type === 'short') {
+                    ctx.lineTo(this.x - this.vx*4, this.y - this.vy*4); 
+                } else {
+                    ctx.lineTo(this.x - this.vx*3 + Math.sin(frameCount*0.5)*2, this.y - this.vy*3); 
+                }
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function createMolecules() {
+            co2Molecules = [];
+            photons = [];
+            frameCount = 0;
+            
+            // Kepadatan CO2 bergantung langsung pada Faktor Emisi (EF)
+            let ef = sdaData[apMode].ef;
+            let count = Math.floor(ef * 40); 
+            if(count < 0) count = 0;
+            
+            for(let i=0; i<count; i++) co2Molecules.push(new CO2Particle());
+        }
+
+        function renderCanvas() {
+            if (animId) cancelAnimationFrame(animId);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            frameCount++;
+            
+            let ef = sdaData[apMode].ef;
+
+            // Gambar Tanah (Gelap jika ef tinggi, Hijau/Biru jika ef rendah)
+            ctx.fillStyle = ef > 0.4 ? '#1a1a1a' : (apMode==='ombak' ? '#0284c7' : '#064e3b');
+            ctx.fillRect(0, canvas.height-30, canvas.width, 30);
+            
+            // Matahari
+            ctx.beginPath(); ctx.arc(40, 40, 20, 0, Math.PI*2);
+            ctx.fillStyle = '#facc15'; ctx.fill();
+            
+            // Gambar Pembangkit Listrik (Sederhana berdasarkan Mode)
+            let cx = canvas.width - 60;
+            let cy = canvas.height - 30;
+            
+            if(apMode === 'batubara' || apMode === 'gas' || apMode === 'biomassa') {
+                ctx.fillStyle = '#333'; ctx.fillRect(cx - 20, cy - 50, 50, 50); // Pabrik
+                ctx.fillRect(cx - 10, cy - 90, 10, 40); // Cerobong
+                
+                // Asap
+                let freq = apMode === 'batubara' ? 10 : (apMode === 'gas' ? 25 : 15);
+                if(frameCount % freq === 0) {
+                    ctx.fillStyle = apMode === 'biomassa' ? 'rgba(74,222,128,0.3)' : 'rgba(100,100,100,0.5)';
+                    ctx.beginPath(); ctx.arc(cx - 5, cy - 100 - (frameCount%30), 10 + (frameCount%20), 0, Math.PI*2); ctx.fill();
+                }
+            } else if (apMode === 'panasbumi') {
+                ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(cx, cy, 30, Math.PI, 0); ctx.fill(); // Kubah
+                if(frameCount % 20 === 0) { // Uap putih
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath(); ctx.arc(cx, cy - 40 - (frameCount%20), 10 + (frameCount%10), 0, Math.PI*2); ctx.fill();
+                }
+            } else if (apMode === 'ombak') {
+                ctx.fillStyle = '#94a3b8'; ctx.fillRect(cx-5, cy-40, 10, 40); // Tiang
+                ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(cx, cy-40, 15, 0, Math.PI*2); ctx.fill(); // Generator
+            } else if (apMode === 'surya') {
+                ctx.fillStyle = '#0ea5e9'; ctx.beginPath(); // Panel
+                ctx.moveTo(cx - 30, cy); ctx.lineTo(cx + 30, cy);
+                ctx.lineTo(cx + 20, cy - 20); ctx.lineTo(cx - 40, cy - 20);
+                ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.stroke();
+            }
+
+            // Tembakkan Fotons 
+            if (frameCount % 6 === 0) {
+                let r = Math.random() * 20; let theta = Math.random() * Math.PI * 2;
+                photons.push(new Photon(40 + r * Math.cos(theta), 40 + r * Math.sin(theta), 'short'));
+            }
+
+            // Update Objects
+            co2Molecules.forEach(p => { p.update(); p.draw(); });
+            for (let i = photons.length - 1; i >= 0; i--) {
+                photons[i].update(); photons[i].draw();
+                if (!photons[i].active) photons.splice(i, 1);
+            }
+            
+            // Legenda
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(canvas.width - 200, 10, 190, 65);
+            ctx.font = '10px sans-serif';
+            ctx.fillStyle = '#facc15'; ctx.fillText("— Sinar Pendek (UV/Cahaya)", canvas.width - 190, 25);
+            ctx.fillStyle = '#ef4444'; ctx.fillText("~ Sinar Panjang (Inframerah)", canvas.width - 190, 42);
+            ctx.fillStyle = '#64748b'; ctx.fillText("● Molekul CO₂ (Menyerap Panas)", canvas.width - 190, 59);
+
+            animId = requestAnimationFrame(renderCanvas);
+        }
+
+        function setApperception(mode) {
+            apMode = mode;
+            let data = sdaData[mode];
+
+            // Highlight Active Button
+            document.querySelectorAll('#modul-1-btns .btn').forEach(b => b.classList.remove('active-ap'));
+            document.getElementById('btn-ap-' + mode).classList.add('active-ap');
+            
+            // Set Description
+            let desc = `<b>Skenario (${data.name})</b>: Faktor Emisi ${data.ef} ton CO₂/MWh. `;
+            if(data.ef > 0.4) desc += "Radiasi panas <b>TERPERANGKAP</b>.";
+            else if(data.ef > 0.1) desc += "Sebagian panas terperangkap.";
+            else desc += "Udara bersih, panas <b>BEBAS KELUAR</b>.";
+            document.getElementById('scene-desc').innerHTML = desc;
+            
+            createMolecules();
+            if(!animId) renderCanvas();
+            
+            // Update Global Stats based on EF
+            let temp = 1.5 + (data.ef * 1.7);
+            let aqi = Math.round(30 + (data.ef * 150));
+            
+            let tempEl = document.getElementById('glob-temp');
+            tempEl.innerText = `+${temp.toFixed(1)}°C`;
+            tempEl.style.color = data.ef > 0.4 ? 'var(--alert)' : (data.ef > 0.1 ? 'var(--sulfur)' : 'var(--emerald)');
+            
+            let aqiEl = document.getElementById('glob-aqi');
+            let aqiStatus = aqi > 100 ? '(Buruk)' : (aqi > 50 ? '(Sedang)' : '(Baik)');
+            aqiEl.innerText = `${aqi} ${aqiStatus}`;
+            aqiEl.style.color = data.ef > 0.4 ? 'var(--alert)' : (data.ef > 0.1 ? 'var(--sulfur)' : 'var(--emerald)');
+        }
+
+        // ==========================================
+        // 3. MODUL 2: DAMPAK ECOLOGIS LOKAL
+        // ==========================================
+        function selectSDA(id) {
+            activeSDA = id;
+            document.querySelectorAll('.sda-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('sda-' + id).classList.add('active');
+            
+            document.getElementById('local-desc').innerText = sdaData[id].local;
+            updateImpacts();
+        }
+
+        function updateImpacts() {
+            let scale = document.getElementById('sda-scale').value;
+            document.getElementById('sda-scale-val').innerText = scale + " MW";
+            
+            let data = sdaData[activeSDA];
+            let pctScale = scale / 1000; 
+
+            let ecoScore = Math.min(100, (data.ecoMult * pctScale * 100) + 10); 
+            let healthScore = Math.max(5, 100 + (data.healthMult * pctScale * 100));
+            let envScore = Math.max(5, 100 + (data.envMult * pctScale * 100));
+
+            updateBar('bar-econ', 'val-econ', ecoScore, true);
+            updateBar('bar-health', 'val-health', healthScore, false);
+            updateBar('bar-env', 'val-env', envScore, false);
+        }
+
+        function updateBar(barId, valId, score, isPositiveAttr) {
+            const bar = document.getElementById(barId);
+            const val = document.getElementById(valId);
+            bar.style.width = score + "%";
+            
+            let color = 'var(--sulfur)';
+            let text = 'Sedang';
+
+            if(score >= 70) {
+                color = 'var(--emerald)'; text = isPositiveAttr ? 'Sangat Untung' : 'Sangat Sehat/Aman';
+            } else if(score >= 40) {
+                color = 'var(--sulfur)'; text = isPositiveAttr ? 'Stabil' : 'Waspada';
+            } else {
+                color = 'var(--alert)'; text = isPositiveAttr ? 'Rugi / Lambat' : 'Kritis / Berbahaya';
+            }
+
+            bar.style.backgroundColor = color;
+            val.innerText = text;
+            val.style.color = color;
+        }
+
+        // ==========================================
+        // 4. MODUL 4: MINI GAME
+        // ==========================================
+        const targetMW = 1000;
+        const maxEmission = 400; 
+        const maxCost = 3000; 
+
+        function updateGame() {
+            let vCoal = parseInt(document.getElementById('gm-coal').value);
+            let vGas = parseInt(document.getElementById('gm-gas').value);
+            let vGeo = parseInt(document.getElementById('gm-geo').value);
+            let vSolar = parseInt(document.getElementById('gm-solar').value);
+
+            document.getElementById('gm-val-coal').innerText = vCoal + " MW";
+            document.getElementById('gm-val-gas').innerText = vGas + " MW";
+            document.getElementById('gm-val-geo').innerText = vGeo + " MW";
+            document.getElementById('gm-val-solar').innerText = vSolar + " MW";
+
+            let totalP = vCoal + vGas + vGeo + vSolar;
+            
+            let totalE = (vCoal * sdaData.batubara.ef) + (vGas * sdaData.gas.ef) + 
+                         (vGeo * sdaData.panasbumi.ef) + (vSolar * sdaData.surya.ef);
+            
+            let totalC = (vCoal * sdaData.batubara.cost) + (vGas * sdaData.gas.cost) + 
+                         (vGeo * sdaData.panasbumi.cost) + (vSolar * sdaData.surya.cost);
+
+            document.getElementById('gm-power').innerText = `${totalP} / ${targetMW} MW`;
+            document.getElementById('gm-emissions').innerText = `${totalE.toFixed(0)} / ${maxEmission} Ton`;
+            document.getElementById('gm-cost').innerText = `${totalC.toFixed(0)} / ${maxCost} M$`;
+
+            document.getElementById('gm-power').style.color = totalP >= targetMW ? 'var(--emerald)' : 'var(--cyan)';
+            document.getElementById('gm-emissions').style.color = totalE > maxEmission ? 'var(--alert)' : 'var(--emerald)';
+            document.getElementById('gm-cost').style.color = totalC > maxCost ? 'var(--alert)' : 'var(--sulfur)';
+
+            if(totalP >= targetMW) {
+                if(totalE > maxEmission) {
+                    showGameEnd(false, "Kota Tertutup Kabut Asap!", "Listrik terpenuhi, tapi emisi karbon melebihi batas toleransi. Terjadi krisis kesehatan pernapasan massal.");
+                } else if(totalC > maxCost) {
+                    showGameEnd(false, "Kota Bangkrut!", "Listrik hijau berhasil dicapai, tapi anggaran pembangunan melebihi batas. Ekonomi daerah kolaps.");
+                } else {
+                    showGameEnd(true, "Manajer Energi Sukses!", "Luar Biasa! Anda berhasil menyeimbangkan antara kebutuhan listrik, batas emisi karbon, dan anggaran ekonomi.");
+                }
+            }
+        }
+
+        function showGameEnd(isWin, title, desc) {
+            let overlay = document.getElementById('game-overlay');
+            let t = document.getElementById('game-msg-title');
+            let d = document.getElementById('game-msg-desc');
+
+            t.innerText = title;
+            t.style.color = isWin ? 'var(--emerald)' : 'var(--alert)';
+            d.innerText = desc;
+            d.style.color = '#fff';
+
+            overlay.classList.add('active');
+        }
+
+        function resetGame() {
+            document.getElementById('gm-coal').value = 0;
+            document.getElementById('gm-gas').value = 0;
+            document.getElementById('gm-geo').value = 0;
+            document.getElementById('gm-solar').value = 0;
+            
+            document.getElementById('game-overlay').classList.remove('active');
+            updateGame();
+        }
+
+        // ==========================================
+        // INIT APPLICATION
+        // ==========================================
+        window.onload = () => {
+            initCanvas();
+            setApperception('batubara');
+            selectSDA('batubara');
+            updateGame();
+            
+            window.addEventListener('resize', initCanvas);
+        };
+    </script>
+</body>
+</html>
