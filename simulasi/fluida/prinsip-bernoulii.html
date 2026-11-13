@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fluida Dinamis: Paradoks Bernoulli</title>
+    <style>
+        /* === TEMA & RESET === */
+        :root {
+            --bg-dark: #090f1a;
+            --panel-bg: #111827;
+            --border-color: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-blue-glow: rgba(59, 130, 246, 0.5);
+            --accent-red: #ef4444;
+            --accent-red-glow: rgba(239, 68, 68, 0.5);
+            --streamline: #334155;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+            /* Latar belakang garis aliran udara (streamline) tipis */
+            background-image: linear-gradient(var(--streamline) 1px, transparent 1px);
+            background-size: 100% 40px;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* === PANEL DASHBOARD === */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-red));
+        }
+
+        .header-title { text-align: center; margin-bottom: 30px; }
+        .header-title h1 { color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--accent-blue-glow); font-size: 1.8rem; }
+        .header-title p { color: var(--accent-blue); font-weight: 600; font-size: 1.1rem; }
+        h2 { font-size: 1.3rem; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;}
+        
+        /* === UI KONTROL & TOMBOL === */
+        .btn {
+            background: var(--accent-blue); color: white; border: none; padding: 12px 24px; font-size: 1rem;
+            font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 0 15px var(--accent-blue-glow); text-transform: uppercase; letter-spacing: 1px;
+            user-select: none;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn.danger { background: var(--accent-red); box-shadow: 0 0 15px var(--accent-red-glow); }
+
+        .slider-container { margin: 20px 0; display: flex; align-items: center; gap: 15px; }
+        .slider-container label { font-weight: bold; min-width: 200px; }
+        input[type=range] {
+            flex-grow: 1; -webkit-appearance: none; background: #334155; height: 6px; border-radius: 3px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px; background: #fff; border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 10px #fff; transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type=range]:disabled::-webkit-slider-thumb { cursor: not-allowed; background: #94a3b8; box-shadow: none; }
+
+        /* === SEKSI 1: SIMULASI SAYAP PESAWAT === */
+        .controls-grid {
+            display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 15px 0;
+            background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;
+        }
+        .btn-group { display: flex; align-items: center; gap: 10px; }
+        .btn-sm { padding: 6px 12px; font-size: 1.2rem; border-radius: 6px; }
+        .tool-info { font-size: 0.9rem; color: var(--accent-red); font-weight: bold; margin-bottom: 10px; text-align: center; }
+
+        /* === SEKSI 2 & 4: CANVAS RESPONSIVE === */
+        canvas {
+            display: block; width: 100%; max-width: 800px; height: auto;
+            background: #0b1120; border: 1px solid var(--streamline); border-radius: 8px; margin: 0 auto;
+        }
+        .canvas-label-overlay { text-align: center; font-family: monospace; color: var(--text-muted); margin-top: 5px; font-size: 0.9rem; }
+
+        /* === SEKSI 3: NERACA BERNOULLI === */
+        .balance-container { display: flex; justify-content: space-around; align-items: flex-end; height: 250px; margin: 20px 0; gap: 20px; }
+        .balance-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .balance-title { margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 0.9rem; color: var(--text-muted); }
+        
+        .stack { width: 100px; height: 200px; background: rgba(255,255,255,0.05); border: 2px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .block-p, .block-ke {
+            width: 100%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold;
+            font-size: 0.8rem; text-align: center; transition: height 0.3s ease-out; position: relative;
+        }
+        .block-p { background: linear-gradient(to bottom, var(--accent-blue), #1d4ed8); } /* Tekanan = Biru */
+        .block-ke { background: linear-gradient(to bottom, var(--accent-red), #b91c1c); }  /* Kinetik = Merah */
+        .block-pe { background: linear-gradient(to bottom, #10b981, #047857); display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 0.8rem; text-align: center; transition: height 0.3s ease-out; } /* Potensial = Hijau */
+        
+        .equation { text-align: center; font-family: monospace; font-size: 1.2rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-top: 15px; }
+
+        .highlight-red { color: var(--accent-red); font-weight: bold; }
+        .highlight-blue { color: var(--accent-blue); font-weight: bold; }
+        .highlight-green { color: var(--success); font-weight: bold; }
+
+        /* Responsiveness */
+        @media (max-width: 600px) {
+            .paper-exp-area { gap: 30px; }
+            .slider-container { flex-direction: column; align-items: flex-start; gap: 5px; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header-title">
+        <h1>Tahap 2.2: Paradoks Kecepatan & Tekanan</h1>
+        <p>Bagaimana mungkin aliran udara yang bergerak sangat CEPAT justru menghasilkan tekanan yang RENDAH?</p>
+    </div>
+
+    <!-- SEKSI 1: SIMULASI SAYAP PESAWAT -->
+    <div class="panel">
+        <h2>1. Simulasi Aerodinamika Sayap Pesawat <span>✈️</span></h2>
+        <p>Visualisasi aliran udara melewati sayap (Airfoil). Hukum Bernoulli bekerja di sini: bentuk sayap membuat aliran udara di bagian atas bergerak <strong>LEBIH CEPAT</strong> sehingga tekanannya turun (menciptakan gaya angkat).</p>
+        
+        <div class="controls-grid">
+            <div class="slider-container" style="margin: 0; flex-grow: 1;">
+                <label for="sliderWind">Kecepatan Angin Awal:</label>
+                <input type="range" id="sliderWind" min="10" max="100" value="40">
+            </div>
+            <div class="btn-group">
+                <label>Kemiringan (<span id="aoaValue">5</span>&deg;):</label>
+                <button class="btn btn-sm" id="btnAoAMinus">-</button>
+                <button class="btn btn-sm" id="btnAoAPlus">+</button>
+            </div>
+            <div class="force-display" style="display: flex; gap: 15px; font-weight: bold; padding: 5px 15px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                <span style="color: #3b82f6;">Gaya Angkat: <span id="valLift">0</span> N</span>
+                <span style="color: #ef4444;">Gaya Hambat: <span id="valDrag">0</span> N</span>
+            </div>
+        </div>
+
+        <div class="tool-info">🔴 KLIK, TAHAN, & GESER alat ukur (crosshair) di bawah untuk mengecek kecepatan lokal!</div>
+        <canvas id="canvasAirfoil" width="800" height="300" style="cursor: grab;"></canvas>
+        <div class="canvas-label-overlay">Merah = Udara Cepat (Tekanan Rendah) | Biru = Udara Lambat (Tekanan Tinggi)</div>
+    </div>
+
+    <!-- SEKSI 2: PIPA VENTURI -->
+    <div class="panel">
+        <h2>2. Laboratorium Pipa Venturi <span>🔬</span></h2>
+        <p>Atur kecepatan, diameter, dan ketinggian pipa. Perhatikan bagaimana <strong>Diameter Kecil</strong> meningkatkan kecepatan aliran (Kontinuitas) dan bagaimana <strong>Kecepatan & Ketinggian</strong> membuat tinggi air di manometer (Tekanan) anjlok (Bernoulli).</p>
+        
+        <div class="controls-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+                <label>Kecepatan Masuk (v₁): <span id="valV1" style="color:var(--accent-red)">5</span></label>
+                <input type="range" id="sliderV1" min="1" max="15" value="5" style="width: 100%;">
+            </div>
+            <div>
+                <label>Diameter Kiri (D₁): <span id="valD1" style="color:var(--accent-blue)">80</span></label>
+                <input type="range" id="sliderD1" min="30" max="120" value="80" style="width: 100%;">
+            </div>
+            <div>
+                <label>Diameter Kanan (D₂): <span id="valD2" style="color:var(--accent-blue)">40</span></label>
+                <input type="range" id="sliderD2" min="30" max="120" value="40" style="width: 100%;">
+            </div>
+            <div>
+                <label>Elevasi Kiri (h₁): <span id="valZ1" style="color:var(--success)">20</span></label>
+                <input type="range" id="sliderZ1" min="10" max="120" value="20" style="width: 100%;">
+            </div>
+            <div>
+                <label>Elevasi Kanan (h₂): <span id="valZ2" style="color:var(--success)">20</span></label>
+                <input type="range" id="sliderZ2" min="10" max="120" value="20" style="width: 100%;">
+            </div>
+        </div>
+
+        <canvas id="canvasVenturi" width="800" height="350" style="background:#040812; cursor: grab;"></canvas>
+        <div class="canvas-label-overlay">🔴 KLIK, TAHAN, & GESER Pipa 1 & Pipa 2 untuk mengukur tekanan (P) dan kecepatan (v) di berbagai titik!</div>
+    </div>
+
+    <!-- SEKSI 3: NERACA BERNOULLI -->
+    <div class="panel">
+        <h2>3. Timbangan Energi Bernoulli <span>⚖️</span></h2>
+        <p>Menurut Bernoulli, <strong>Total Energi selalu konstan</strong>. Jika Energi Gerak (v) atau Energi Potensial (h) naik, maka Tekanan (P) <em>harus</em> turun untuk menjaga keseimbangan neraca.</p>
+        
+        <div class="balance-container">
+            <!-- Bagian Lebar -->
+            <div class="balance-group">
+                <div class="balance-title">Di Pipa KIRI (Bagian 1)</div>
+                <div class="stack">
+                    <div class="block-p" id="barP1">P1</div>
+                    <div class="block-ke" id="barKE1">KE1</div>
+                    <div class="block-pe" id="barPE1">PE1</div>
+                </div>
+            </div>
+            
+            <!-- Bagian Sempit -->
+            <div class="balance-group">
+                <div class="balance-title">Di Pipa KANAN (Bagian 2)</div>
+                <div class="stack">
+                    <div class="block-p" id="barP2">P2</div>
+                    <div class="block-ke" id="barKE2">KE2</div>
+                    <div class="block-pe" id="barPE2">PE2</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="equation">
+            <span class="highlight-blue">Tekanan (P)</span> + 
+            <span class="highlight-red">Energi Kinetik (½&rho;v²)</span> + 
+            <span class="highlight-green">Energi Potensial (&rho;gh)</span> = KONSTAN
+        </div>
+    </div>
+
+    <!-- SEKSI 4: MINI GAME TORRICELLI -->
+    <div class="panel">
+        <h2>4. Mini-Game: Teorema Torricelli <span>🎯</span></h2>
+        <p>Sebuah tangki bocor mengonversi tekanan hidrostatik menjadi energi kinetik (kecepatan semburan). Geser lubang untuk menemukan jarak pancaran optimal agar masuk keranjang!</p>
+        
+        <div class="controls-grid" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px;">
+            <div>
+                <label for="sliderHole">Posisi Lubang (h): <span id="valHole" style="color:var(--accent-red)">100</span></label>
+                <input type="range" id="sliderHole" min="80" max="330" value="200" style="width:100%">
+            </div>
+            <div>
+                <label for="sliderBasket">Posisi Wadah (x): <span id="valBasket" style="color:var(--success)">600</span></label>
+                <input type="range" id="sliderBasket" min="300" max="750" value="600" style="width:100%">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button id="btnSpout" class="btn" style="width: 100%;">BUKA PANCURAN</button>
+            </div>
+        </div>
+
+        <canvas id="canvasTorricelli" width="800" height="400" style="background:#040812;"></canvas>
+        <div id="torricelliMsg" class="canvas-label-overlay">Atur lubang dan posisi wadah, lalu klik "Buka Pancuran". Jangkauan maksimal (x) terjadi saat lubang ada di tengah-tengah!</div>
+    </div>
+
+</div>
+
+<script>
+    // ==========================================
+    // SEKSI 1: LOGIKA SIMULASI SAYAP PESAWAT (AIRFOIL)
+    // ==========================================
+    const cvsAirfoil = document.getElementById('canvasAirfoil');
+    const ctxA = cvsAirfoil.getContext('2d');
+    const sliderWind = document.getElementById('sliderWind');
+    const btnAoAMinus = document.getElementById('btnAoAMinus');
+    const btnAoAPlus = document.getElementById('btnAoAPlus');
+    const aoaValueTxt = document.getElementById('aoaValue');
+
+    let af_aoa = 5; // Angle of Attack (derajat)
+    let af_particles = [];
+    const af_numParticles = 250;
+
+    // Alat Ukur (Probe)
+    let probe = { x: 300, y: 50, radius: 15, isDragging: false };
+
+    // Inisialisasi Partikel Airfoil
+    for(let i=0; i<af_numParticles; i++) {
+        af_particles.push({
+            x: Math.random() * 800,
+            y: Math.random() * 300,
+            length: Math.random() * 10 + 5
+        });
+    }
+
+    // Fungsi menghitung vektor kecepatan lokal (vx, vy) dan magnitudo
+    function getLocalWindData(x, y, baseSpeed, aoa) {
+        let cx = 400, cy = 150; // Pusat sayap
+        let dx = x - cx;
+        let dy = y - cy;
+        
+        // Rotasi koordinat sesuai kemiringan sayap (Angle of Attack)
+        // Hidung di Kanan (+120), Ekor di Kiri (-120). Angin dari Kanan ke Kiri.
+        let rad = aoa * Math.PI / 180;
+        let rx = dx * Math.cos(rad) + dy * Math.sin(rad);
+        let ry = -dx * Math.sin(rad) + dy * Math.cos(rad);
+
+        // Kecepatan dasar angin (dari Kanan ke Kiri, jadi negatif X)
+        let vx = -baseSpeed; 
+        let vy = 0;
+        let speed = baseSpeed;
+
+        // Area interaksi sayap (rx antara 150 dan -150)
+        if (rx > -150 && rx < 150) {
+            let distY = Math.abs(ry);
+            let effect = Math.max(0, 1 - distY / 120); // Pengaruh mengecil jika makin jauh ke atas/bawah
+            
+            // Profil camber asimetris: udara di atas secara natural dipaksa lebih cepat
+            let effectiveAoA = Math.max(-20, Math.min(aoa, 20)); 
+            let camberEffect = 0.3; 
+            
+            // Defleksi bentuk (mengikuti kurva sayap)
+            let deflectionCurve = Math.cos((rx / 150) * Math.PI / 2); // 1 di tengah, 0 di ujung
+            
+            if (ry < 0) {
+                // DI ATAS SAYAP (ry negatif)
+                let speedBoost = (camberEffect + effectiveAoA * 0.05) * effect;
+                vx -= baseSpeed * Math.max(0, speedBoost); // Makin cepat (makin negatif)
+                
+                // Udara membelok mengikuti bentuk sayap atas
+                if(rx > 0) vy -= baseSpeed * deflectionCurve * 0.5 * effect; // Naik di depan
+                else vy += baseSpeed * deflectionCurve * 0.3 * effect;       // Turun di belakang
+                
+                // Efek Turbulensi / STALL jika sudut terlalu tinggi (> 15 derajat)
+                if (aoa > 15 && rx < 20) {
+                    vx += (Math.random() - 0.2) * baseSpeed * 1.5; // Melambat mendadak dan kacau
+                    vy += (Math.random() - 0.5) * baseSpeed;
+                }
+            } else {
+                // DI BAWAH SAYAP (ry positif)
+                let speedDrop = (camberEffect + effectiveAoA * 0.05) * effect;
+                vx += baseSpeed * Math.max(0, speedDrop * 0.8); // Melambat (mendekati 0)
+                
+                // Udara membelok mengikuti bentuk sayap bawah
+                if(rx > 0) vy += baseSpeed * deflectionCurve * 0.3 * effect; // Turun di depan
+                else vy -= baseSpeed * deflectionCurve * 0.1 * effect;       // Naik di belakang
+
+                // Efek Turbulensi / STALL jika sudut negatif terlalu ekstrem (< -15 derajat)
+                if (aoa < -15 && rx < 20) {
+                    vx += (Math.random() - 0.2) * baseSpeed * 1.5;
+                    vy += (Math.random() - 0.5) * baseSpeed;
+                }
+            }
+        }
+        
+        speed = Math.sqrt(vx*vx + vy*vy);
+        return { vx, vy, speed };
+    }
+
+    // Fungsi Event Listener untuk Drag & Drop Probe
+    function getMousePos(evt) {
+        const rect = cvsAirfoil.getBoundingClientRect();
+        const scaleX = cvsAirfoil.width / rect.width;
+        const scaleY = cvsAirfoil.height / rect.height;
+        let clientX = evt.clientX;
+        let clientY = evt.clientY;
+
+        if (evt.touches && evt.touches.length > 0) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        }
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+
+    function startDrag(evt) {
+        let pos = getMousePos(evt);
+        let dx = pos.x - probe.x; let dy = pos.y - probe.y;
+        if (Math.sqrt(dx*dx + dy*dy) < probe.radius * 2) {
+            probe.isDragging = true; cvsAirfoil.style.cursor = 'grabbing';
+            if(evt.type === 'touchstart') evt.preventDefault();
+        }
+    }
+
+    function doDrag(evt) {
+        if (probe.isDragging) {
+            let pos = getMousePos(evt);
+            probe.x = pos.x; probe.y = pos.y;
+            if(evt.type === 'touchmove') evt.preventDefault();
+        }
+    }
+
+    function stopDrag() { probe.isDragging = false; cvsAirfoil.style.cursor = 'grab'; }
+
+    cvsAirfoil.addEventListener('mousedown', startDrag);
+    cvsAirfoil.addEventListener('mousemove', doDrag);
+    window.addEventListener('mouseup', stopDrag);
+    cvsAirfoil.addEventListener('touchstart', startDrag, {passive: false});
+    cvsAirfoil.addEventListener('touchmove', doDrag, {passive: false});
+    window.addEventListener('touchend', stopDrag);
+
+    // Kontrol Tombol Kemiringan (-45 hingga 45, interval 5 derajat)
+    btnAoAMinus.addEventListener('click', () => { if(af_aoa > -45) af_aoa -= 5; aoaValueTxt.innerText = af_aoa; });
+    btnAoAPlus.addEventListener('click', () => { if(af_aoa < 45) af_aoa += 5; aoaValueTxt.innerText = af_aoa; });
+
+    // Fungsi menggambar panah (vektor gaya)
+    function drawArrow(ctx, fromx, fromy, tox, toy, color, text) {
+        let headlen = 10;
+        let dx = tox - fromx;
+        let dy = toy - fromy;
+        let angle = Math.atan2(dy, dx);
+        let len = Math.sqrt(dx*dx + dy*dy);
+        
+        if (len < 2) return; // Sembunyikan jika gaya 0
+
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 4;
+        
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        
+        if (text) {
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText(text, tox + (dx > 0 ? 10 : -45), toy + (dy > 0 ? 15 : -10));
+        }
+    }
+
+    function drawAirfoilCanvas() {
+        ctxA.clearRect(0, 0, 800, 300);
+        let baseSpeed = parseInt(sliderWind.value);
+
+        // --- KALKULASI GAYA (Lift & Drag) ---
+        let absAoA = Math.abs(af_aoa);
+        
+        // Koefisien Lift (CL): Prinsip Bernoulli. Naik hingga 15 derajat, lalu STALL (anjlok drastis).
+        let cl = (absAoA <= 15) ? (0.12 * af_aoa + 0.3) : (Math.sign(af_aoa) * Math.max(0, 2.1 * Math.cos((absAoA - 15) * Math.PI / 60)));
+        
+        // Koefisien Drag (CD): Hambatan bertambah eksponensial seiring kemiringan
+        let cd = 0.05 + 0.008 * Math.pow(af_aoa, 2);
+
+        // Gaya (F = C * v^2)
+        let liftForce = cl * baseSpeed * baseSpeed * 0.03;
+        let dragForce = cd * baseSpeed * baseSpeed * 0.03;
+
+        document.getElementById('valLift').innerText = Math.round(liftForce);
+        document.getElementById('valDrag').innerText = Math.round(dragForce);
+
+        // --- 1. GAMBAR PARTIKEL ALIRAN UDARA ---
+        af_particles.forEach(p => {
+            let wind = getLocalWindData(p.x, p.y, baseSpeed, af_aoa);
+            
+            // Pergerakan partikel
+            p.x += wind.vx / 5; 
+            p.y += wind.vy / 5;
+
+            // Reset partikel jika keluar layar sebelah kiri (Kanan -> Kiri)
+            if(p.x < -20 || p.y < -50 || p.y > 350) { 
+                p.x = 820;
+                p.y = Math.random() * 300;
+            }
+
+            // Warna berdasarkan Hukum Bernoulli (Cepat = Merah/Tekanan Rendah, Lambat = Biru/Tekanan Tinggi)
+            let speedRatio = wind.speed / (baseSpeed * 2.5);
+            let r = Math.min(255, speedRatio * 255 + 50);
+            let b = Math.max(50, 255 - speedRatio * 200);
+
+            ctxA.strokeStyle = `rgba(${r}, 50, ${b}, 0.7)`;
+            ctxA.lineWidth = 2;
+            ctxA.beginPath();
+            ctxA.moveTo(p.x, p.y);
+            // Jejak partikel menyesuaikan vektor kecepatannya
+            ctxA.lineTo(p.x - wind.vx/3, p.y - wind.vy/3); 
+            ctxA.stroke();
+        });
+
+        // --- 2. GAMBAR SAYAP PESAWAT (Dengan Animasi Getaran) ---
+        // Getaran dipicu oleh besarnya Drag atau saat sedang Stall (turbulensi)
+        let isStall = absAoA > 15;
+        let jitterAmount = (dragForce * 0.02) + (isStall ? 2 : 0);
+        let jitterX = (Math.random() - 0.5) * jitterAmount * (baseSpeed/50);
+        let jitterY = (Math.random() - 0.5) * jitterAmount * (baseSpeed/50);
+
+        ctxA.save();
+        ctxA.translate(400 + jitterX, 150 + jitterY);
+        
+        // Rotasi (angin dari Kanan. AoA positif -> hidung naik -> rotasi berlawanan arah jarum jam)
+        ctxA.rotate(-af_aoa * Math.PI / 180); 
+        
+        ctxA.beginPath();
+        ctxA.moveTo(-120, 0); // Ekor (Trailing edge) di Kiri
+        ctxA.bezierCurveTo(-50, -45, 100, -55, 120, 0); // Permukaan atas (Cembung)
+        ctxA.bezierCurveTo(100, 15, -50, 10, -120, 0);  // Permukaan bawah (Cenderung Datar)
+        
+        ctxA.fillStyle = '#475569';
+        ctxA.fill();
+        ctxA.strokeStyle = isStall ? '#ef4444' : '#f8fafc'; // Sayap memerah sedikit jika stall
+        ctxA.lineWidth = 3;
+        ctxA.stroke();
+        ctxA.restore();
+
+        // --- 3. GAMBAR VEKTOR GAYA LIFT & DRAG ---
+        let scaleF = 0.5;
+        // Lift positif menarik ke ATAS (Y negatif di canvas)
+        let liftArrowY = 150 - (liftForce * scaleF); 
+        // Drag selalu mendorong searah angin (Ke KIRI / X negatif di canvas)
+        let dragArrowX = 400 - (dragForce * scaleF); 
+
+        drawArrow(ctxA, 400, 150, 400, liftArrowY, '#3b82f6', 'LIFT');
+        drawArrow(ctxA, 400, 150, dragArrowX, 150, '#ef4444', 'DRAG');
+
+        // --- 4. GAMBAR ALAT UKUR (PROBE) ---
+        let measuredData = getLocalWindData(probe.x, probe.y, baseSpeed, af_aoa);
+        
+        ctxA.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+        ctxA.setLineDash([5, 5]);
+        ctxA.beginPath();
+        ctxA.moveTo(probe.x, 0); ctxA.lineTo(probe.x, 300);
+        ctxA.moveTo(0, probe.y); ctxA.lineTo(800, probe.y);
+        ctxA.stroke();
+        ctxA.setLineDash([]);
+
+        ctxA.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        ctxA.strokeStyle = '#ef4444';
+        ctxA.lineWidth = 2;
+        ctxA.beginPath();
+        ctxA.arc(probe.x, probe.y, probe.radius, 0, Math.PI * 2);
+        ctxA.fill();
+        ctxA.stroke();
+        ctxA.beginPath();
+        ctxA.arc(probe.x, probe.y, 2, 0, Math.PI * 2);
+        ctxA.fillStyle = '#ef4444';
+        ctxA.fill();
+
+        ctxA.fillStyle = '#111827';
+        ctxA.fillRect(probe.x + 15, probe.y - 35, 130, 25);
+        ctxA.strokeStyle = '#ef4444';
+        ctxA.strokeRect(probe.x + 15, probe.y - 35, 130, 25);
+        
+        ctxA.fillStyle = '#fff';
+        ctxA.font = 'bold 12px sans-serif';
+        ctxA.fillText(`V: ${measuredData.speed.toFixed(1)} m/s`, probe.x + 20, probe.y - 18);
+
+        requestAnimationFrame(drawAirfoilCanvas);
+    }
+
+    // ==========================================
+    // GEOMETRI PIPA VENTURI (FUNGSI GLOBAL)
+    // ==========================================
+    // Menggunakan kurva smoothstep untuk transisi pipa yang mulus
+    function smoothStep(edge0, edge1, x) {
+        let t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+        return t * t * (3 - 2 * t);
+    }
+    
+    // ==========================================
+    // SEKSI 2 & 3: CANVAS PIPA VENTURI & NERACA
+    // ==========================================
+    const cvsVenturi = document.getElementById('canvasVenturi');
+    const ctxV = cvsVenturi.getContext('2d');
+    
+    // Sliders
+    const sliderV1 = document.getElementById('sliderV1');
+    const sliderD1 = document.getElementById('sliderD1');
+    const sliderD2 = document.getElementById('sliderD2');
+    const sliderZ1 = document.getElementById('sliderZ1');
+    const sliderZ2 = document.getElementById('sliderZ2');
+    
+    // Elemen DOM untuk Neraca
+    const barP1 = document.getElementById('barP1'), barKE1 = document.getElementById('barKE1'), barPE1 = document.getElementById('barPE1');
+    const barP2 = document.getElementById('barP2'), barKE2 = document.getElementById('barKE2'), barPE2 = document.getElementById('barPE2');
+
+    let particles = [];
+    const numParticles = 200;
+
+    // --- FITUR DRAG PIPA MANOMETER (ALAT UKUR VENTURI) ---
+    let venturiManometers = [
+        { x: 200, id: 1 },
+        { x: 600, id: 2 }
+    ];
+    let draggedVenturiMano = null;
+
+    function getMousePosV(evt) {
+        const rect = cvsVenturi.getBoundingClientRect();
+        const scaleX = cvsVenturi.width / rect.width;
+        let clientX = evt.clientX;
+        if (evt.touches && evt.touches.length > 0) clientX = evt.touches[0].clientX;
+        return (clientX - rect.left) * scaleX;
+    }
+
+    function startDragV(evt) {
+        let mx = getMousePosV(evt);
+        // Cek apakah klik berada di dekat Pipa 1 atau Pipa 2 (toleransi 40px)
+        let hit = venturiManometers.find(m => Math.abs(m.x - mx) < 40);
+        if (hit) {
+            draggedVenturiMano = hit;
+            cvsVenturi.style.cursor = 'grabbing';
+            if(evt.type === 'touchstart') evt.preventDefault();
+        }
+    }
+
+    function doDragV(evt) {
+        if (draggedVenturiMano) {
+            let mx = getMousePosV(evt);
+            draggedVenturiMano.x = Math.max(30, Math.min(770, mx)); // Batasi agar tidak keluar kanvas
+            if(evt.type === 'touchmove') evt.preventDefault();
+        }
+    }
+
+    function stopDragV() {
+        draggedVenturiMano = null;
+        cvsVenturi.style.cursor = 'grab';
+    }
+
+    cvsVenturi.addEventListener('mousedown', startDragV);
+    cvsVenturi.addEventListener('mousemove', doDragV);
+    window.addEventListener('mouseup', stopDragV);
+    cvsVenturi.addEventListener('touchstart', startDragV, {passive: false});
+    cvsVenturi.addEventListener('touchmove', doDragV, {passive: false});
+    window.addEventListener('touchend', stopDragV);
+
+    // Fungsi Pembaca Geometri Dinamis
+    function getD(x) {
+        let d1 = parseInt(sliderD1.value), d2 = parseInt(sliderD2.value);
+        if(x < 300) return d1;
+        if(x > 500) return d2;
+        return d1 + (d2 - d1) * smoothStep(300, 500, x);
+    }
+
+    function getZ(x) {
+        let z1 = parseInt(sliderZ1.value), z2 = parseInt(sliderZ2.value);
+        if(x < 300) return z1;
+        if(x > 500) return z2;
+        return z1 + (z2 - z1) * smoothStep(300, 500, x);
+    }
+
+    function getVelocity(x, v1) {
+        let d1 = parseInt(sliderD1.value);
+        let dx = getD(x);
+        return v1 * (d1 * d1) / (dx * dx); // Persamaan Kontinuitas (A1*v1 = A2*v2)
+    }
+
+    // Konstanta Visual Canvas (Y terbalik: 0 di atas, 350 di bawah)
+    const Y_GROUND = 320; 
+    const TOTAL_HEAD = 250; // Total Energi (Konstan)
+    const Y_EGL = Y_GROUND - TOTAL_HEAD; // Garis Energi Total selalu horizontal di Y=70
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * 800;
+            this.ny = (Math.random() - 0.5); // Posisi relatif dari tengah pipa (-0.5 s/d 0.5)
+            this.length = Math.random() * 15 + 10;
+        }
+    }
+    for(let i=0; i<numParticles; i++) particles.push(new Particle());
+
+    function drawVenturi() {
+        ctxV.clearRect(0, 0, 800, 350);
+        
+        let v1 = parseInt(sliderV1.value);
+        let d1 = parseInt(sliderD1.value), d2 = parseInt(sliderD2.value);
+        let z1 = parseInt(sliderZ1.value), z2 = parseInt(sliderZ2.value);
+
+        // Update Label UI
+        document.getElementById('valV1').innerText = v1;
+        document.getElementById('valD1').innerText = d1;
+        document.getElementById('valD2').innerText = d2;
+        document.getElementById('valZ1').innerText = z1;
+        document.getElementById('valZ2').innerText = z2;
+        
+        // 1. Gambar Ground & Garis Energi Total (EGL)
+        ctxV.strokeStyle = '#334155'; ctxV.lineWidth = 2;
+        ctxV.beginPath(); ctxV.moveTo(0, Y_GROUND); ctxV.lineTo(800, Y_GROUND); ctxV.stroke();
+        ctxV.fillStyle = '#64748b'; ctxV.font = '12px sans-serif'; ctxV.fillText('Tanah (h=0)', 10, Y_GROUND + 15);
+
+        ctxV.strokeStyle = 'rgba(255, 234, 0, 0.5)'; ctxV.lineWidth = 2; ctxV.setLineDash([10, 5]);
+        ctxV.beginPath(); ctxV.moveTo(0, Y_EGL); ctxV.lineTo(800, Y_EGL); ctxV.stroke();
+        ctxV.setLineDash([]);
+        ctxV.fillStyle = 'rgba(255, 234, 0, 0.8)'; ctxV.fillText('Garis Energi Total (EGL)', 10, Y_EGL - 10);
+
+        // --- MENGHITUNG GEOMETRI PIPA EFEK 3D ---
+        let topPoints = [];
+        let bottomPoints = [];
+        for(let x=0; x<=800; x+=2) {
+            let y_center = Y_GROUND - getZ(x);
+            let d = getD(x);
+            topPoints.push({x: x, y: y_center - d/2});
+            bottomPoints.unshift({x: x, y: y_center + d/2});
+        }
+
+        // ==========================================
+        // LAYER 1: FLUIDA DALAM PIPA UTAMA
+        // ==========================================
+        ctxV.beginPath();
+        topPoints.forEach((p, i) => i === 0 ? ctxV.moveTo(p.x, p.y) : ctxV.lineTo(p.x, p.y));
+        bottomPoints.forEach(p => ctxV.lineTo(p.x, p.y));
+        ctxV.closePath();
+
+        // Gradien Fluida Utama (Kesan Volume Silinder)
+        let fluidGrad = ctxV.createLinearGradient(0, 100, 0, 320);
+        fluidGrad.addColorStop(0, 'rgba(56, 189, 248, 0.6)');   // Atas terang
+        fluidGrad.addColorStop(0.3, 'rgba(37, 99, 235, 0.9)');  // Tengah biru pekat
+        fluidGrad.addColorStop(0.8, 'rgba(30, 58, 138, 0.95)'); // Bawah agak gelap
+        fluidGrad.addColorStop(1, 'rgba(2, 6, 23, 0.8)');       // Dasar bayangan
+        ctxV.fillStyle = fluidGrad;
+        ctxV.fill();
+
+        // ==========================================
+        // LAYER 2: FLUIDA DALAM PIPA VERTIKAL (MANOMETER)
+        // ==========================================
+        venturiManometers.forEach((mano) => {
+            let mx = mano.x;
+            let zx = getZ(mx), dx = getD(mx), vx = getVelocity(mx, v1);
+            let y_center = Y_GROUND - zx;
+            let top_pipe = y_center - dx/2;
+            
+            let ke_head = 0.05 * vx * vx; 
+            let fluid_y = Y_EGL + ke_head; 
+            let isVacuum = fluid_y > top_pipe;
+            if(isVacuum) fluid_y = top_pipe; 
+            
+            // Kaca Manometer Bagian Belakang (Inner)
+            ctxV.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctxV.fillRect(mx - 12, Y_EGL - 20, 24, top_pipe - (Y_EGL - 20));
+
+            // Fluida Manometer (Menyatu dengan fluida utama tanpa batas bawah)
+            let manoGrad = ctxV.createLinearGradient(mx - 12, 0, mx + 12, 0);
+            if(isVacuum) {
+                manoGrad.addColorStop(0, 'rgba(153, 27, 27, 0.8)');
+                manoGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.9)');
+                manoGrad.addColorStop(1, 'rgba(153, 27, 27, 0.8)');
+            } else {
+                manoGrad.addColorStop(0, 'rgba(30, 64, 175, 0.8)');
+                manoGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.95)');
+                manoGrad.addColorStop(1, 'rgba(30, 64, 175, 0.8)');
+            }
+            ctxV.fillStyle = manoGrad;
+            // Ditambah sedikit (+5) ke bawah agar membaur ke pipa utama
+            ctxV.fillRect(mx - 10, fluid_y, 20, (top_pipe - fluid_y) + 5); 
+        });
+
+        // ==========================================
+        // LAYER 3: PARTIKEL ALIRAN
+        // ==========================================
+        particles.forEach(p => {
+            let vx = getVelocity(p.x, v1);
+            p.x += vx * 0.4; 
+            if(p.x > 800) { p.x = -10; p.ny = (Math.random() - 0.5); }
+            
+            let dx = getD(p.x);
+            let y_center = Y_GROUND - getZ(p.x);
+            let py = y_center + (p.ny * (dx - 12)); 
+            
+            let speedRatio = vx / 35; 
+            let r = Math.min(255, speedRatio * 255 + 50);
+            let b = Math.max(50, 255 - speedRatio * 200);
+            
+            ctxV.strokeStyle = `rgba(${r}, 50, ${b}, 0.8)`;
+            ctxV.lineWidth = 2;
+            ctxV.beginPath();
+            ctxV.moveTo(p.x, py);
+            let tailX = p.x - Math.min(vx, p.length);
+            let tailY = (Y_GROUND - getZ(tailX)) + (p.ny * (getD(tailX) - 12));
+            ctxV.lineTo(tailX, tailY);
+            ctxV.stroke();
+        });
+
+        // ==========================================
+        // LAYER 4: KACA PIPA UTAMA & SAMBUNGAN (SEAMLESS)
+        // ==========================================
+        
+        // A. Garis Tepi Kaca Bawah
+        ctxV.beginPath();
+        bottomPoints.reverse().forEach((p, i) => i === 0 ? ctxV.moveTo(p.x, p.y) : ctxV.lineTo(p.x, p.y));
+        bottomPoints.reverse(); 
+        ctxV.strokeStyle = 'rgba(148, 163, 184, 0.9)'; // Warna batas solid
+        ctxV.lineWidth = 4;
+        ctxV.stroke();
+        // Pantulan Bawah Kaca Utama
+        ctxV.beginPath();
+        bottomPoints.reverse().forEach((p, i) => i === 0 ? ctxV.moveTo(p.x, p.y - 4) : ctxV.lineTo(p.x, p.y - 4));
+        bottomPoints.reverse();
+        ctxV.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctxV.lineWidth = 1.5;
+        ctxV.stroke();
+
+        // B. Garis Tepi Kaca Atas (DIPOTONG/BOLONG di area Manometer)
+        ctxV.beginPath();
+        let isDrawing = false;
+        topPoints.forEach((p, i) => {
+            // Cek apakah titik X ini berada di dalam salah satu lubang manometer
+            let insideHole = venturiManometers.some(m => Math.abs(m.x - p.x) <= 12);
+            
+            if (!insideHole) {
+                if (!isDrawing) { ctxV.moveTo(p.x, p.y); isDrawing = true; } 
+                else { ctxV.lineTo(p.x, p.y); }
+            } else {
+                isDrawing = false; // Angkat pena (buat celah)
+            }
+        });
+        ctxV.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctxV.lineWidth = 4;
+        ctxV.lineCap = 'round';
+        ctxV.stroke();
+        
+        // Pantulan Atas Kaca Utama (Highlight)
+        ctxV.beginPath();
+        isDrawing = false;
+        topPoints.forEach((p, i) => {
+            let insideHole = venturiManometers.some(m => Math.abs(m.x - p.x) <= 12);
+            if (!insideHole) {
+                if (!isDrawing) { ctxV.moveTo(p.x, p.y + 4); isDrawing = true; } 
+                else { ctxV.lineTo(p.x, p.y + 4); }
+            } else { isDrawing = false; }
+        });
+        ctxV.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctxV.lineWidth = 2;
+        ctxV.stroke();
+
+        // ==========================================
+        // LAYER 5: KACA DEPAN MANOMETER & UI OVERLAYS
+        // ==========================================
+        venturiManometers.forEach((mano) => {
+            let mx = mano.x, index = mano.id;
+            let zx = getZ(mx), dx = getD(mx), vx = getVelocity(mx, v1);
+            let y_center = Y_GROUND - zx;
+            let top_pipe = y_center - dx/2;
+            let ke_head = 0.05 * vx * vx; 
+            let fluid_y = Y_EGL + ke_head; 
+            let isVacuum = fluid_y > top_pipe;
+            if(isVacuum) fluid_y = top_pipe; 
+
+            // Garis Tepi Vertikal Kaca Manometer (Kiri & Kanan)
+            ctxV.beginPath();
+            ctxV.moveTo(mx - 12, Y_EGL - 20); ctxV.lineTo(mx - 12, top_pipe + 1);
+            ctxV.moveTo(mx + 12, Y_EGL - 20); ctxV.lineTo(mx + 12, top_pipe + 1);
+            ctxV.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctxV.lineWidth = 3;
+            ctxV.stroke();
+
+            // Lengkungan Atas (Tutup Kaca Manometer)
+            ctxV.beginPath();
+            if (ctxV.ellipse) {
+                ctxV.ellipse(mx, Y_EGL - 20, 12, 4, 0, Math.PI, 0);
+            } else {
+                ctxV.moveTo(mx - 12, Y_EGL - 20); ctxV.lineTo(mx + 12, Y_EGL - 20);
+            }
+            ctxV.stroke();
+
+            // Pantulan Kaca Manometer (Highlight Vertikal Putih)
+            ctxV.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctxV.lineWidth = 2;
+            ctxV.beginPath();
+            ctxV.moveTo(mx - 6, Y_EGL - 18);
+            ctxV.lineTo(mx - 6, top_pipe - 2);
+            ctxV.stroke();
+
+            // Garis Skala Pengukur pada Kaca
+            ctxV.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctxV.lineWidth = 1;
+            for(let tick = Y_EGL - 10; tick < top_pipe; tick+= 15) {
+                ctxV.beginPath();
+                ctxV.moveTo(mx + 6, tick); ctxV.lineTo(mx + 12, tick);
+                ctxV.stroke();
+            }
+
+            // --- UI: AREA DRAG & HANDLE ---
+            ctxV.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            ctxV.fillRect(mx - 30, 0, 60, 350);
+            ctxV.fillStyle = '#cbd5e1'; // Segitiga Drag
+            ctxV.beginPath(); 
+            ctxV.moveTo(mx - 10, Y_EGL - 35); ctxV.lineTo(mx + 10, Y_EGL - 35); ctxV.lineTo(mx, Y_EGL - 25); 
+            ctxV.fill();
+
+            // Indikator Titik Pusat & Garis Elevasi (h)
+            ctxV.fillStyle = '#10b981'; ctxV.beginPath(); ctxV.arc(mx, y_center, 4, 0, Math.PI*2); ctxV.fill();
+            ctxV.strokeStyle = 'rgba(16, 185, 129, 0.5)'; ctxV.beginPath();
+            ctxV.moveTo(mx, Y_GROUND); ctxV.lineTo(mx, y_center); ctxV.stroke();
+
+            // --- UI: PANEL INDIKATOR P & V ---
+            let p_val = (top_pipe - fluid_y).toFixed(0);
+            if (p_val < 0) p_val = 0;
+
+            ctxV.fillStyle = 'rgba(15, 23, 42, 0.85)'; 
+            ctxV.fillRect(mx - 45, top_pipe + dx/2 + 10, 90, 45);
+            ctxV.strokeStyle = '#38bdf8'; ctxV.lineWidth = 1;
+            ctxV.strokeRect(mx - 45, top_pipe + dx/2 + 10, 90, 45);
+
+            ctxV.fillStyle = '#fff'; ctxV.font = 'bold 12px sans-serif'; ctxV.textAlign = 'center';
+            if(isVacuum) {
+                ctxV.fillStyle = '#ef4444'; ctxV.fillText('KAVITASI!', mx, fluid_y - 10);
+                ctxV.fillText(`P: 0 unit`, mx, top_pipe + dx/2 + 25);
+            } else {
+                ctxV.fillStyle = '#38bdf8'; ctxV.fillText(`P${index}`, mx, fluid_y - 10);
+                ctxV.fillStyle = '#fff'; ctxV.fillText(`P: ${p_val} unit`, mx, top_pipe + dx/2 + 25);
+            }
+            ctxV.fillStyle = '#ef4444'; ctxV.font = 'bold 11px sans-serif';
+            ctxV.fillText(`v: ${vx.toFixed(1)} m/s`, mx, top_pipe + dx/2 + 42);
+        });
+
+        // 5. Update DOM Neraca Bernoulli
+        updateNeraca(v1);
+
+        requestAnimationFrame(drawVenturi);
+    }
+
+    function updateNeraca(v1) {
+        // Kalkulasi diambil tepat dari posisi X masing-masing pipa manometer
+        let data = [
+            { x: venturiManometers[0].x, z: getZ(venturiManometers[0].x), d: getD(venturiManometers[0].x) },
+            { x: venturiManometers[1].x, z: getZ(venturiManometers[1].x), d: getD(venturiManometers[1].x) }
+        ];
+
+        let bars = [
+            { p: barP1, ke: barKE1, pe: barPE1 },
+            { p: barP2, ke: barKE2, pe: barPE2 }
+        ];
+
+        data.forEach((loc, i) => {
+            let vx = getVelocity(loc.x, v1);
+            
+            // Konversi ke persentase energi (Total = 250px)
+            let pe_percent = (loc.z / TOTAL_HEAD) * 100;
+            let ke_percent = ((0.05 * vx * vx) / TOTAL_HEAD) * 100;
+            let p_percent = 100 - pe_percent - ke_percent;
+
+            if (p_percent < 0) p_percent = 0; // Kavitasi limit
+
+            bars[i].pe.style.height = `${pe_percent}%`;
+            bars[i].ke.style.height = `${ke_percent}%`;
+            bars[i].p.style.height = `${p_percent}%`;
+
+            // Tambahan label nilai persentase yang presisi
+            bars[i].pe.innerHTML = pe_percent > 10 ? `PE: ${pe_percent.toFixed(0)}%` : '';
+            bars[i].ke.innerHTML = ke_percent > 10 ? `KE: ${ke_percent.toFixed(0)}%` : '';
+            bars[i].p.innerHTML = p_percent > 10 ? `P: ${p_percent.toFixed(0)}%` : '';
+            
+            // Merah menyala jika tekanan kritis
+            if(p_percent === 0) bars[i].p.style.background = 'red';
+            else bars[i].p.style.background = 'linear-gradient(to bottom, var(--accent-blue), #1d4ed8)';
+        });
+    }
+
+    // ==========================================
+    // SEKSI 4: TANGKI BOCOR (TORRICELLI)
+    // ==========================================
+    const cvsTorricelli = document.getElementById('canvasTorricelli');
+    const ctxT = cvsTorricelli.getContext('2d');
+    const sliderHole = document.getElementById('sliderHole');
+    const sliderBasket = document.getElementById('sliderBasket');
+    const valHole = document.getElementById('valHole');
+    const valBasket = document.getElementById('valBasket');
+    const btnSpout = document.getElementById('btnSpout');
+    const msgT = document.getElementById('torricelliMsg');
+
+    let isSpoutOpen = false;
+    let spoutTimer = 0;
+    let spoutState = "IDLE"; // IDLE, FLOWING, SUCCESS, FAIL
+    let t_particles = [];
+
+    // Logika Tombol Pancuran
+    btnSpout.addEventListener('click', () => {
+        if (!isSpoutOpen) {
+            isSpoutOpen = true;
+            spoutTimer = 0;
+            spoutState = "FLOWING";
+            sliderHole.disabled = true;
+            sliderBasket.disabled = true;
+            btnSpout.innerText = "TUTUP PANCURAN";
+            btnSpout.classList.add("danger");
+            msgT.innerHTML = "Pancuran dibuka! Mengamati lintasan air...";
+            t_particles = []; // Bersihkan cipratan sebelumnya
+        } else {
+            closeSpout();
+        }
+    });
+
+    function closeSpout() {
+        isSpoutOpen = false;
+        spoutState = "IDLE";
+        sliderHole.disabled = false;
+        sliderBasket.disabled = false;
+        btnSpout.innerText = "BUKA PANCURAN";
+        btnSpout.classList.remove("danger");
+        t_particles = [];
+        if(msgT.innerHTML.includes("MELESET") || msgT.innerHTML.includes("otomatis")) {
+            msgT.innerHTML = "Atur kembali posisi lubang dan wadah, lalu coba lagi!";
+        }
+    }
+
+    // Pembuat Partikel Cipratan
+    function createSplash(x, y, color) {
+        for(let i=0; i<4; i++) {
+            t_particles.push({
+                x: x + (Math.random() - 0.5) * 15,
+                y: y,
+                vx: (Math.random() - 0.5) * 5,
+                vy: -Math.random() * 4 - 2,
+                life: 1.0,
+                color: color
+            });
+        }
+    }
+
+    function drawTorricelli() {
+        ctxT.clearRect(0, 0, 800, 400);
+        
+        const tankX = 50, tankW = 120;
+        const tankTop = 50, tankBottom = 350;
+        const waterTop = 70; // Permukaan air
+        
+        let holeY = parseInt(sliderHole.value);
+        let basketX = parseInt(sliderBasket.value);
+        let basketW = 60, basketH = 50;
+        let basketY = tankBottom - basketH; // Wadah berdiri tepat di atas tanah
+        
+        // Update label
+        valHole.innerText = holeY;
+        valBasket.innerText = basketX;
+
+        // Fisika Pancaran (Simulasi Visual)
+        let h = holeY - waterTop; 
+        let g = 0.2; // Skala gravitasi visual
+        let vx = Math.sqrt(2 * g * h) * 2.0; // Multiplier horizontal agar pas di canvas
+        
+        let y_fall = tankBottom - holeY;
+        let t_total = Math.sqrt(2 * y_fall / g); // Waktu total sampai menyentuh tanah
+        let x_impact = (tankX + tankW) + vx * t_total; // Titik jatuh di tanah
+
+        // Cek masuk tepat sasaran
+        let isHit = Math.abs(x_impact - (basketX + basketW/2)) < (basketW/2 + 5);
+
+        // 1. Gambar Tanah (Ground)
+        ctxT.fillStyle = '#1e293b';
+        ctxT.fillRect(0, tankBottom, 800, 50);
+        ctxT.strokeStyle = '#475569';
+        ctxT.lineWidth = 4;
+        ctxT.beginPath(); ctxT.moveTo(0, tankBottom); ctxT.lineTo(800, tankBottom); ctxT.stroke();
+
+        // 2. Gambar Tangki Belakang (Efek Kedalaman)
+        ctxT.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctxT.fillRect(tankX, tankTop, tankW, tankBottom - tankTop);
+
+        // 3. Gambar Air Dalam Tangki
+        let waterGrad = ctxT.createLinearGradient(tankX, waterTop, tankX + tankW, waterTop);
+        waterGrad.addColorStop(0, 'rgba(30, 64, 175, 0.8)');
+        waterGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.9)');
+        waterGrad.addColorStop(1, 'rgba(30, 64, 175, 0.8)');
+        ctxT.fillStyle = waterGrad;
+        ctxT.fillRect(tankX, waterTop, tankW, tankBottom - waterTop);
+        // Permukaan air
+        ctxT.strokeStyle = 'rgba(186, 230, 253, 0.9)';
+        ctxT.lineWidth = 2;
+        ctxT.beginPath(); ctxT.moveTo(tankX, waterTop); ctxT.lineTo(tankX + tankW, waterTop); ctxT.stroke();
+
+        // 4. Gambar Dinding Depan Tangki
+        ctxT.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+        ctxT.lineWidth = 4;
+        ctxT.lineCap = 'square';
+        ctxT.beginPath();
+        // Dinding kiri & bawah
+        ctxT.moveTo(tankX, tankTop); ctxT.lineTo(tankX, tankBottom); ctxT.lineTo(tankX + tankW, tankBottom);
+        // Dinding kanan (terpotong lubang)
+        ctxT.lineTo(tankX + tankW, holeY + 10);
+        ctxT.stroke();
+        ctxT.beginPath();
+        ctxT.moveTo(tankX + tankW, holeY - 10); ctxT.lineTo(tankX + tankW, tankTop);
+        ctxT.stroke();
+
+        // Moncong Pipa (Spout)
+        ctxT.fillStyle = '#64748b';
+        ctxT.fillRect(tankX + tankW, holeY - 12, 12, 24);
+        ctxT.strokeStyle = 'white';
+        ctxT.lineWidth = 2;
+        ctxT.strokeRect(tankX + tankW, holeY - 12, 12, 24);
+
+        // 5. Gambar Wadah Penerima (Basket) Realistis
+        // Bagian belakang wadah (gelap)
+        ctxT.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctxT.fillRect(basketX, basketY, basketW, basketH);
+        
+        // Badan wadah (Bentuk U dengan gradien metalik/kaca)
+        let basketGrad = ctxT.createLinearGradient(basketX, 0, basketX + basketW, 0);
+        basketGrad.addColorStop(0, '#475569');
+        basketGrad.addColorStop(0.5, '#cbd5e1');
+        basketGrad.addColorStop(1, '#334155');
+        ctxT.fillStyle = basketGrad;
+        ctxT.globalAlpha = 0.85; // Sedikit transparan agar air di dalamnya terlihat
+        
+        ctxT.beginPath();
+        ctxT.moveTo(basketX, basketY);
+        ctxT.lineTo(basketX, basketY + basketH);
+        ctxT.lineTo(basketX + basketW, basketY + basketH);
+        ctxT.lineTo(basketX + basketW, basketY);
+        ctxT.lineTo(basketX + basketW - 5, basketY);
+        ctxT.lineTo(basketX + basketW - 5, basketY + basketH - 5);
+        ctxT.lineTo(basketX + 5, basketY + basketH - 5);
+        ctxT.lineTo(basketX + 5, basketY);
+        ctxT.closePath();
+        ctxT.fill();
+        ctxT.globalAlpha = 1.0;
+
+        // Highlight Wadah (Hijau jika sukses)
+        ctxT.strokeStyle = (spoutState === "SUCCESS" || (spoutState === "FLOWING" && isHit)) ? '#10b981' : 'rgba(255,255,255,0.4)';
+        ctxT.lineWidth = 2;
+        ctxT.strokeRect(basketX, basketY, basketW, basketH);
+
+        // 6. Logika Animasi Pancuran
+        if (!isSpoutOpen) {
+            // Gambar Sumbat (Plug) warna merah saat ditutup
+            ctxT.fillStyle = '#ef4444';
+            ctxT.fillRect(tankX + tankW + 12, holeY - 10, 8, 20);
+            ctxT.fillStyle = '#7f1d1d';
+            ctxT.fillRect(tankX + tankW + 20, holeY - 6, 6, 12); // Gagang sumbat
+        } else {
+            // Proses Air Mengalir
+            spoutTimer += 1.2; // Kecepatan aliran animasi
+            let current_t = Math.min(spoutTimer, t_total);
+
+            // Path Lintasan Air
+            ctxT.beginPath();
+            let startX = tankX + tankW + 12;
+            ctxT.moveTo(startX, holeY);
+            let px = startX, py = holeY;
+            
+            for(let t = 0; t <= current_t; t += 0.5) {
+                px = startX + vx * t;
+                py = holeY + 0.5 * g * t * t;
+                ctxT.lineTo(px, py);
+            }
+            
+            // Render Air
+            ctxT.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+            ctxT.lineWidth = 10;
+            ctxT.lineCap = 'round';
+            ctxT.stroke();
+            // Core cahaya dalam air
+            ctxT.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctxT.lineWidth = 3;
+            ctxT.stroke();
+
+            // Cek kondisi saat air menyentuh dasar / masuk wadah
+            if (current_t >= t_total) {
+                createSplash(px, py, 'rgba(56, 189, 248, 0.8)');
+                
+                if (spoutState === "FLOWING") {
+                    if (isHit) {
+                        spoutState = "SUCCESS";
+                        msgT.innerHTML = `<span style="color:#10b981; font-weight:bold; font-size:1.1rem;">TEPAT SASARAN!</span> Energi potensial terkonversi sempurna.`;
+                    } else {
+                        spoutState = "FAIL";
+                        msgT.innerHTML = `<span style="color:#ef4444; font-weight:bold;">YAHH MELESET!</span> Menutup pancuran otomatis dalam 1,5 detik...`;
+                        
+                        // Menutup otomatis jika meleset
+                        setTimeout(() => {
+                            if (spoutState === "FAIL") closeSpout();
+                        }, 1500);
+                    }
+                }
+            }
+        }
+
+        // 7. Render Efek Cipratan Air
+        for(let i = t_particles.length - 1; i >= 0; i--) {
+            let p = t_particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.5; // Efek gravitasi pada cipratan
+            p.life -= 0.05;
+
+            ctxT.fillStyle = p.color;
+            ctxT.globalAlpha = Math.max(0, p.life);
+            ctxT.beginPath();
+            ctxT.arc(p.x, p.y, 3, 0, Math.PI*2);
+            ctxT.fill();
+            ctxT.globalAlpha = 1.0;
+
+            if (p.life <= 0) t_particles.splice(i, 1);
+        }
+
+        requestAnimationFrame(drawTorricelli);
+    }
+
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+    window.onload = function() {
+        // Start Animasi Loop
+        drawAirfoilCanvas();
+        drawVenturi();
+        drawTorricelli();
+    };
+
+</script>
+</body>
+</html>
