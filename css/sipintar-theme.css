@@ -1,0 +1,61 @@
+/* Simpan sebagai: css/sipintar-theme.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    /* Variabel Warna Default (Mode Gelap Cybernetic) */
+    --sp-bg-main: #0f172a;
+    --sp-bg-panel: #1e293b;
+    --sp-bg-input: #0b1120;
+    --sp-text-main: #f8fafc;
+    --sp-text-muted: #94a3b8;
+    --sp-border: #334155;
+    --sp-accent-primary: #3b82f6;
+    --sp-accent-cyan: #06b6d4;
+    --sp-accent-amber: #f59e0b;
+    --sp-accent-green: #10b981;
+    --sp-accent-red: #ef4444;
+}
+
+/* Otomatis aktif saat Portal Utama mengirim parameter theme=light */
+html[data-theme="light"] {
+    --sp-bg-main: #f8fafc;
+    --sp-bg-panel: #ffffff;
+    --sp-bg-input: #f1f5f9;
+    --sp-text-main: #0f172a;
+    --sp-text-muted: #475569;
+    --sp-border: #cbd5e1;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--sp-bg-main) !important;
+    color: var(--sp-text-main) !important;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Penyeragaman Panel & Kartu di LKPD, Kuis, maupun Media */
+html[data-theme="light"] .panel,
+html[data-theme="light"] .main-container,
+html[data-theme="light"] .main-wrapper,
+html[data-theme="light"] .statement-item,
+html[data-theme="light"] .option-label {
+    background-color: var(--sp-bg-panel) !important;
+    color: var(--sp-text-main) !important;
+    border-color: var(--sp-border) !important;
+}
+
+html[data-theme="light"] .stimulus-box,
+html[data-theme="light"] .form-input,
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+    background-color: var(--sp-bg-input) !important;
+    color: var(--sp-text-main) !important;
+    border-color: var(--sp-border) !important;
+}
+
+/* Scrollbar Seragam di Semua Perangkat */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
