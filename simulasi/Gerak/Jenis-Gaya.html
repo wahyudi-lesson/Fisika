@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Dynamics HUD: Analisis Gaya & FBD</title>
+    <style>
+        :root {
+            /* Palet Warna Gelap & Vektor Neon */
+            --bg-base: #0f172a;
+            --bg-panel: #1e293b;
+            --c-w: #ffff00;       /* Berat - Kuning Neon Murni */
+            --c-n: #00ffff;       /* Normal - Cyan Neon Murni */
+            --c-f: #ff8800;       /* Tarik/Luar - Oranye Neon Murni */
+            --c-fric: #ff007f;    /* Gesek - Pink/Merah Neon */
+            --c-wx: #cc00ff;      /* Komponen Wx - Ungu Neon */
+            --c-wy: #00ff88;      /* Komponen Wy - Hijau Neon/Mint */
+            --c-res: #39ff14;     /* Resultan - Hijau Neon Terang */
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --grid-line: rgba(255, 255, 255, 0.15);
+            --border-hud: #334155;
+            --font-ui: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            line-height: 1.6;
+            overflow-x: hidden;
+            font-size: 14px;
+        }
+
+        .container { max-width: 1440px; margin: 0 auto; padding: 15px; }
+
+        /* Typography & Headers */
+        h1 { font-size: 1.8rem; color: var(--c-n); text-transform: uppercase; text-align: center; font-weight: 800; letter-spacing: 1px; }
+        .subtitle { text-align: center; color: var(--c-f); font-size: 0.95rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        h2 { font-size: 1.2rem; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid var(--border-hud); color: var(--text-main); display: flex; align-items: center; justify-content: space-between;}
+        h3 { font-size: 1rem; color: var(--text-main); margin-bottom: 10px; font-weight: bold; }
+
+        /* Layout Grids */
+        .grid-misconception { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .main-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; margin-bottom: 20px; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+        .canvas-grid { display: grid; grid-template-columns: 1fr; gap: 20px; } /* Diubah menjadi 1 kolom (atas-bawah) agar mendapat 100% lebar */
+
+        /* Panels & HUD Elements */
+        .panel { background: var(--bg-panel); border: 1px solid var(--border-hud); border-radius: 8px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
+        .panel-glow { border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 0 15px rgba(56, 189, 248, 0.1) inset; }
+        
+        .misc-box { padding: 12px; border-radius: 6px; border-left: 4px solid; background: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .misc-box.w { border-color: var(--c-w); }
+        .misc-box.res { border-color: var(--c-res); }
+        .misc-box.fric { border-color: var(--c-fric); }
+        .misc-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; color: var(--c-f); }
+        
+        /* Controls */
+        .control-group { margin-bottom: 12px; }
+        .control-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; font-weight: 600; }
+        .val-display { font-family: var(--font-mono); color: var(--c-n); font-weight: bold; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #475569; border-radius: 3px; border: 1px solid #334155; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: var(--c-n); cursor: pointer; margin-top: -7px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+        .checkbox-group input { accent-color: var(--c-n); width: 15px; height: 15px; cursor: pointer; }
+
+        .btn { display: inline-block; width: 100%; padding: 10px; background: #334155; color: var(--text-main); border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; font-size: 0.9rem; transition: 0.2s; text-transform: uppercase; }
+        .btn:hover { background: #475569; }
+        .btn-primary { background: rgba(56, 189, 248, 0.1); border-color: var(--c-n); color: var(--c-n); }
+        .btn-primary:hover { background: var(--c-n); color: #000; box-shadow: 0 4px 10px rgba(56, 189, 248, 0.3); }
+        .btn-action { background: rgba(251, 146, 60, 0.1); border-color: var(--c-f); color: var(--c-f); }
+        .btn-action:hover { background: var(--c-f); color: #000; box-shadow: 0 4px 10px rgba(251, 146, 60, 0.3); }
+
+        /* Canvas & Displays */
+        .canvas-container { background: #000000; border: 1px solid var(--border-hud); border-radius: 6px; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+        
+        /* Aspect rasio adaptif berdasarkan jenis canvas dan perangkat */
+        .canvas-phys { aspect-ratio: 4/3; }
+        .canvas-fbd { aspect-ratio: 1/1; }
+        
+        @media (min-width: 768px) { 
+            .canvas-phys { aspect-ratio: 16/9; } 
+            .canvas-fbd { aspect-ratio: 16/9; max-height: 500px; } 
+        }
+        @media (min-width: 1024px) { 
+            .canvas-phys { aspect-ratio: 21/9; } /* Mode layarkaca super lebar untuk fisika lingkungan */
+            .canvas-fbd { aspect-ratio: 21/9; max-height: 600px; }
+        }
+        
+        canvas { display: block; max-width: 100%; max-height: 100%; }
+        
+        .hud-overlay { position: absolute; top: 10px; left: 10px; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(0, 0, 0, 0.8); padding: 8px; border: 1px solid var(--border-hud); border-radius: 4px; pointer-events: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); color: #f8fafc; }
+        .status-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; color: #fff; }
+
+        /* Dashboard & Formulasi */
+        .telemetry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 15px; }
+        .metric-box { background: #0f172a; border: 1px solid var(--border-hud); padding: 8px; text-align: center; border-radius: 4px; }
+        .metric-title { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
+        .metric-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: bold; margin-top: 2px; }
+
+        .formula-box { background: #020617; padding: 12px; border-radius: 6px; border: 1px dashed var(--border-hud); font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.7; color: var(--text-main); }
+        .math-var { font-weight: bold; }
+        
+        /* Bar Chart Compensator */
+        .comp-chart { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-hud); }
+        .bar-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .bar-label { width: 110px; font-size: 0.75rem; font-weight: bold; color: var(--text-dim); }
+        .bar-track { flex: 1; height: 16px; background: #334155; border-radius: 2px; overflow: hidden; position: relative; border: 1px solid #475569; }
+        .bar-fill { height: 100%; transition: width 0.2s ease-out; }
+
+        /* Utils Colors */
+        .t-w { color: var(--c-w); font-weight: bold; } .t-n { color: var(--c-n); font-weight: bold; } .t-f { color: var(--c-f); font-weight: bold; }
+        .t-fric { color: var(--c-fric); font-weight: bold; } .t-wx { color: var(--c-wx); font-weight: bold; } .t-wy { color: var(--c-wy); font-weight: bold; }
+        .t-res { color: var(--c-res); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulator Dynamics HUD</h1>
+        <div class="subtitle">Analisis Jenis Gaya & Free-Body Diagram (FBD)</div>
+    </header>
+
+    <div class="panel grid-misconception">
+        <div class="misc-box w">
+            <div class="misc-title">Miskonsepsi 1: "N selalu = W"</div>
+            <p style="font-size: 0.8rem; margin:0;"><strong>Klarifikasi:</strong> Gaya Normal (<span class="t-n">N</span>) adalah gaya kontak tegak lurus bidang. Nilainya bergantung kemiringan dan tarikan vertikal. <br>Pada bidang datar ditarik ke atas: <span class="math-var">N = W - F<sub>y</sub></span>.</p>
+        </div>
+        <div class="misc-box res">
+            <div class="misc-title">Miskonsepsi 2: "Diam = Tanpa Gaya"</div>
+            <p style="font-size: 0.8rem; margin:0;"><strong>Klarifikasi:</strong> Benda diam memiliki resultan gaya Nol (<span class="t-res">&Sigma;F = 0</span>). Gaya (<span class="t-w">W</span>, <span class="t-n">N</span>, <span class="t-fric">f<sub>s</sub></span>) tetap bekerja namun dalam keadaan saling menyeimbangkan sepenuhnya.</p>
+        </div>
+        <div class="misc-box fric">
+            <div class="misc-title">Miskonsepsi 3: "Gesekan vs Arah Gerak"</div>
+            <p style="font-size: 0.8rem; margin:0;"><strong>Klarifikasi:</strong> Gaya gesek menentang <em>kecenderungan</em> gerak relatif antar permukaan, bukan mutlak menentang arah dorongan. Pada balok miring diam, <span class="t-fric">f<sub>s</sub></span> menahan laju jatuh (<span class="t-wx">W<sub>x</sub></span>).</p>
+        </div>
+    </div>
+
+    <div class="panel panel-glow" style="margin-bottom: 20px;">
+        <h2>Apersepsi: Dilema Lemari & Karpet Gesek</h2>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 300px;">
+                <p style="font-size: 0.85rem; margin-bottom: 10px;">Coba tarik balok kayu (10 kg) di lantai kasar. Perhatikan bagaimana <span class="t-fric">Gaya Gesek Statis (f<sub>s</sub>)</span> cerdas menyesuaikan tarikanmu sampai mencapai batas maksimumnya, lalu hancur menjadi <span class="t-fric">Gaya Gesek Kinetis (f<sub>k</sub>)</span> saat balok meluncur!</p>
+                <div class="control-group">
+                    <div class="control-header"><span>Gaya Tarik Horizontal (F)</span> <span class="val-display" id="ap-f-val">0 N</span></div>
+                    <input type="range" id="ap-f-slider" min="0" max="80" step="1" value="0">
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; background: var(--bg-base); border: 1px solid var(--border-hud); padding: 8px; border-radius: 4px;">
+                    Ambang Batas (<span class="t-fric">f<sub>s,max</sub></span>) = <span id="ap-fsmax-val">50.0</span> N<br>
+                    Status Benda: <span id="ap-status" class="status-badge" style="background: #64748b;">DIAM</span>
+                </div>
+            </div>
+            <div class="canvas-container" style="flex: 1; min-width: 300px; aspect-ratio: 21/9; height: 160px;">
+                <canvas id="appCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Kolom Kiri: Kontrol -->
+        <div class="panel">
+            <h2>Parameter Sistem</h2>
+            
+            <div class="control-group">
+                <div class="control-header"><span>Massa Balok (<span class="t-w">m</span>)</span> <span class="val-display" id="v-m">10 kg</span></div>
+                <input type="range" id="sl-m" min="1" max="20" step="1" value="10">
+            </div>
+            <div class="control-group">
+                <div class="control-header"><span>Sudut Bidang (&alpha;)</span> <span class="val-display" id="v-alpha">0 &deg;</span></div>
+                <input type="range" id="sl-alpha" min="0" max="60" step="1" value="0">
+            </div>
+            <div class="control-group">
+                <div class="control-header"><span>Gaya Tarik Luar (<span class="t-f">F</span>)</span> <span class="val-display" id="v-f">0 N</span></div>
+                <input type="range" id="sl-f" min="0" max="150" step="1" value="0">
+            </div>
+            <div class="control-group">
+                <div class="control-header"><span>Sudut Gaya Tarik (&theta;)</span> <span class="val-display" id="v-theta">0 &deg;</span></div>
+                <input type="range" id="sl-theta" min="-45" max="45" step="5" value="0">
+                <div style="font-size: 0.7rem; color: var(--text-dim); text-align: right;">+ tarik ke atas, - dorong ke bawah</div>
+            </div>
+            <div class="control-group">
+                <div class="control-header"><span>Koef. Gesek Statis (&mu;<sub>s</sub>)</span> <span class="val-display" id="v-mus">0.40</span></div>
+                <input type="range" id="sl-mus" min="0.0" max="1.0" step="0.05" value="0.40">
+            </div>
+            <div class="control-group">
+                <div class="control-header"><span>Koef. Gesek Kinetis (&mu;<sub>k</sub>)</span> <span class="val-display" id="v-muk">0.25</span></div>
+                <input type="range" id="sl-muk" min="0.0" max="0.8" step="0.05" value="0.25">
+            </div>
+
+            <h3 style="margin-top: 20px; border-top: 1px solid var(--border-hud); padding-top: 10px;">Toggle Visualisasi</h3>
+            <label class="checkbox-group"><input type="checkbox" id="chk-comp" checked> <span class="t-wx">Tampilkan W<sub>x</sub>, W<sub>y</sub></span></label>
+            <label class="checkbox-group"><input type="checkbox" id="chk-res" checked> <span class="t-res">Tampilkan Resultan (&Sigma;F)</span></label>
+            <label class="checkbox-group"><input type="checkbox" id="chk-val" checked> Tampilkan Angka Magnitudo</label>
+            <label class="checkbox-group"><input type="checkbox" id="chk-grid" checked> Tampilkan Grid FBD Axis</label>
+            
+            <button class="btn btn-action" id="btn-reset" style="margin-top: 15px;">RESET SISTEM</button>
+        </div>
+
+        <!-- Kolom Kanan: Tampilan & Telemetri -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="canvas-grid">
+                <!-- Visual Fisik -->
+                <div class="panel" style="padding: 10px;">
+                    <div style="font-size: 0.85rem; text-align: center; font-weight: bold; margin-bottom: 5px; color: var(--text-dim);">TAMPILAN FISIK (LINGKUNGAN)</div>
+                    <div class="canvas-container canvas-phys">
+                        <canvas id="physCanvas"></canvas>
+                        <div class="hud-overlay">
+                            STATUS:<br><span id="hud-status" class="status-badge" style="background: rgba(100,116,139,0.5);">DIAM</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Visual FBD -->
+                <div class="panel" style="padding: 10px;">
+                    <div style="font-size: 0.85rem; text-align: center; font-weight: bold; margin-bottom: 5px; color: var(--c-n);">FREE-BODY DIAGRAM (TERISOLASI)</div>
+                    <div class="canvas-container canvas-fbd">
+                        <canvas id="fbdCanvas"></canvas>
+                        <div class="hud-overlay" style="right: 10px; left: auto;">
+                            a = <span id="hud-a" class="t-res">0.00</span> m/s&sup2;
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Formulasi -->
+            <div class="panel panel-glow">
+                <div class="telemetry-grid">
+                    <div class="metric-box"><div class="metric-title">Gaya Berat (W)</div><div class="metric-val t-w"><span id="dash-w">98.0</span> N</div></div>
+                    <div class="metric-box"><div class="metric-title">Gaya Normal (N)</div><div class="metric-val t-n"><span id="dash-n">98.0</span> N</div></div>
+                    <div class="metric-box"><div class="metric-title">Gesek Max (f<sub>s,max</sub>)</div><div class="metric-val t-fric"><span id="dash-fsmax">39.2</span> N</div></div>
+                    <div class="metric-box"><div class="metric-title">Gesek Aktual (f)</div><div class="metric-val t-fric"><span id="dash-fact">0.0</span> N</div></div>
+                    <div class="metric-box"><div class="metric-title">Resultan (&Sigma;F<sub>x</sub>)</div><div class="metric-val t-res"><span id="dash-res">0.0</span> N</div></div>
+                </div>
+
+                <div class="formula-box">
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                        <div>
+                            <span class="t-w">W</span> = m &middot; g = <span id="f-m">10</span> &middot; 9.8 = <strong><span id="f-w">98.0</span> N</strong><br>
+                            <span class="t-wx">W<sub>x</sub></span> = W &middot; sin(&alpha;) = <strong><span id="f-wx">0.0</span> N</strong><br>
+                            <span class="t-wy">W<sub>y</sub></span> = W &middot; cos(&alpha;) = <strong><span id="f-wy">98.0</span> N</strong>
+                        </div>
+                        <div>
+                            <span class="t-n">N</span> = W<sub>y</sub> - F<sub>y</sub> = <span id="f-wy2">98.0</span> - <span id="f-fy">0.0</span> = <strong><span id="f-n">98.0</span> N</strong> <span id="f-lift" style="color:var(--c-fric); font-size:0.75rem; display:none;">(TERANGKAT!)</span><br>
+                            &Sigma;F<sub>x</sub> = F<sub>x</sub> - W<sub>x</sub> - f<br>
+                            &Sigma;F<sub>x</sub> = <span id="f-fx">0.0</span> - <span id="f-wx2">0.0</span> - (<span id="f-fact">0.0</span>) = <strong><span id="f-res">0.0</span> N</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comp-chart">
+                    <div style="font-size: 0.8rem; margin-bottom: 5px; color: var(--text-dim);">ANALISIS KOMPENSASI VEKTOR SEJAJAR BIDANG (SUMBU X)</div>
+                    <div class="bar-row">
+                        <div class="bar-label">Potensi Penggerak <br><span style="font-size: 0.65rem; color:var(--text-dim);">(F<sub>x</sub> atau W<sub>x</sub>)</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bar-drive" style="background: var(--c-f); width: 0%;"></div></div>
+                        <div style="width: 50px; text-align:right; font-size:0.8rem; font-family:var(--font-mono);" id="val-drive">0 N</div>
+                    </div>
+                    <div class="bar-row">
+                        <div class="bar-label">Penahan Max <br><span style="font-size: 0.65rem; color:var(--text-dim);">(f<sub>s,max</sub> &amp; W<sub>x</sub> lawan)</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bar-resist" style="background: var(--c-fric); width: 40%;"></div></div>
+                        <div style="width: 50px; text-align:right; font-size:0.8rem; font-family:var(--font-mono);" id="val-resist">39.2 N</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 style="color: var(--c-res);">Tantangan: FBD Precision Sloping Mission</h2>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
+            <div style="flex: 1; background: var(--bg-base); padding: 15px; border-radius: 6px; border: 1px dashed var(--c-res);">
+                <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>MISI SAAT INI:</strong><br>Pertahankan balok (<span class="t-w">m = 5 kg</span>) pada bidang miring (<span class="t-wx">&alpha; = 30&deg;</span>) agar berada tepat di <strong>ambang batas kelinciran ke BAWAH</strong> (tepat akan bergerak ke bawah). <br><br>Setel <strong>Gaya Tarik (F)</strong> sejajar bidang ke atas (&theta; = 0) jika &mu;<sub>s</sub> = 0.20!</p>
+                <button class="btn btn-action" id="btn-check-game">EVALUASI MISI</button>
+                <div id="game-feedback" style="margin-top: 10px; font-weight: bold; text-align: center; font-size: 0.9rem; display: none; padding: 10px; border-radius: 4px;"></div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.8;">
+                    <strong>Petunjuk:</strong><br>
+                    1. Hitung kecenderungan gaya turun: <span class="t-wx">W<sub>x</sub></span><br>
+                    2. Hitung penahan alamiah: <span class="t-fric">f<sub>s,max</sub></span><br>
+                    3. Berapa sisa <span class="t-f">F</span> yang harus kamu berikan agar <span class="t-f">F</span> + <span class="t-fric">f<sub>s,max</sub></span> persis mengimbangi <span class="t-wx">W<sub>x</sub></span>?
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teori yang langsung ditampilkan pada halaman -->
+    <div class="panel" style="margin-top: 20px;" id="theory-section">
+        <h2 style="color: var(--c-n);">Ringkasan Teori FBD & Dinamika Partikel</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <h3 class="t-w">1. Gaya Berat (W)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya tarik gravitasi bumi pada benda. Arahnya <strong>selalu tegak lurus ke bawah</strong> menuju pusat bumi, tidak peduli kemiringan bidang. <br>Rumus: <code>W = m &middot; g</code> (Asumsi g = 9.8 m/s&sup2;)</p>
+                
+                <h3 class="t-n">2. Gaya Normal (N)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya reaksi dari permukaan bidang sentuh terhadap benda. Arahnya <strong>selalu tegak lurus (normal) menjauhi permukaan bidang</strong>. Gaya ini menjaga benda agar tidak tembus ke dalam bidang. Dihitung menggunakan Hukum I Newton pada sumbu tegak lurus bidang (&Sigma;F<sub>y</sub> = 0).</p>
+                
+                <h3 class="t-fric">3. Gaya Gesek (f)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 5px;">Gaya sentuh yang menentang <em>kecenderungan</em> gerak relatif. Bekerja sejajar permukaan bidang.</p>
+                <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px;">
+                    <li><strong>Gesekan Statis (f<sub>s</sub>):</strong> Saat benda diam. Nilainya bervariasi menyesuaikan gaya pendorong, hingga mencapai batas maksimum <code>f<sub>s,max</sub> = &mu;<sub>s</sub> &middot; N</code>.</li>
+                    <li><strong>Gesekan Kinetis (f<sub>k</sub>):</strong> Saat benda sudah bergerak relatif. Nilainya konstan: <code>f<sub>k</sub> = &mu;<sub>k</sub> &middot; N</code>.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="t-f">4. Gaya Tarik / Dorong (F)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya luar aktif yang diberikan pada benda. Arah dan besarnya tergantung pada sumber gaya (contoh: tarikan atau dorongan). Dapat didekomposisi ke sumbu X dan Y berdasarkan sudut tariknya.</p>
+                
+                <h3 style="color: #0d9488;">5. Gaya Tegangan Tali (T)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya yang bekerja melalui tali, kabel, atau kawat yang menegang. Arahnya selalu <strong>menjauhi</strong> benda yang ditarik, di sepanjang tali. Tali tidak bisa mendorong, hanya bisa menarik benda.</p>
+                
+                <h3 style="color: #be123c;">6. Gaya Pegas (F<sub>p</sub>)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya pemulih yang timbul saat pegas diregangkan atau ditekan. Sesuai Hukum Hooke: <code>F = -k &middot; &Delta;x</code>, di mana arah gaya selalu berlawanan dengan arah simpangan (tarikan/tekanan).</p>
+                
+                <h3 class="t-wx">7. Dekomposisi pada Bidang Miring (&alpha;)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 5px;">Sumbu koordinat (X,Y) dimiringkan sejajar bidang. Gaya Berat (W) harus dipecah menjadi dua komponen vektor:</p>
+                <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px;">
+                    <li><code>W<sub>x</sub> = W &middot; sin(&alpha;)</code> : Komponen sejajar bidang (penyebab benda meluncur turun).</li>
+                    <li><code>W<sub>y</sub> = W &middot; cos(&alpha;)</code> : Komponen tegak lurus bidang (menekan bidang).</li>
+                </ul>
+                
+                <h3 style="color: #60a5fa;">8. Gaya Sentripetal (F<sub>s</sub>)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya yang menyebabkan benda bergerak melingkar, dengan arah selalu menuju pusat lingkaran lintasan. Tanpa gaya ini, benda akan bergerak lurus menjauh dari pusat. Rumus: <code>F<sub>s</sub> = m &middot; v&sup2; / r</code>.</p>
+                
+                <h3 style="color: #a78bfa;">9. Gaya Tak Sentuh (Magnet & Listrik)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">Gaya yang bekerja pada benda tanpa membutuhkan kontak fisik langsung. <br><strong>Gaya Magnet:</strong> Tarik-menarik atau tolak-menolak antar kutub magnet.<br><strong>Gaya Listrik:</strong> Interaksi tarik atau tolak antar partikel yang memiliki muatan positif dan negatif.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const g = 9.8;
+    const rad = (deg) => deg * (Math.PI / 180);
+    const round = (val, d=1) => Number(val).toFixed(d);
+
+    // State Sistem Utama
+    let state = {
+        m: 10, alpha: 0, F: 0, theta: 0, mus: 0.4, muk: 0.25,
+        W: 0, Wx: 0, Wy: 0, Fx: 0, Fy: 0, N: 0,
+        fs_max: 0, fk: 0, f_act: 0, F_net_x: 0, a: 0,
+        status: "DIAM", // DIAM, KRITIS, BERGERAK, TERANGKAT
+        physX: 0, physV: 0 // Untuk animasi kanvas fisik
+    };
+
+    // State Drag untuk fitur memindahkan balok manual
+    let drag = { active: false, startX: 0, startPhysX: 0 };
+
+    // State Apersepsi
+    let apState = { m: 10, F: 0, mus: 0.5, muk: 0.3, f_act: 0, x: 0, v: 0, status: "DIAM" };
+
+    let lastTime = 0;
+    let animFrame;
+
+    // DOM Elements
+    const els = {
+        sl: { m: document.getElementById('sl-m'), alpha: document.getElementById('sl-alpha'), F: document.getElementById('sl-f'), theta: document.getElementById('sl-theta'), mus: document.getElementById('sl-mus'), muk: document.getElementById('sl-muk') },
+        v: { m: document.getElementById('v-m'), alpha: document.getElementById('v-alpha'), F: document.getElementById('v-f'), theta: document.getElementById('v-theta'), mus: document.getElementById('v-mus'), muk: document.getElementById('v-muk') },
+        chk: { comp: document.getElementById('chk-comp'), res: document.getElementById('chk-res'), val: document.getElementById('chk-val'), grid: document.getElementById('chk-grid') },
+        dash: { w: document.getElementById('dash-w'), n: document.getElementById('dash-n'), fsmax: document.getElementById('dash-fsmax'), fact: document.getElementById('dash-fact'), res: document.getElementById('dash-res') },
+        form: { m: document.getElementById('f-m'), w: document.getElementById('f-w'), wx: document.getElementById('f-wx'), wy: document.getElementById('f-wy'), wy2: document.getElementById('f-wy2'), fy: document.getElementById('f-fy'), n: document.getElementById('f-n'), lift: document.getElementById('f-lift'), fx: document.getElementById('f-fx'), wx2: document.getElementById('f-wx2'), fact: document.getElementById('f-fact'), res: document.getElementById('f-res') },
+        hud: { status: document.getElementById('hud-status'), a: document.getElementById('hud-a') },
+        chart: { driveBar: document.getElementById('bar-drive'), resistBar: document.getElementById('bar-resist'), driveVal: document.getElementById('val-drive'), resistVal: document.getElementById('val-resist') },
+        ap: { fSlider: document.getElementById('ap-f-slider'), fVal: document.getElementById('ap-f-val'), fsmaxVal: document.getElementById('ap-fsmax-val'), status: document.getElementById('ap-status') }
+    };
+
+    // Contexts
+    const ctxPhys = document.getElementById('physCanvas').getContext('2d');
+    const ctxFbd = document.getElementById('fbdCanvas').getContext('2d');
+    const ctxAp = document.getElementById('appCanvas').getContext('2d');
+
+    function updatePhysicsLogic() {
+        // Tarik input slider
+        state.m = parseFloat(els.sl.m.value);
+        state.alpha = parseFloat(els.sl.alpha.value);
+        state.F = parseFloat(els.sl.F.value);
+        state.theta = parseFloat(els.sl.theta.value);
+        state.mus = parseFloat(els.sl.mus.value);
+        state.muk = parseFloat(els.sl.muk.value);
+
+        // Validasi gesekan
+        if(state.muk > state.mus) {
+            state.muk = state.mus; els.sl.muk.value = state.muk; els.v.muk.textContent = state.muk.toFixed(2);
+        }
+
+        // Update Text
+        els.v.m.textContent = state.m + " kg";
+        els.v.alpha.textContent = state.alpha + " \u00B0";
+        els.v.F.textContent = state.F + " N";
+        els.v.theta.textContent = state.theta + " \u00B0";
+        els.v.mus.textContent = state.mus.toFixed(2);
+        els.v.muk.textContent = state.muk.toFixed(2);
+
+        // Basic Math
+        let aRad = rad(state.alpha);
+        let tRad = rad(state.theta);
+        
+        state.W = state.m * g;
+        state.Wx = state.W * Math.sin(aRad);
+        state.Wy = state.W * Math.cos(aRad);
+        
+        state.Fx = state.F * Math.cos(tRad);
+        state.Fy = state.F * Math.sin(tRad); // Positif jika ke atas bidang
+
+        // Sumbu Y (Tegak Lurus Bidang)
+        state.N = state.Wy - state.Fy;
+        
+        if (state.N <= 0.01) {
+            // Kasus Terangkat
+            state.N = 0;
+            state.fs_max = 0;
+            state.fk = 0;
+            state.f_act = 0;
+            state.status = "TERANGKAT";
+            state.F_net_x = state.Fx - state.Wx;
+            state.a = state.F_net_x / state.m;
+        } else {
+            // Benda Menempel Bidang
+            state.fs_max = state.mus * state.N;
+            state.fk = state.muk * state.N;
+            
+            // Evaluasi Sumbu X
+            // Penggerak potensial (tanpa gesekan)
+            let F_drive = state.Fx - state.Wx; 
+            
+            if (Math.abs(F_drive) < 0.01) {
+                state.status = "DIAM";
+                state.f_act = 0;
+                state.F_net_x = 0;
+                state.a = 0;
+            } else if (Math.abs(F_drive) <= state.fs_max + 0.01) {
+                // Gesekan statis mampu menahan
+                state.status = Math.abs(F_drive) >= state.fs_max - 0.1 ? "KRITIS (TEPAT AKAN GERAK)" : "DIAM";
+                // Gesekan statis berlawanan arah dengan kecenderungan gerak
+                state.f_act = -F_drive; 
+                state.F_net_x = 0;
+                state.a = 0;
+            } else {
+                // Bergerak
+                state.status = "BERGERAK (GLBB)";
+                // Gesekan kinetis berlawanan arah penggerak
+                state.f_act = -Math.sign(F_drive) * state.fk;
+                state.F_net_x = F_drive + state.f_act;
+                state.a = state.F_net_x / state.m;
+            }
+        }
+        
+        updateDOMTelemetri();
+    }
+
+    function updateDOMTelemetri() {
+        els.dash.w.textContent = round(state.W);
+        els.dash.n.textContent = round(state.N);
+        els.dash.fsmax.textContent = round(state.fs_max);
+        els.dash.fact.textContent = round(Math.abs(state.f_act));
+        els.dash.res.textContent = round(Math.abs(state.F_net_x));
+
+        els.form.m.textContent = state.m; els.form.w.textContent = round(state.W);
+        els.form.wx.textContent = round(state.Wx); els.form.wy.textContent = round(state.Wy);
+        els.form.wy2.textContent = round(state.Wy); els.form.fy.textContent = round(state.Fy);
+        els.form.n.textContent = round(state.N);
+        
+        els.form.lift.style.display = state.N === 0 ? "inline" : "none";
+
+        els.form.fx.textContent = round(state.Fx); els.form.wx2.textContent = round(state.Wx);
+        // Tampilkan f_act dengan tanda operasinya (apakah searah Wx atau searah Fx)
+        // Di sini kita tunjukkan dalam rumus dasar Fx - Wx + f_act
+        let fStr = state.f_act < 0 ? `- ${round(Math.abs(state.f_act))}` : `+ ${round(Math.abs(state.f_act))}`;
+        els.form.fact.textContent = fStr;
+        els.form.res.textContent = round(state.F_net_x);
+
+        els.hud.a.textContent = round(state.a, 2);
+        
+        // Update Badge Status
+        let badgeColor = "#64748b"; // DIAM
+        if (state.status.includes("KRITIS")) badgeColor = "#eab308";
+        if (state.status.includes("BERGERAK")) badgeColor = "#ef4444";
+        if (state.status.includes("TERANGKAT")) badgeColor = "#8b5cf6";
+        els.hud.status.textContent = state.status;
+        els.hud.status.style.backgroundColor = badgeColor;
+
+        // Update Bar Chart
+        let F_drive_mag = Math.abs(state.Fx - state.Wx);
+        let resist_max = state.fs_max;
+        
+        // Skala maksimum dinamis (terbesar dari drive atau resist)
+        let max_scale = Math.max(F_drive_mag, resist_max, 100); 
+        
+        els.chart.driveBar.style.width = `${(F_drive_mag / max_scale) * 100}%`;
+        els.chart.resistBar.style.width = `${(resist_max / max_scale) * 100}%`;
+        els.chart.driveVal.textContent = round(F_drive_mag) + " N";
+        els.chart.resistVal.textContent = round(resist_max) + " N";
+        
+        if (F_drive_mag > resist_max && state.N > 0) {
+            els.chart.driveBar.style.background = "var(--c-res)"; // Mengamuk (Orange)
+        } else {
+            els.chart.driveBar.style.background = "var(--c-f)"; // Kuning biasa
+        }
+    }
+
+    function resizeCanvases() {
+        const canvases = [ctxPhys.canvas, ctxFbd.canvas, ctxAp.canvas];
+        canvases.forEach(c => {
+            const rect = c.parentElement.getBoundingClientRect();
+            c.width = rect.width;
+            c.height = rect.height;
+        });
+    }
+
+    function drawArrow(ctx, sx, sy, len, angleRad, color, label, valStr, showVal) {
+        if (len < 1) return; // Terlalu kecil untuk digambar
+        
+        let visualLen = len; 
+        
+        let ex = sx + visualLen * Math.cos(angleRad);
+        let ey = sy + visualLen * Math.sin(angleRad); // Canvas Y ke bawah
+        
+        ctx.save();
+        
+        ctx.shadowBlur = 20; // Intensitas pendaran neon
+        ctx.shadowColor = "#ff8800"; // Panah oranye
+        
+        ctx.strokeStyle = "#ff8800"; // Garis panah oranye
+        ctx.fillStyle = "#ff8800"; // Isi panah oranye
+        ctx.lineWidth = 5; // Garis ditebalkan sebagai base warna
+        
+        // Garis Utama Warna
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        
+        // Kepala Panah Warna (Polygon)
+        let headLen = 16; 
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - headLen * Math.cos(angleRad - Math.PI/7), ey - headLen * Math.sin(angleRad - Math.PI/7));
+        ctx.lineTo(ex - headLen * Math.cos(angleRad + Math.PI/7), ey - headLen * Math.sin(angleRad + Math.PI/7));
+        ctx.lineTo(ex, ey);
+        ctx.fill();
+
+        // Inti Neon Putih (Dual-stroke)
+        ctx.shadowBlur = 5; 
+        ctx.shadowColor = "#ffffff";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+
+        // Label Teks Informasi Gaya
+        if (label) {
+            ctx.font = "bold 14px 'Segoe UI', sans-serif";
+            let text = showVal ? `${label}=${valStr}` : label;
+            
+            // Koordinat dasar di ujung panah
+            let tx = ex + 20 * Math.cos(angleRad);
+            let ty = ey + 20 * Math.sin(angleRad);
+            
+            // --- SMART POSITIONING UNTUK MENCEGAH TUMPANG TINDIH ---
+            if (label === 'W') {
+                tx -= 25; // Geser ke kiri (menjauhi Wy)
+                ty += 10; // Turunkan sedikit
+            } else if (label === 'Wy') {
+                tx += 25; // Geser ke kanan (menjauhi W)
+                ty += 10;
+            } else if (label === 'Wx') {
+                ty -= 20; // Geser ke atas vektor
+            } else if (label === 'N') {
+                tx += 25; // Geser ke kanan (menjauhi sumbu vertikal)
+            } else if (label === 'F') {
+                ty -= 20; // Geser ke atas vektor
+            } else if (label === 'fs' || label === 'fk') {
+                ty += 22; // Geser ke bawah vektor
+            } else if (label === 'ΣF') {
+                ty += 45; // Geser jauh ke bawah agar tidak menabrak f
+            }
+            
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            // Teks berwarna kuning dengan sedikit glow kuning
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = "#ffff00"; 
+            ctx.fillStyle = "#ffff00"; 
+            ctx.fillText(text, tx, ty);
+        }
+        
+        ctx.restore();
+    }
+
+    function renderPhys(dt) {
+        let w = ctxPhys.canvas.width;
+        let h = ctxPhys.canvas.height;
+        ctxPhys.clearRect(0,0,w,h);
+        
+        // Animasi posisi jika bergerak dan tidak sedang didrag
+        if (!drag.active) {
+            if (state.status.includes("BERGERAK")) {
+                state.physV += state.a * dt;
+                state.physX += state.physV * dt;
+            } else if (state.status.includes("TERANGKAT")) {
+                state.physX = 0; state.physV = 0; // Sederhanakan animasi terangkat
+            } else {
+                state.physV = 0;
+                // Benda dibiarkan di posisinya saat diam, tidak lagi kembali ke tengah otomatis
+            }
+        } else {
+            state.physV = 0; // Reset kecepatan saat didrag secara manual
+        }
+        
+        // Limit pergerakan (Batas tembok penghalang di ujung layar)
+        const LIMIT = 11; // +/- 11 meter dari pusat
+        if (state.physX >= LIMIT) { state.physX = LIMIT; state.physV = 0; }
+        if (state.physX <= -LIMIT) { state.physX = -LIMIT; state.physV = 0; }
+
+        ctxPhys.save();
+        // Posisikan origin secara responsif di bagian bawah tengah canvas (75% tinggi canvas)
+        ctxPhys.translate(w/2, h * 0.75);
+        
+        // Gambar latar grid miring
+        ctxPhys.rotate(-rad(state.alpha)); // Rotasi berlawanan arah jarum jam
+        
+        // Gambar Bidang Miring (Lantai)
+        ctxPhys.fillStyle = "#1e293b";
+        ctxPhys.fillRect(-w, 0, w*2, h);
+        ctxPhys.strokeStyle = "var(--c-n)";
+        ctxPhys.lineWidth = 2;
+        ctxPhys.beginPath(); ctxPhys.moveTo(-w, 0); ctxPhys.lineTo(w, 0); ctxPhys.stroke();
+        
+        // Grid marka jalan transparan terang
+        ctxPhys.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctxPhys.lineWidth = 2;
+        ctxPhys.setLineDash([20, 20]);
+        ctxPhys.beginPath(); ctxPhys.moveTo(-w, 10); ctxPhys.lineTo(w, 10); ctxPhys.stroke();
+        ctxPhys.setLineDash([]);
+        
+        // Gambar Penghalang Kiri & Kanan (Bumpers)
+        const bumperWidth = 30;
+        const bumperHeight = 60;
+        const maxBlockHalf = 25; // bSize maksimal adalah 50, maka jarak amannya setengahnya (25)
+        
+        ctxPhys.fillStyle = "#334155"; // Warna dasar tembok solid
+        // Tembok Kiri
+        ctxPhys.fillRect(-LIMIT * 30 - maxBlockHalf - bumperWidth, -bumperHeight, bumperWidth, bumperHeight); 
+        // Tembok Kanan
+        ctxPhys.fillRect(LIMIT * 30 + maxBlockHalf, -bumperHeight, bumperWidth, bumperHeight); 
+        
+        // Pola Hazard (Garis Kuning) pada Tembok
+        ctxPhys.fillStyle = "#eab308";
+        for(let i=0; i<4; i++) {
+            ctxPhys.fillRect(-LIMIT * 30 - maxBlockHalf - bumperWidth, -bumperHeight + 5 + i*15, bumperWidth, 8);
+            ctxPhys.fillRect(LIMIT * 30 + maxBlockHalf, -bumperHeight + 5 + i*15, bumperWidth, 8);
+        }
+
+        // Gambar Balok
+        let bSize = 40 + (state.m * 0.5); // Skala ukuran terhadap massa
+        let bX = state.physX * 30; // 30px per meter
+        let bY = state.N === 0 ? -bSize - 20 : -bSize; // Terangkat sedikit jika N=0
+        
+        ctxPhys.fillStyle = "#cbd5e1"; // Warna balok abu-abu solid terang agar mencolok
+        ctxPhys.strokeStyle = "#ffffff"; // Garis tepi putih solid
+        ctxPhys.lineWidth = 2;
+        ctxPhys.fillRect(bX - bSize/2, bY, bSize, bSize);
+        ctxPhys.strokeRect(bX - bSize/2, bY, bSize, bSize);
+
+        // Panah F tarikan di kanvas fisik (visual hint saja)
+        if (state.F > 0) {
+            drawArrow(ctxPhys, bX, bY + bSize/2, state.F*0.5, -rad(state.theta), "var(--c-f)", "", "", false);
+        }
+
+        ctxPhys.restore();
+    }
+
+    function renderFbd() {
+        let w = ctxFbd.canvas.width;
+        let h = ctxFbd.canvas.height;
+        ctxFbd.clearRect(0,0,w,h);
+        
+        let cx = w/2;
+        let cy = h/2;
+        let showVal = els.chk.val.checked;
+
+        // --- SISTEM SKALA DINAMIS RESPONSIVE ---
+        // Cari gaya terbesar yang sedang bekerja untuk dijadikan patokan skala
+        let maxForce = Math.max(state.W, state.N, state.F, Math.abs(state.f_act), Math.abs(state.F_net_x), 50);
+        // Radius maksimal aman dari titik tengah ke tepi canvas (sisakan 45px untuk label)
+        let maxRadius = (Math.min(w, h) / 2) - 45; 
+        // Faktor pengali panjang vektor FBD
+        let scale = maxRadius / maxForce; 
+
+        ctxFbd.save();
+        ctxFbd.translate(cx, cy);
+        
+        // Dalam FBD standar bidang miring, sumbu X adalah sejajar bidang.
+        // Kita rotasi kanvas sehingga sejajar bidang = horizontal di layar, 
+        // Ini membantu pemahaman bahwa Gaya Berat-lah yang miring terhadap bidang.
+        ctxFbd.rotate(-rad(state.alpha));
+
+        // Gambar Grid Axis (Opsional)
+        if (els.chk.grid.checked) {
+            ctxFbd.strokeStyle = "var(--grid-line)";
+            ctxFbd.lineWidth = 1;
+            ctxFbd.beginPath();
+            ctxFbd.moveTo(-w, 0); ctxFbd.lineTo(w, 0); // Sumbu X FBD (Sejajar bidang)
+            ctxFbd.moveTo(0, -h); ctxFbd.lineTo(0, h); // Sumbu Y FBD (Tegak lurus bidang)
+            ctxFbd.stroke();
+            
+            // Label sumbu transparan
+            ctxFbd.fillStyle = "rgba(255, 255, 255, 0.6)";
+            ctxFbd.font = "10px sans-serif";
+            ctxFbd.fillText("+X (Sejajar)", 100, -5);
+            ctxFbd.fillText("+Y (Normal)", 5, -100);
+        }
+
+        // Titik Pusat Massa
+        ctxFbd.fillStyle = "#ffffff";
+        ctxFbd.beginPath(); ctxFbd.arc(0, 0, 7, 0, Math.PI*2); ctxFbd.fill(); // Diperbesar menjadi radius 7
+        ctxFbd.strokeStyle = "#64748b"; // Tambahan outline agar lebih tegas
+        ctxFbd.lineWidth = 2;
+        ctxFbd.stroke();
+
+        // 1. Gaya Berat (W) - Arahnya selalu miring sejauh alpha dari sumbu Y vertikal ke bawah
+        // Di canvas yang sudah dirotasi -alpha, arah W menjadi (90 + alpha) derajat.
+        // Y canvas itu ke bawah (+90deg).
+        let dirW = rad(90 + state.alpha); 
+        drawArrow(ctxFbd, 0, 0, state.W * scale, dirW, "var(--c-w)", "W", round(state.W), showVal);
+
+        // Komponen W (Wx, Wy)
+        if (els.chk.comp.checked) {
+            // Wx searah sumbu -X (kiri) = 180deg
+            drawArrow(ctxFbd, 0, 0, state.Wx * scale, Math.PI, "var(--c-wx)", "Wx", round(state.Wx), showVal);
+            // Wy searah sumbu +Y (bawah kanvas) = 90deg
+            drawArrow(ctxFbd, 0, 0, state.Wy * scale, Math.PI/2, "var(--c-wy)", "Wy", round(state.Wy), showVal);
+            
+            // Garis proyeksi putus-putus
+            ctxFbd.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            ctxFbd.setLineDash([4, 4]);
+            ctxFbd.beginPath();
+            let wx_px = state.Wx * scale * Math.cos(Math.PI);
+            let wy_px = state.Wy * scale * Math.sin(Math.PI/2);
+            let w_px_x = state.W * scale * Math.cos(dirW);
+            let w_px_y = state.W * scale * Math.sin(dirW);
+            ctxFbd.moveTo(wx_px, 0); ctxFbd.lineTo(w_px_x, w_px_y);
+            ctxFbd.moveTo(0, wy_px); ctxFbd.lineTo(w_px_x, w_px_y);
+            ctxFbd.stroke();
+            ctxFbd.setLineDash([]);
+        }
+
+        // 2. Gaya Normal (N) - Searah sumbu -Y (atas kanvas)
+        drawArrow(ctxFbd, 0, 0, state.N * scale, -Math.PI/2, "var(--c-n)", "N", round(state.N), showVal);
+
+        // 3. Gaya Tarik (F) - Sudut theta relatif terhadap sumbu +X
+        // Di canvas, rotasi Y negatif adalah ke atas
+        if (state.F > 0) {
+            drawArrow(ctxFbd, 0, 0, state.F * scale, -rad(state.theta), "var(--c-f)", "F", round(state.F), showVal);
+        }
+
+        // 4. Gaya Gesek (f) - Berlawanan arah kecenderungan gerak sumbu X
+        if (Math.abs(state.f_act) > 0) {
+            // Jika f_act positif, arah ke kanan (0). Jika negatif, arah ke kiri (PI)
+            let dirFric = state.f_act > 0 ? 0 : Math.PI;
+            let fricLbl = state.status.includes("BERGERAK") ? "fk" : "fs";
+            // Sedikit digeser vertikal agar tidak tertumpuk Wx atau Fx
+            let offset = 4; 
+            drawArrow(ctxFbd, 0, offset, Math.abs(state.f_act) * scale, dirFric, "var(--c-fric)", fricLbl, round(Math.abs(state.f_act)), showVal);
+        }
+
+        // 5. Resultan (Sigma F)
+        if (els.chk.res.checked && Math.abs(state.F_net_x) > 0.01) {
+            // Gambar panah resultan lebih tebal dan transparan, sedikit tergeser ke bawah
+            let dirRes = state.F_net_x > 0 ? 0 : Math.PI;
+            ctxFbd.globalAlpha = 0.6;
+            ctxFbd.lineWidth = 6; // Panah tebal
+            drawArrow(ctxFbd, 0, 15, Math.abs(state.F_net_x) * scale, dirRes, "var(--c-res)", "ΣF", round(Math.abs(state.F_net_x)), showVal);
+            ctxFbd.globalAlpha = 1.0;
+        }
+
+        ctxFbd.restore();
+    }
+
+    function updateApPhysics(dt) {
+        let F = parseFloat(els.ap.fSlider.value);
+        apState.F = F;
+        els.ap.fVal.textContent = F + " N";
+        
+        let N = apState.m * g;
+        let fs_max = apState.mus * N;
+        els.ap.fsmaxVal.textContent = round(fs_max);
+
+        if (F <= fs_max) {
+            apState.status = "DIAM";
+            apState.f_act = F; // fs menyeimbangkan F
+            apState.v = 0;
+            // Return ke tengah perlahan
+            apState.x += (0 - apState.x) * 5 * dt;
+        } else {
+            apState.status = "BERGERAK (fk bekerja)";
+            apState.f_act = apState.muk * N;
+            let a = (F - apState.f_act) / apState.m;
+            apState.v += a * dt;
+            apState.x += apState.v * dt * 10; // 10x pengali visual
+        }
+
+        // Wrap around loop
+        if(apState.x > 200) apState.x = -150;
+
+        // UI Update
+        els.ap.status.textContent = apState.status;
+        els.ap.status.style.backgroundColor = apState.status === "DIAM" ? "#64748b" : "#ef4444";
+    }
+
+    function renderAp() {
+        let w = ctxAp.canvas.width;
+        let h = ctxAp.canvas.height;
+        ctxAp.clearRect(0,0,w,h);
+        
+        let cx = w/2; let cy = h/2 + 20;
+        
+        // Lantai
+        ctxAp.strokeStyle = "var(--grid-line)"; ctxAp.lineWidth = 2;
+        ctxAp.beginPath(); ctxAp.moveTo(0, cy); ctxAp.lineTo(w, cy); ctxAp.stroke();
+        
+        // Balok
+        let bx = cx - 50 + apState.x;
+        ctxAp.fillStyle = "#cbd5e1"; // Warna balok abu-abu solid terang
+        ctxAp.strokeStyle = "#ffffff"; ctxAp.lineWidth = 2;
+        ctxAp.fillRect(bx, cy-40, 40, 40); ctxAp.strokeRect(bx, cy-40, 40, 40);
+
+        // Panah F (Kanan)
+        drawArrow(ctxAp, bx+40, cy-20, apState.F, 0, "var(--c-f)", "F", apState.F, true);
+        
+        // Panah f (Kiri)
+        if (apState.f_act > 0) {
+            let fricLbl = apState.status === "DIAM" ? "fs" : "fk";
+            drawArrow(ctxAp, bx, cy, apState.f_act, Math.PI, "var(--c-fric)", fricLbl, round(apState.f_act), true);
+        }
+    }
+
+    function gameLoop(timestamp) {
+        let dt = (timestamp - lastTime) / 1000;
+        if(dt > 0.1) dt = 0.1; // Limit dt saat tab berpindah
+        lastTime = timestamp;
+
+        updateApPhysics(dt);
+        renderAp();
+
+        updatePhysicsLogic();
+        renderPhys(dt);
+        renderFbd();
+
+        animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function initEvents() {
+        // Sliders Listeners
+        Object.values(els.sl).forEach(slider => {
+            slider.addEventListener('input', () => {
+                // Reset kecepatan saja agar benda tidak tiba-tiba melompat dari posisi terakhir didrag
+                state.physV = 0;
+            });
+        });
+
+        // Reset Button
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            els.sl.m.value = 10; els.sl.alpha.value = 0; els.sl.F.value = 0;
+            els.sl.theta.value = 0; els.sl.mus.value = 0.4; els.sl.muk.value = 0.25;
+            state.physX = 0; state.physV = 0;
+        });
+
+        // Resize Canvas Observer
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+        
+        // --- DRAG AND DROP LOGIC UNTUK PHYS CANVAS ---
+        const canvasPhysObj = document.getElementById('physCanvas');
+        canvasPhysObj.style.cursor = 'grab';
+
+        const getMousePos = (e) => {
+            const rect = canvasPhysObj.getBoundingClientRect();
+            // Dukungan koordinat untuk touch (HP) dan mouse (PC)
+            const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            return clientX - rect.left;
+        };
+
+        const startDrag = (e) => {
+            drag.active = true;
+            drag.startX = getMousePos(e);
+            drag.startPhysX = state.physX;
+            state.physV = 0; // Hentikan momentum (ditangkap)
+            canvasPhysObj.style.cursor = 'grabbing';
+        };
+
+        const doDrag = (e) => {
+            if (!drag.active) return;
+            const dx = getMousePos(e) - drag.startX;
+            // Rasio pergerakan: 1 meter = 30px (menyesuaikan dengan kalkulasi renderPhys)
+            state.physX = drag.startPhysX + (dx / 30);
+            
+            // Batasi agar user tidak bisa menarik balok menembus penghalang
+            const LIMIT = 11;
+            if(state.physX > LIMIT) state.physX = LIMIT;
+            if(state.physX < -LIMIT) state.physX = -LIMIT;
+        };
+
+        const stopDrag = () => {
+            drag.active = false;
+            canvasPhysObj.style.cursor = 'grab';
+        };
+
+        // Event Mouse
+        canvasPhysObj.addEventListener('mousedown', startDrag);
+        canvasPhysObj.addEventListener('mousemove', doDrag);
+        window.addEventListener('mouseup', stopDrag); // listener dipasang di window agar kursor bebas bergerak keluar batas kotak
+
+        // Event Touch (Mobile)
+        canvasPhysObj.addEventListener('touchstart', (e) => { startDrag(e); }, {passive: true});
+        canvasPhysObj.addEventListener('touchmove', (e) => { 
+            if(drag.active) { 
+                e.preventDefault(); // Mencegah scrolling halaman ke bawah saat sedang menggeser balok
+                doDrag(e); 
+            } 
+        }, {passive: false});
+        window.addEventListener('touchend', stopDrag);
+
+        // Mini-Game Checker
+        document.getElementById('btn-check-game').addEventListener('click', () => {
+            const fb = document.getElementById('game-feedback');
+            fb.style.display = "block";
+            
+            // Kondisi Misi: m=5, alpha=30, tepat gerak ke bawah (KRITIS ke bawah), F sejajar bidang (theta=0), mus=0.20
+            // Syarat berhasil: User mengatur slider m=5, alpha=30, theta=0, mus=0.2, 
+            // Dan mencari nilai F yang pas.
+            // Hitungan: Wx = 5*9.8*sin(30) = 24.5 N. 
+            // N = Wy = 5*9.8*cos(30) = 42.435 N.
+            // fs_max = 0.2 * 42.435 = 8.487 N.
+            // Benda tepat meluncur ke bawah jika Gaya penahan ke atas (F + fs_max) = Wx.
+            // F = Wx - fs_max = 24.5 - 8.487 = 16.01 N. (Sekitar 16 N).
+            
+            if (state.m !== 5 || state.alpha !== 30 || state.theta !== 0 || Math.abs(state.mus - 0.2) > 0.01) {
+                fb.innerHTML = "❌ Parameter Dasar Salah! Pastikan mengatur m=5, &alpha;=30&deg;, &theta;=0, &mu;<sub>s</sub>=0.2 sesuai instruksi.";
+                fb.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+                fb.style.color = "var(--c-fric)";
+                return;
+            }
+
+            if (state.F === 16) {
+                fb.innerHTML = "🎉 MISI BERHASIL! Presisi Luar Biasa!<br>Analisis: Wx(24.5 N) diimbangi oleh F(16 N) + f<sub>s,max</sub>(8.5 N). Sistem berada pada keseimbangan kritis.";
+                fb.style.backgroundColor = "rgba(132, 204, 22, 0.2)";
+                fb.style.color = "var(--c-wy)";
+            } else if (state.F < 16) {
+                fb.innerHTML = "💥 GAGAL: F kurang besar! Benda akan merosot ke bawah karena gaya penahan tidak sanggup mengimbangi Wx.";
+                fb.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+                fb.style.color = "var(--c-fric)";
+            } else {
+                fb.innerHTML = "💥 GAGAL: F terlalu besar! Kamu malah menarik benda ke atas menjauhi kondisi meluncur ke bawah, atau gaya gesek statis belum maksimal.";
+                fb.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+                fb.style.color = "var(--c-fric)";
+            }
+        });
+
+        // Mulai Loop Animasi
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Bootstrap
+    window.onload = () => {
+        initEvents();
+    };
+
+</script>
+</body>
+</html>
