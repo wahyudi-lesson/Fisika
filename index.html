@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Si-PINTAR Fisika</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Konfigurasi Custom Warna Tailwind sesuai gambar -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1d4ed8', // Biru terang untuk judul utama
+                        secondary: '#256b90', // Biru kehijauan untuk judul bab dan tombol
+                        btnHover: '#174a66',
+                        textGray: '#6b7280',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Styling khusus tambahan */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #installBanner {
+            display: none; /* Disembunyikan secara default, muncul jika PWA siap di-install */
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen relative pb-20">
+
+    <div class="w-full flex justify-center items-center py-3 text-sm text-gray-700 space-x-3">
+        <span>Hubungi pak Wahyudi</span>
+        <a href="https://wa.me/628000000000" target="_blank" class="border border-gray-400 px-4 py-1.5 rounded hover:bg-gray-50 transition">
+            Whatsapp
+        </a>
+    </div>
+
+    <header class="w-full max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center bg-white">
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-2 mb-4 md:mb-0 cursor-pointer">
+            <div class="w-8 h-8 flex items-center justify-center">
+                <!-- SVG Placeholder Logo -->
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <circle cx="50" cy="50" r="45" fill="#facc15" stroke="#1e3a8a" stroke-width="5"/>
+                    <path d="M50 20 L80 80 L20 80 Z" fill="#1e3a8a"/>
+                    <circle cx="50" cy="65" r="10" fill="#facc15"/>
+                </svg>
+            </div>
+            <span class="text-xl text-gray-400 font-semibold tracking-wide">Si-PINTAR</span>
+        </div>
+
+        <nav class="flex flex-wrap justify-center items-center gap-4 md:gap-6 text-sm font-medium text-gray-400">
+            <a href="#" onclick="goToHome()" class="hover:text-gray-700 transition">Halaman Muka</a>
+            <div class="relative group py-2">
+                <div class="flex items-center cursor-pointer hover:text-gray-700 transition">
+                    <span>Survei</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </div>
+            </div>
+            <a href="#" class="hover:text-gray-700 transition">Papan Nilai</a>
+            
+            <!-- Dropdown Kelas XII -->
+            <div class="relative group py-2">
+                <div class="flex items-center cursor-pointer hover:text-gray-700 transition">
+                    <span>Kelas XII</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </div>
+                <div class="absolute left-0 mt-2 hidden group-hover:block bg-white border border-gray-100 shadow-xl rounded-lg w-56 z-50 py-2">
+                    <a href="#" onclick="goToTopic('Listrik Statis dan Dinamis')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Listrik Statis & Dinamis</a>
+                    <a href="#" onclick="goToTopic('Kemagnetan')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Kemagnetan</a>
+                    <a href="#" onclick="goToTopic('Fisika Kuantum')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Fisika Kuantum</a>
+                </div>
+            </div>
+
+            <!-- Dropdown Kelas XI -->
+            <div class="relative group py-2">
+                <div class="flex items-center cursor-pointer hover:text-gray-700 transition">
+                    <span>Kelas XI</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </div>
+                <div class="absolute left-0 mt-2 hidden group-hover:block bg-white border border-gray-100 shadow-xl rounded-lg w-56 z-50 py-2">
+                    <a href="#" onclick="goToTopic('Dinamika Rotasi')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Dinamika Rotasi</a>
+                    <a href="#" onclick="goToTopic('Elastisitas')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Elastisitas</a>
+                    <a href="#" onclick="goToTopic('Termodinamika')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Termodinamika</a>
+                </div>
+            </div>
+
+            <!-- Dropdown Kelas X -->
+            <div class="relative group py-2">
+                <div class="flex items-center cursor-pointer hover:text-gray-700 transition">
+                    <span>Kelas X</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </div>
+                <div class="absolute left-0 md:-left-12 mt-2 hidden group-hover:block bg-white border border-gray-100 shadow-xl rounded-lg w-64 z-50 py-2">
+                    <a href="#" onclick="goToTopic('Besaran dan Pengukuran')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Besaran dan Pengukuran</a>
+                    <a href="#" onclick="goToTopic('Pengolahan Sumber Daya Alam')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Pengolahan Sumber Daya Alam</a>
+                    <a href="#" onclick="goToTopic('Gerak')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Gerak</a>
+                    <a href="#" onclick="goToTopic('Getaran dan Gelombang')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Getaran dan Gelombang</a>
+                    <a href="#" onclick="goToTopic('Fluida')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Fluida</a>
+                    <a href="#" onclick="goToTopic('Teknologi Digital')" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-primary transition">Teknologi Digital</a>
+                </div>
+            </div>
+            
+            <a href="#" class="text-gray-400 hover:text-gray-700 transition ml-2">
+                <i class="fas fa-search text-lg"></i>
+            </a>
+        </nav>
+    </header>
+
+    <div id="app-container" class="w-full max-w-5xl mx-auto px-4 mt-8 md:mt-12">
+        
+        <!-- 1. HALAMAN MUKA (VIEW: HOME) -->
+        <main id="view-home" class="block animate-fade-in">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#2962ff] text-center mb-16 tracking-wide drop-shadow-sm">
+                Si-PINTAR Fisika
+            </h1>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Besaran dan Pengukuran <span class="ml-2">📐📊</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="goToCategory('Besaran dan Pengukuran', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Besaran dan Pengukuran', 'Lembar Kerja')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Lembar Kerja</button>
+                    <button onclick="goToCategory('Besaran dan Pengukuran', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Besaran dan Pengukuran', 'Tutor AI dan Media', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI dan Media</button>
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Pengolahan Sumber Daya Alam <span class="ml-2">♻️🏭</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="goToCategory('Pengolahan Sumber Daya Alam', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Pengolahan Sumber Daya Alam', 'Lembar Kerja')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Lembar Kerja</button>
+                    <button onclick="goToCategory('Pengolahan Sumber Daya Alam', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Pengolahan Sumber Daya Alam', 'Tutor AI dan Media', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI dan Media</button>
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Gerak <span class="ml-2">🚙</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="goToCategory('Gerak', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Gerak', 'Lembar Kerja')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Lembar Kerja</button>
+                    <button onclick="goToCategory('Gerak', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Gerak', 'Tutor AI', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI</button>
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Getaran dan Gelombang <span class="ml-2">🔊✨</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button onclick="goToCategory('Getaran dan Gelombang', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Getaran dan Gelombang', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Getaran dan Gelombang', 'Tutor AI dan Media', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI dan Media</button>
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Fluida <span class="ml-2">🌊🌪️</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button onclick="goToCategory('Fluida', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Fluida', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Fluida', 'Tutor AI', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI</button>
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-secondary mb-6 flex items-center">
+                    Teknologi Digital <span class="ml-2">📟</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button onclick="goToCategory('Teknologi Digital', 'Eksplorasi Konsep')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Eksplorasi Konsep</button>
+                    <button onclick="goToCategory('Teknologi Digital', 'Uji Kompetensi')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Uji Kompetensi</button>
+                    <button onclick="goToContent('Teknologi Digital', 'Tutor AI dan Media', 'Akses Tutor')" class="bg-secondary hover:bg-btnHover text-white text-center py-2.5 px-4 rounded shadow-sm text-sm font-medium transition duration-200 w-full">Tutor AI dan Media</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 2. HALAMAN TOPIK MATERI -->
+        <main id="view-topic" class="hidden min-h-[50vh] flex flex-col justify-center animate-fade-in">
+            <button onclick="goToHome()" class="self-start mb-6 text-gray-500 hover:text-primary transition flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Kembali ke Halaman Muka
+            </button>
+            <h1 id="topic-title" class="text-3xl md:text-4xl font-extrabold text-primary mb-10 text-center drop-shadow-sm border-b-2 border-blue-100 pb-4">
+                Nama Topik
+            </h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto w-full">
+                <button id="btn-topic-eksplorasi" class="bg-white border-2 border-secondary hover:bg-secondary hover:text-white text-secondary text-center py-8 px-4 rounded-xl shadow-md text-lg font-bold transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-book-open text-3xl mb-3 block"></i> Eksplorasi Konsep
+                </button>
+                <button id="btn-topic-lkpd" class="bg-white border-2 border-secondary hover:bg-secondary hover:text-white text-secondary text-center py-8 px-4 rounded-xl shadow-md text-lg font-bold transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-clipboard-list text-3xl mb-3 block"></i> Lembar Kerja
+                </button>
+                <button id="btn-topic-uji" class="bg-white border-2 border-secondary hover:bg-secondary hover:text-white text-secondary text-center py-8 px-4 rounded-xl shadow-md text-lg font-bold transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-tasks text-3xl mb-3 block"></i> Uji Kompetensi
+                </button>
+                <button id="btn-topic-tutor" class="bg-gradient-to-br from-secondary to-btnHover text-white text-center py-8 px-4 rounded-xl shadow-md text-lg font-bold transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-robot text-3xl mb-3 block text-yellow-300"></i> Tutor AI & Media
+                </button>
+            </div>
+        </main>
+
+        <!-- 3. HALAMAN KATEGORI (PILIH SUB-MATERI) -->
+        <main id="view-category" class="hidden min-h-[50vh] animate-fade-in">
+            <button onclick="showView('view-topic')" class="mb-6 text-gray-500 hover:text-primary transition flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Kembali ke Topik
+            </button>
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm mb-8">
+                <p id="category-subtitle" class="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-1">Topik Fisika</p>
+                <h1 id="category-title" class="text-3xl font-extrabold text-secondary">
+                    Kategori Terpilih
+                </h1>
+            </div>
+            
+            <h3 class="text-xl font-bold text-gray-700 mb-6">Pilih Sub-Materi:</h3>
+            <div id="submateri-list" class="flex flex-col space-y-3 max-w-2xl">
+                <!-- Tombol-tombol sub materi akan di-generate oleh JavaScript disini -->
+            </div>
+        </main>
+
+        <!-- 4. HALAMAN KONTEN KEDEPANNYA (PLACEHOLDER) -->
+        <main id="view-content" class="hidden min-h-[60vh] animate-fade-in">
+            <button onclick="showView('view-category')" class="mb-6 text-gray-500 hover:text-primary transition flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Kembali ke Sub-Materi
+            </button>
+            
+            <div class="w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-8 md:p-12 text-center mt-10">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-tools text-3xl text-primary"></i>
+                </div>
+                <p id="content-breadcrumb" class="text-sm text-gray-400 font-medium mb-3">Besaran > Eksplorasi > Angka Penting</p>
+                <h1 id="content-title" class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4">
+                    Judul Konten
+                </h1>
+                <p class="text-gray-500 max-w-md mx-auto">
+                    Halaman ini adalah ruang yang disiapkan untuk menaruh link materi, form, dokumen, atau iframe media pembelajaran kedepannya.
+                </p>
+                <button onclick="goToHome()" class="mt-8 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-full transition">
+                    Kembali ke Beranda
+                </button>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- PWA Install Banner -->
+    <div id="installBanner" class="fixed bottom-0 left-0 w-full bg-blue-50 border-t border-blue-200 p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-50 flex justify-between items-center transition-transform transform translate-y-full">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center font-bold">
+                SP
+            </div>
+            <div>
+                <p class="text-sm font-bold text-gray-800">Install Aplikasi</p>
+                <p class="text-xs text-gray-500">Gunakan offline & akses lebih cepat</p>
+            </div>
+        </div>
+        <button id="installBtn" class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-medium shadow-md transition-colors">
+            Install
+        </button>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------
+        // SISTEM NAVIGASI SINGLE PAGE APP (SPA)
+        // ---------------------------------------------------------
+        const views = ['view-home', 'view-topic', 'view-category', 'view-content'];
+        let currentTopic = "";
+        let currentCategory = "";
+        
+        // Data Dummy Sub-Materi untuk Setiap Topik
+        const dataSubMateri = {
+            "Besaran dan Pengukuran": ["Alat Ukur Panjang, Massa, dan Waktu", "Besaran Pokok dan Besaran Turunan", "Aturan Angka Penting", "Notasi Ilmiah", "Ketidakpastian Pengukuran"],
+            "Pengolahan Sumber Daya Alam": ["Energi Terbarukan", "Energi Fosil & Tak Terbarukan", "Dampak Eksplorasi Lingkungan", "Teknologi Ramah Lingkungan"],
+            "Gerak": ["Jarak dan Perpindahan", "Kecepatan dan Kelajuan", "Gerak Lurus Beraturan (GLB)", "Gerak Lurus Berubah Beraturan (GLBB)", "Gerak Parabola & Melingkar"],
+            "Getaran dan Gelombang": ["Karakteristik Getaran", "Jenis-jenis Gelombang", "Besaran Gelombang", "Sifat-sifat Gelombang (Pemantulan, Pembiasan, dll)"],
+            "Fluida": ["Tekanan Hidrostatis", "Hukum Pascal & Penerapannya", "Hukum Archimedes", "Tegangan Permukaan", "Fluida Dinamis & Asas Bernoulli"],
+            "Teknologi Digital": ["Transmisi Data", "Penyimpanan Data Digital", "Sinyal Analog & Digital", "Gerbang Logika Dasar"],
+            "Listrik Statis dan Dinamis": ["Hukum Coulomb", "Medan Listrik", "Hukum Ohm", "Hukum Kirchhoff"],
+            "Kemagnetan": ["Medan Magnet di Sekitar Arus Listrik", "Gaya Lorentz", "Induksi Elektromagnetik"],
+            "Fisika Kuantum": ["Radiasi Benda Hitam", "Efek Fotolistrik", "Sinar X dan Efek Compton"],
+            "Dinamika Rotasi": ["Torsi", "Momen Inersia", "Momentum Sudut"],
+            "Elastisitas": ["Tegangan dan Regangan", "Hukum Hooke", "Susunan Pegas"],
+            "Termodinamika": ["Hukum ke-0", "Hukum ke-1", "Siklus Carnot dan Mesin Kalor"]
+        };
+
+        function showView(viewId) {
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === viewId) {
+                        el.classList.remove('hidden');
+                        el.classList.add('block');
+                    } else {
+                        el.classList.remove('block');
+                        el.classList.add('hidden');
+                    }
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goToHome() {
+            showView('view-home');
+        }
+
+        function goToTopic(topicName) {
+            currentTopic = topicName;
+            document.getElementById('topic-title').innerText = topicName;
+            
+            // Re-assign event listeners for the 4 main buttons
+            document.getElementById('btn-topic-eksplorasi').onclick = () => goToCategory(topicName, 'Eksplorasi Konsep');
+            document.getElementById('btn-topic-lkpd').onclick = () => goToCategory(topicName, 'Lembar Kerja');
+            document.getElementById('btn-topic-uji').onclick = () => goToCategory(topicName, 'Uji Kompetensi');
+            document.getElementById('btn-topic-tutor').onclick = () => goToContent(topicName, 'Tutor AI dan Media', 'Akses Tutor AI');
+            
+            showView('view-topic');
+        }
+
+        function goToCategory(topicName, categoryName) {
+            currentTopic = topicName;
+            currentCategory = categoryName;
+            
+            document.getElementById('category-subtitle').innerText = topicName;
+            document.getElementById('category-title').innerText = categoryName;
+            
+            const listContainer = document.getElementById('submateri-list');
+            listContainer.innerHTML = ''; // Kosongkan list sebelumnya
+            
+            let subMateriList = dataSubMateri[topicName] || ["Sub-materi 1 (Placeholder)", "Sub-materi 2 (Placeholder)", "Sub-materi 3 (Placeholder)"];
+            
+            subMateriList.forEach(sub => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border hover:bg-blue-50 border-gray-200 text-gray-700 hover:text-primary hover:border-blue-300 font-semibold py-4 px-6 rounded-xl shadow-sm transition flex justify-between items-center text-left";
+                btn.innerHTML = `<span>${sub}</span> <i class="fas fa-chevron-right text-gray-300 text-sm"></i>`;
+                btn.onclick = () => goToContent(topicName, categoryName, sub);
+                listContainer.appendChild(btn);
+            });
+            
+            showView('view-category');
+        }
+
+        function goToContent(topicName, categoryName, subMateriName) {
+            document.getElementById('content-title').innerText = subMateriName;
+            document.getElementById('content-breadcrumb').innerText = `${topicName} > ${categoryName}`;
+            showView('view-content');
+        }
+
+        // Penambahan CSS animasi sederhana via JS inject style agar view transisi halus
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .animate-fade-in {
+                animation: fadeIn 0.4s ease-out forwards;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 1. INJEKSI MANIFEST SECARA DINAMIS
+        // Kita menggunakan Blob dan Data URI agar tetap menjadi 1 file tunggal tapi HP mendeteksinya sebagai PWA
+        const manifestData = {
+            "name": "Si-PINTAR Fisika",
+            "short_name": "SiPINTAR",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#256b90",
+            "description": "Aplikasi Pembelajaran Fisika Si-PINTAR",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZhY2MxNSIgc3Ryb2tlPSIjMWUzYThhIiBzdHJva2Utd2lkdGg9IjUiLz48cGF0aCBkPSJNNTAgMjAgTDgwIDgwIEwyMCA4MCBaIiBmaWxsPSIjMWUzYThhIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI2NSIgcj0iMTAiIGZpbGw9IiNmYWNjMTUiLz48L3N2Zz4=",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                },
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZhY2MxNSIgc3Ryb2tlPSIjMWUzYThhIiBzdHJva2Utd2lkdGg9IjUiLz48cGF0aCBkPSJNNTAgMjAgTDgwIDgwIEwyMCA4MCBaIiBmaWxsPSIjMWUzYThhIi8+PGNpcmNsZSBjeD0iNTAiIGN5PSI2NSIgcj0iMTAiIGZpbGw9IiNmYWNjMTUiLz48L3N2Zz4=",
+                    "sizes": "512x512",
+                    "type": "image/svg+xml"
+                }
+            ]
+        };
+
+        const manifestString = JSON.stringify(manifestData);
+        const manifestBlob = new Blob([manifestString], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+
+        // 2. INJEKSI SERVICE WORKER (Untuk Cache Offline)
+        const swCode = `
+            const CACHE_NAME = 'sipintar-cache-v1';
+            self.addEventListener('install', event => {
+                event.waitUntil(
+                    caches.open(CACHE_NAME).then(cache => {
+                        return cache.addAll([
+                            location.href, // Cache halaman ini
+                            'https://cdn.tailwindcss.com',
+                            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+                        ]);
+                    })
+                );
+            });
+
+            self.addEventListener('fetch', event => {
+                event.respondWith(
+                    caches.match(event.request).then(response => {
+                        return response || fetch(event.request);
+                    })
+                );
+            });
+        `;
+
+        const swBlob = new Blob([swCode], { type: 'text/javascript' });
+        const swURL = URL.createObjectURL(swBlob);
+
+        // Registrasi Service Worker jika browser mendukung
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swURL)
+                    .then(registration => {
+                        console.log('ServiceWorker siap untuk mode offline.');
+                    })
+                    .catch(err => {
+                        console.log('PWA ServiceWorker dibatasi karena format Blob. Untuk production di Github, Anda bisa memindahkan script ini ke file sw.js terpisah.', err);
+                    });
+            });
+        }
+
+        // 3. LOGIKA TOMBOL INSTALL (Merespon ketika diakses di HP/Chrome)
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+
+        // Event ini otomatis ditembak oleh browser (terutama di Android Chrome) jika situs memenuhi syarat PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Mencegah Chrome memunculkan prompt mini infobar otomatis
+            e.preventDefault();
+            // Simpan event sehingga bisa dipicu nanti lewat tombol
+            deferredPrompt = e;
+            
+            // Tampilkan Banner Install Custom milik kita
+            installBanner.style.display = 'flex';
+            setTimeout(() => {
+                installBanner.classList.remove('translate-y-full');
+            }, 100);
+        });
+
+        // Aksi ketika tombol "Install" ditekan
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt !== null) {
+                // Sembunyikan banner
+                installBanner.classList.add('translate-y-full');
+                setTimeout(() => { installBanner.style.display = 'none'; }, 300);
+                
+                // Munculkan prompt instalasi bawaan browser (seperti Add to Home Screen)
+                deferredPrompt.prompt();
+                
+                // Tunggu respon user
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User menerima instalasi APLIKASI');
+                } else {
+                    console.log('User menolak instalasi');
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // Sembunyikan banner jika aplikasi sudah terinstall (berjalan dalam mode standalone)
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.display = 'none';
+            deferredPrompt = null;
+            console.log('PWA terinstall dengan sukses');
+        });
+    </script>
+</body>
+</html>
