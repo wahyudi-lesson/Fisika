@@ -1,0 +1,4131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Dinamika Rotasi: Momen Inersia & Pusat Massa</title>
+    <style>
+        /* ==========================================================================
+           CYBER-MECHANICS HIGH-CONTRAST DARK MODE THEME
+           ========================================================================== */
+        :root {
+            --bg-main: #0B0F19;
+            --bg-panel: #111827;
+            --bg-card: #1E293B;
+            --bg-input: #0F172A;
+            --border-line: #334155;
+            --text-white: #FFFFFF;
+            --text-light: #E2E8F0;
+            --text-muted: #94A3B8;
+
+            /* Palet Warna Simulator Kontras Tinggi */
+            --neon-yellow: #FFD600;   /* Momen Inersia Kecil / Cepat */
+            --neon-magenta: #FF2A85;  /* Momen Inersia Besar / Lambat */
+            --neon-cyan: #00F0FF;     /* Sumbu Putar, Kecepatan Sudut, Jari-jari */
+            --neon-emerald: #00E676;  /* Pusat Massa (R_pm) & Zona Stabil */
+
+            --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --font-mono: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            background-color: var(--bg-main);
+            color: var(--text-white);
+            font-family: var(--font-ui);
+            line-height: 1.5;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        /* ==========================================================================
+           1. HEADER & NAVIGASI STICKY
+           ========================================================================== */
+        header {
+            background: rgba(17, 24, 39, 0.95);
+            border-bottom: 2px solid var(--border-line);
+            padding: 1.25rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .title-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .badge-cyber {
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-emerald));
+            color: #000000;
+            font-weight: 900;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 0.35rem;
+        }
+
+        h1 {
+            font-size: clamp(1.3rem, 2.5vw, 1.85rem);
+            font-weight: 800;
+            color: var(--text-white);
+            letter-spacing: -0.02em;
+            text-shadow: 0 0 18px rgba(0, 240, 255, 0.3);
+        }
+
+        .subtitle {
+            color: var(--neon-yellow);
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            font-weight: 600;
+            margin-top: 0.2rem;
+        }
+
+        .nav-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6rem;
+        }
+
+        .nav-tab {
+            background: var(--bg-card);
+            color: var(--text-light);
+            border: 1px solid var(--border-line);
+            padding: 0.75rem 0.85rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+
+        .nav-tab:hover {
+            border-color: var(--neon-cyan);
+            color: var(--text-white);
+            transform: translateY(-1px);
+        }
+
+        .nav-tab.active {
+            background: rgba(0, 240, 255, 0.14);
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .step-pill {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .nav-tab.active .step-pill {
+            background: var(--neon-cyan);
+            color: #000000;
+            font-weight: 900;
+        }
+
+        /* ==========================================================================
+           LAYOUT UTAMA & KOMPONEN UMUM
+           ========================================================================== */
+        main {
+            max-width: 1440px;
+            margin: 1.5rem auto 3rem;
+            padding: 0 1.25rem;
+        }
+
+        .lab-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .lab-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-banner {
+            background: linear-gradient(90deg, rgba(255, 214, 0, 0.12) 0%, rgba(17, 24, 39, 0.9) 100%);
+            border-left: 5px solid var(--neon-yellow);
+            border-top: 1px solid var(--border-line);
+            border-right: 1px solid var(--border-line);
+            border-bottom: 1px solid var(--border-line);
+            padding: 1rem 1.25rem;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .banner-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+
+        .banner-content h2 {
+            font-size: 1.1rem;
+            color: var(--neon-yellow);
+            margin-bottom: 0.25rem;
+        }
+
+        .banner-content p {
+            font-size: 0.92rem;
+            color: var(--text-light);
+        }
+
+        /* Grid Split-Screen Simulator & Kalkulator */
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        .canvas-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .canvas-topbar {
+            background: var(--bg-card);
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--border-line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .canvas-label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-emerald);
+            box-shadow: 0 0 8px var(--neon-emerald);
+            display: inline-block;
+        }
+
+        .legend-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.9rem;
+            font-size: 0.78rem;
+            color: var(--text-light);
+        }
+
+        .legend-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .swatch {
+            width: 11px;
+            height: 11px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .canvas-holder {
+            width: 100%;
+            height: 460px;
+            position: relative;
+            background: #070B12;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sidebar Panel Kontrol & Rumus */
+        .control-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-heading {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--neon-cyan);
+            font-weight: 800;
+            border-bottom: 1px solid var(--border-line);
+            padding-bottom: 0.4rem;
+        }
+
+        /* Penulisan Rumus Matematis HTML/CSS Rapi Tanpa Library */
+        .math-box {
+            background: rgba(0, 240, 255, 0.07);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            color: var(--text-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 0.2rem;
+            font-size: 0.88em;
+        }
+
+        .frac .num {
+            border-bottom: 1.5px solid var(--text-white);
+            padding: 0 0.3rem 1px;
+        }
+
+        .frac .den {
+            padding: 1px 0.3rem 0;
+        }
+
+        /* Sliders & Form Controls */
+        .slider-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .slider-val {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 7px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-line);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: transform 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="range"].yellow-thumb::-webkit-slider-thumb {
+            background: var(--neon-yellow);
+            box-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        input[type="range"].magenta-thumb::-webkit-slider-thumb {
+            background: var(--neon-magenta);
+            box-shadow: 0 0 10px var(--neon-magenta);
+        }
+
+        input[type="range"].emerald-thumb::-webkit-slider-thumb {
+            background: var(--neon-emerald);
+            box-shadow: 0 0 10px var(--neon-emerald);
+        }
+
+        select {
+            width: 100%;
+            background: var(--bg-input);
+            color: var(--text-white);
+            border: 1px solid var(--border-line);
+            padding: 0.6rem 0.75rem;
+            border-radius: 6px;
+            font-family: var(--font-ui);
+            font-size: 0.88rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: var(--neon-cyan);
+        }
+
+        /* Tombol Aksi Kontras Tinggi */
+        .btn-group {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .btn-yellow {
+            background: var(--neon-yellow);
+            color: #000000;
+            box-shadow: 0 0 16px rgba(255, 214, 0, 0.35);
+        }
+
+        .btn-yellow:hover {
+            background: #ffe033;
+            transform: translateY(-1px);
+        }
+
+        .btn-cyan {
+            background: var(--neon-cyan);
+            color: #000000;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+        }
+
+        .btn-cyan:hover {
+            background: #4df5ff;
+            transform: translateY(-1px);
+        }
+
+        .btn-emerald {
+            background: var(--neon-emerald);
+            color: #000000;
+            box-shadow: 0 0 16px rgba(0, 230, 118, 0.35);
+        }
+
+        .btn-emerald:hover {
+            background: #33eb91;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: var(--bg-input);
+            color: var(--text-white);
+            border-color: var(--border-line);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-light);
+            background: #1e293b;
+        }
+
+        /* Sub-Tab Switcher */
+        .mode-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--bg-input);
+            padding: 0.3rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-line);
+            margin-bottom: 1rem;
+        }
+
+        .mode-toggle-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.84rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-toggle-btn.active {
+            background: var(--bg-card);
+            color: var(--neon-cyan);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Kotak Data Telemetri */
+        .telemetry-panel {
+            background: var(--bg-input);
+            border: 1px solid var(--border-line);
+            border-radius: 8px;
+            padding: 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.83rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .telemetry-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed rgba(51, 65, 85, 0.7);
+            padding-bottom: 0.35rem;
+        }
+
+        .telemetry-line:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* Pop-up Penjelasan Kontras Tinggi */
+        .insight-popup {
+            margin-top: 1rem;
+            background: linear-gradient(135deg, rgba(255, 42, 133, 0.16), rgba(255, 214, 0, 0.12));
+            border: 2px solid var(--neon-yellow);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: none;
+            animation: popScale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .insight-popup.visible {
+            display: block;
+        }
+
+        @keyframes popScale {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Highlight Box 4 Faktor Penentu Momen Inersia */
+        .factors-card {
+            margin-top: 1.25rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .factors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-top: 0.85rem;
+        }
+
+        .factor-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 8px;
+            padding: 0.85rem;
+        }
+
+        .factor-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+        }
+
+        .bar-outer {
+            width: 100%;
+            height: 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-line);
+            margin-bottom: 0.4rem;
+        }
+
+        .bar-inner {
+            height: 100%;
+            transition: width 0.25s ease;
+        }
+
+        /* Checkbox Pemilihan Peserta Balapan */
+        .racer-checks {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.45rem;
+        }
+
+        .check-pill {
+            background: var(--bg-input);
+            border: 1px solid var(--border-line);
+            border-radius: 6px;
+            padding: 0.45rem 0.6rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .check-pill input {
+            accent-color: var(--neon-cyan);
+            width: 15px;
+            height: 15px;
+        }
+
+        /* Responsif untuk Tablet & Mobile (Embed Google Sites) */
+        @media (max-width: 1080px) {
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .nav-bar {
+                grid-template-columns: 1fr;
+            }
+            .canvas-holder {
+                height: 380px;
+            }
+            header {
+                padding: 0.85rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================================================
+         1. HEADER & DESKRIPSI UTAMA
+         ========================================================================== -->
+    <header>
+        <div class="header-container">
+            <div class="title-row">
+                <div>
+                    <span class="badge-cyber">MODUL INTERAKTIF FISIKA SMA</span>
+                    <h1>Laboratorium Dinamika Rotasi: Momen Inersia &amp; Pusat Massa</h1>
+                    <p class="subtitle">"Mengapa tongkat yang sama terasa jauh lebih berat saat diputar dari ujungnya dibandingkan dari bagian tengahnya?"</p>
+                </div>
+            </div>
+
+            <nav class="nav-bar" role="tablist">
+                <button class="nav-tab active" onclick="switchSection(1)" id="tab-1">
+                    <span class="step-pill">TAHAP 1</span> Apersepsi: Tongkat &amp; Pemberat
+                </button>
+                <button class="nav-tab" onclick="switchSection(2)" id="tab-2">
+                    <span class="step-pill">LAB 1</span> Inersia Diskrit &amp; Kontinyu
+                </button>
+                <button class="nav-tab" onclick="switchSection(3)" id="tab-3">
+                    <span class="step-pill">LAB 2</span> Simulator Pusat Massa (R<sub>pm</sub>)
+                </button>
+                <button class="nav-tab" onclick="switchSection(4)" id="tab-4">
+                    <span class="step-pill">APLIKASI</span> Ice Skating &amp; Mini-Game
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- ==========================================================================
+             2. VISUALISASI APERSEPSI (EKSPERIMEN TONGKAT & PEMBERAT)
+             ========================================================================== -->
+        <section class="lab-section active" id="sec-1">
+            <div class="section-banner">
+                <div class="banner-icon">⚡</div>
+                <div class="banner-content">
+                    <h2>Eksperimen Apersepsi: Membongkar Miskonsepsi Massa vs Distribusi Massa</h2>
+                    <p>Perhatikan dua tongkat tak bermassa di bawah ini. Keduanya memiliki <strong>total massa bola pemberat yang SAMA PERSIS (2 × 3 kg = 6 kg)</strong>. Apa yang terjadi jika kedua poros diberikan <strong>Torsi Putar (τ)</strong> yang identik?</p>
+                </div>
+            </div>
+
+            <div class="split-grid">
+                <div class="canvas-box">
+                    <div class="canvas-topbar">
+                        <div class="canvas-label">
+                            <span class="live-dot"></span> Komparasi Rotasi Dua Sistem Bermassa Identik
+                        </div>
+                        <div class="legend-group">
+                            <span class="legend-tag"><span class="swatch" style="background:var(--neon-yellow)"></span> Sistem A: Pemberat Dekat Poros (r kecil)</span>
+                            <span class="legend-tag"><span class="swatch" style="background:var(--neon-magenta)"></span> Sistem B: Pemberat di Ujung Luar (r besar)</span>
+                            <span class="legend-tag"><span class="swatch" style="background:var(--neon-cyan)"></span> Sumbu Putar &amp; Vektor ω</span>
+                        </div>
+                    </div>
+                    <div class="canvas-holder">
+                        <canvas id="canvasApperception"></canvas>
+                    </div>
+                </div>
+
+                <div class="control-card">
+                    <div class="panel-heading">Panel Eksperimen Apersepsi</div>
+
+                    <div class="math-box">
+                        <span>I = &Sigma; m<sub>i</sub> &middot; r<sub>i</sub><sup>2</sup></span>
+                        <span>&nbsp;&rarr;&nbsp;</span>
+                        <span>&alpha; = </span>
+                        <span class="frac"><span class="num">&tau;</span><span class="den">I</span></span>
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span>Massa Tiap Bola Pemberat (m)</span>
+                            <span class="slider-val" id="ap-m-lbl">3.0 kg (Total 6.0 kg)</span>
+                        </div>
+                        <input type="range" id="ap-m-slider" min="1" max="6" step="0.5" value="3" oninput="updateApperceptionParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span>Besar Torsi Uji Identik (&tau;)</span>
+                            <span class="slider-val" id="ap-tau-lbl">24.0 N&middot;m</span>
+                        </div>
+                        <input type="range" id="ap-tau-slider" min="10" max="50" step="2" value="24" oninput="updateApperceptionParams()">
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-yellow" onclick="triggerApperceptionTorque()">
+                            🚀 BERI TORSI YANG SAMA SEKARANG!
+                        </button>
+                        <button class="btn btn-outline" onclick="resetApperception()">
+                            🔄 RESET
+                        </button>
+                    </div>
+
+                    <div class="telemetry-panel">
+                        <div class="telemetry-line">
+                            <span style="color:var(--neon-yellow)">Sistem A (r<sub>A</sub> = 0.6 m):</span>
+                            <span id="ap-ia-val" style="color:var(--neon-yellow);font-weight:bold;">I = 2.16 kg&middot;m²</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span style="color:var(--neon-yellow)">Percepatan Sudut &alpha;<sub>A</sub>:</span>
+                            <span id="ap-aa-val">11.11 rad/s² (SANGAT CEPAT)</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span style="color:var(--neon-magenta)">Sistem B (r<sub>B</sub> = 2.2 m):</span>
+                            <span id="ap-ib-val" style="color:var(--neon-magenta);font-weight:bold;">I = 29.04 kg&middot;m²</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span style="color:var(--neon-magenta)">Percepatan Sudut &alpha;<sub>B</sub>:</span>
+                            <span id="ap-ab-val">0.83 rad/s² (SANGAT BERAT)</span>
+                        </div>
+                    </div>
+
+                    <!-- Pop-up Penjelasan Kontras Tinggi -->
+                    <div class="insight-popup" id="ap-insight">
+                        <strong style="color:var(--neon-yellow); font-size:0.95rem; display:block; margin-bottom:0.3rem;">
+                            💡 PENJELASAN ILMIAH TERBUKTI!
+                        </strong>
+                        <p style="font-size:0.86rem; color:var(--text-white);">
+                            "Massa kedua sistem <strong>SAMA PERSIS</strong>! Namun, saat massa berada jauh dari poros (<em>r</em> besar), Momen Inersia (<em>I</em>) meningkat secara <strong>kuadratis (I = &Sigma; m<sub>i</sub> r<sub>i</sub><sup>2</sup>)</strong>. Jarak pemberat Sistem B yang 3,67 kali lebih jauh menghasilkan Momen Inersia <strong>13,4 kali lebih besar</strong>. Akibatnya, Sistem B jauh lebih menolak perubahan gerak putar!"
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             3. LABORATORIUM 1: SISTEM DISKRIT VS KONTINYU & FAKTOR PENENTU
+             ========================================================================== -->
+        <section class="lab-section" id="sec-2">
+            <div class="mode-toggle">
+                <button class="mode-toggle-btn active" id="btn-lab1-disc" onclick="switchLab1Mode('discrete')">
+                    MODE A: Sistem Partikel Diskrit (I = &Sigma; m<sub>i</sub> r<sub>i</sub><sup>2</sup>)
+                </button>
+                <button class="mode-toggle-btn" id="btn-lab1-cont" onclick="switchLab1Mode('continuous')">
+                    MODE B: Benda Tegar Kontinyu (I = &int; r<sup>2</sup> dm) &amp; Balapan Bidang Miring
+                </button>
+            </div>
+
+            <!-- SUB-MODE A: PARTIKEL DISKRIT -->
+            <div id="lab1-discrete-view">
+                <div class="split-grid">
+                    <div class="canvas-box">
+                        <div class="canvas-topbar">
+                            <div class="canvas-label">
+                                <span class="live-dot"></span> Piringan Kisi-Kisi Rotasi 3 Partikel Diskrit
+                            </div>
+                            <div class="legend-group">
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-yellow)"></span> Partikel m₁</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-emerald)"></span> Partikel m₂</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-magenta)"></span> Partikel m₃</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-cyan)"></span> Garis Jari-Jari (r)</span>
+                            </div>
+                        </div>
+                        <div class="canvas-holder">
+                            <canvas id="canvasLab1Discrete"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <div class="panel-heading">Kalkulator Rumus Real-Time (Sistem Diskrit)</div>
+
+                        <div class="math-box">
+                            <span>I<sub>total</sub> = m<sub>1</sub>r<sub>1</sub><sup>2</sup> + m<sub>2</sub>r<sub>2</sub><sup>2</sup> + m<sub>3</sub>r<sub>3</sub><sup>2</sup></span>
+                            <span>&nbsp;|&nbsp;</span>
+                            <span>&alpha; = </span>
+                            <span class="frac"><span class="num">&tau;</span><span class="den">I<sub>total</sub></span></span>
+                        </div>
+
+                        <!-- Kontrol Partikel 1 -->
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-yellow)">Partikel 1: Massa m₁ &amp; Jarak r₁</span>
+                                <span class="slider-val" id="d-p1-lbl" style="color:var(--neon-yellow)">2 kg | 1.5 m</span>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <input type="range" class="yellow-thumb" id="d-m1" min="1" max="10" step="0.5" value="2" oninput="updateLab1Discrete()">
+                                <input type="range" class="yellow-thumb" id="d-r1" min="0.5" max="5.0" step="0.5" value="1.5" oninput="updateLab1Discrete()">
+                            </div>
+                        </div>
+
+                        <!-- Kontrol Partikel 2 -->
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-emerald)">Partikel 2: Massa m₂ &amp; Jarak r₂</span>
+                                <span class="slider-val" id="d-p2-lbl" style="color:var(--neon-emerald)">4 kg | 3.0 m</span>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <input type="range" class="emerald-thumb" id="d-m2" min="1" max="10" step="0.5" value="4" oninput="updateLab1Discrete()">
+                                <input type="range" class="emerald-thumb" id="d-r2" min="0.5" max="5.0" step="0.5" value="3.0" oninput="updateLab1Discrete()">
+                            </div>
+                        </div>
+
+                        <!-- Kontrol Partikel 3 -->
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-magenta)">Partikel 3: Massa m₃ &amp; Jarak r₃</span>
+                                <span class="slider-val" id="d-p3-lbl" style="color:var(--neon-magenta)">6 kg | 4.5 m</span>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <input type="range" class="magenta-thumb" id="d-m3" min="1" max="10" step="0.5" value="6" oninput="updateLab1Discrete()">
+                                <input type="range" class="magenta-thumb" id="d-r3" min="0.5" max="5.0" step="0.5" value="4.5" oninput="updateLab1Discrete()">
+                            </div>
+                        </div>
+
+                        <!-- Kontrol Torsi Uji -->
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span>Torsi Uji Pemutar (&tau;)</span>
+                                <span class="slider-val" id="d-tau-lbl">50 N&middot;m</span>
+                            </div>
+                            <input type="range" id="d-tau" min="10" max="100" step="5" value="50" oninput="updateLab1Discrete()">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-cyan" id="btn-disc-spin" onclick="toggleDiscreteSpin()">
+                                ▶ PUTAR / HENTIKAN SISTEM
+                            </button>
+                        </div>
+
+                        <div class="telemetry-panel">
+                            <div class="telemetry-line">
+                                <span>Rincian m<sub>i</sub>r<sub>i</sub><sup>2</sup>:</span>
+                                <span id="d-breakdown" style="color:var(--text-light)">4.5 + 36.0 + 121.5</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Momen Inersia Total (I<sub>total</sub>):</span>
+                                <span id="d-itotal" style="color:var(--neon-cyan);font-weight:bold;">162.00 kg&middot;m²</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Percepatan Sudut (&alpha; = &tau;/I):</span>
+                                <span id="d-alpha" style="color:var(--neon-yellow);font-weight:bold;">0.31 rad/s²</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-MODE B: BENDA TEGAR KONTINYU (BALAPAN BIDANG MIRING & INSPEKSI 2.5D) -->
+            <div id="lab1-continuous-view" style="display:none;">
+                <div class="split-grid">
+                    <div class="canvas-box">
+                        <div class="canvas-topbar">
+                            <div class="canvas-label">
+                                <span class="live-dot"></span> Simulator 3D Benda Tegar Kontinyu (Geser Kanvas untuk Putar Kamera 3D)
+                            </div>
+                            <div class="legend-group">
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-yellow)"></span> Bola Pejal (k=2/5)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-emerald)"></span> Silinder Pejal (k=1/2)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-cyan)"></span> Bola Rongga (k=2/3)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-magenta)"></span> Cincin Tipis (k=1)</span>
+                            </div>
+                        </div>
+                        <div class="canvas-holder">
+                            <canvas id="canvasLab1Continuous" style="cursor: grab;"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <div class="panel-heading">Pengaturan Benda Tegar Kontinyu 3D</div>
+
+                        <div class="mode-toggle" style="margin-bottom:0.4rem;">
+                            <button class="mode-toggle-btn active" id="sub-btn-race" onclick="setContSubMode('race')">
+                                🏁 Balapan Bidang Miring 3D
+                            </button>
+                            <button class="mode-toggle-btn" id="sub-btn-inspect" onclick="setContSubMode('inspect')">
+                                🔍 Inspeksi 3D &amp; Poros Batang
+                            </button>
+                        </div>
+
+                        <!-- Kontrol Balapan Bidang Miring -->
+                        <div id="cont-race-controls">
+                            <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+                                Pilih Benda Peserta Balapan (4 Jalur 3D):
+                            </label>
+                            <div class="racer-checks">
+                                <label class="check-pill">
+                                    <input type="checkbox" id="chk-solid-sphere" checked onchange="resetContRace()">
+                                    <span style="color:var(--neon-yellow)">Bola Pejal (2/5)</span>
+                                </label>
+                                <label class="check-pill">
+                                    <input type="checkbox" id="chk-solid-cyl" checked onchange="resetContRace()">
+                                    <span style="color:var(--neon-emerald)">Silinder Pejal (1/2)</span>
+                                </label>
+                                <label class="check-pill">
+                                    <input type="checkbox" id="chk-hollow-sphere" checked onchange="resetContRace()">
+                                    <span style="color:var(--neon-cyan)">Bola Rongga (2/3)</span>
+                                </label>
+                                <label class="check-pill">
+                                    <input type="checkbox" id="chk-ring" checked onchange="resetContRace()">
+                                    <span style="color:var(--neon-magenta)">Cincin Tipis (1)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Kontrol Inspeksi Benda Tunggal & Batang -->
+                        <div id="cont-inspect-controls" style="display:none;">
+                            <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+                                Pilih Benda Tegar untuk Inspeksi Struktur 3D:
+                            </label>
+                            <select id="inspect-shape-sel" onchange="updateContCalculations()">
+                                <option value="solid_sphere">1. Bola Pejal 3D (I = 2/5 MR² = 0.40 MR²)</option>
+                                <option value="solid_cyl">2. Silinder Pejal 3D (I = 1/2 MR² = 0.50 MR²)</option>
+                                <option value="hollow_sphere">3. Bola Berongga 3D - Cangkang Tipis (I = 2/3 MR²)</option>
+                                <option value="ring">4. Silinder Berongga / Cincin Tipis 3D (I = MR²)</option>
+                                <option value="rod_center">5. Batang Homogen 3D Poros Tengah (I = 1/12 ML²)</option>
+                                <option value="rod_end">6. Batang Homogen 3D Poros Ujung (I = 1/3 ML²)</option>
+                            </select>
+                        </div>
+
+                        <!-- Slider Massa, Jari-jari/Panjang, dan Sudut -->
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span>Massa Benda (M)</span>
+                                <span class="slider-val" id="cont-m-lbl">5.0 kg</span>
+                            </div>
+                            <input type="range" id="cont-m-slider" min="1" max="20" step="1" value="5" oninput="onMassRadiusSliderChange()">
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span>Jari-jari (R) / Panjang Batang (L)</span>
+                                <span class="slider-val" id="cont-r-lbl">1.0 m</span>
+                            </div>
+                            <input type="range" id="cont-r-slider" min="0.2" max="2.0" step="0.1" value="1.0" oninput="onMassRadiusSliderChange()">
+                        </div>
+
+                        <div class="slider-item" id="cont-angle-wrap">
+                            <div class="slider-header">
+                                <span>Sudut Kemiringan Bidang (&theta;)</span>
+                                <span class="slider-val" id="cont-theta-lbl">30&deg;</span>
+                            </div>
+                            <input type="range" class="yellow-thumb" id="cont-theta-slider" min="15" max="60" step="1" value="30" oninput="resetContRace()">
+                        </div>
+
+                        <!-- Catatan Khusus M & R Saling Menghilangkan -->
+                        <div id="mr-cancel-note" style="background:rgba(0,230,118,0.12); border:1px solid var(--neon-emerald); border-radius:6px; padding:0.55rem 0.75rem; font-size:0.78rem; color:var(--text-white);">
+                            📌 <strong style="color:var(--neon-emerald)">Catatan Fisika Penting:</strong> Mengubah Massa (<em>M</em>) dan Jari-jari (<em>R</em>) memang mengubah nilai Momen Inersia (<em>I = kMR²</em>), tetapi <strong>TIDAK mengubah percepatan maupun waktu tempuh menggelinding</strong> karena <em>M</em> dan <em>R</em> saling menghilangkan dalam persamaan:
+                            <div class="math-box" style="margin-top:0.35rem; padding:0.35rem; font-size:0.85rem;">
+                                <span>a = </span>
+                                <span class="frac"><span class="num">g &middot; sin &theta;</span><span class="den">1 + k</span></span>
+                            </div>
+                        </div>
+
+                        <div class="btn-group" id="cont-race-btns">
+                            <button class="btn btn-yellow" onclick="startContRace()">
+                                🏁 MULAI BALAPAN
+                            </button>
+                            <button class="btn btn-outline" onclick="resetContRace()">
+                                🔄 RESET
+                            </button>
+                        </div>
+
+                        <div class="telemetry-panel" id="cont-telemetry">
+                            <div class="telemetry-line">
+                                <span>Urutan Pemenang (Tercepat):</span>
+                                <span id="race-podium-txt" style="color:var(--neon-yellow);font-weight:bold;">Bola Pejal (k=0.4)</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Inersia I = k&middot;M&middot;R² (k=0.4 vs k=1):</span>
+                                <span id="race-inertia-cmp" style="color:var(--neon-cyan)">2.00 vs 5.00 kg&middot;m²</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HIGHLIGHT BOX: 4 FAKTOR PENENTU MOMEN INERSIA -->
+            <div class="factors-card">
+                <div class="panel-heading">📊 Analisis Real-Time: 4 Faktor yang Mempengaruhi Besar Momen Inersia (I)</div>
+                <div class="factors-grid">
+                    <div class="factor-item">
+                        <div class="factor-title">
+                            <span>1. Massa Benda (M)</span>
+                            <span id="fac-m-txt" style="color:var(--neon-cyan)">Sebanding (I &prop; M)</span>
+                        </div>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="fac-m-bar" style="width:45%; background:var(--neon-cyan);"></div>
+                        </div>
+                        <p style="font-size:0.78rem; color:var(--text-muted);">Semakin besar massa benda, semakin besar pula momen inersianya secara linier.</p>
+                    </div>
+
+                    <div class="factor-item">
+                        <div class="factor-title">
+                            <span>2. Ukuran / Jari-jari (R atau L)</span>
+                            <span id="fac-r-txt" style="color:var(--neon-magenta)">Kuadratis (I &prop; R²)</span>
+                        </div>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="fac-r-bar" style="width:70%; background:var(--neon-magenta);"></div>
+                        </div>
+                        <p style="font-size:0.78rem; color:var(--text-muted);">Jarak ke poros dikuadratkan! Menggandakan jari-jari meningkatkan inersia 4 kali lipat.</p>
+                    </div>
+
+                    <div class="factor-item">
+                        <div class="factor-title">
+                            <span>3. Bentuk &amp; Distribusi (k)</span>
+                            <span id="fac-k-txt" style="color:var(--neon-yellow)">k = 0.40 s/d 1.00</span>
+                        </div>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="fac-k-bar" style="width:50%; background:var(--neon-yellow);"></div>
+                        </div>
+                        <p style="font-size:0.78rem; color:var(--text-muted);">Cincin berongga (k=1) lebih sulit diputar daripada bola pejal (k=0.4) karena massanya di tepi luar.</p>
+                    </div>
+
+                    <div class="factor-item">
+                        <div class="factor-title">
+                            <span>4. Letak Sumbu Putar</span>
+                            <span id="fac-axis-txt" style="color:var(--neon-emerald)">Poros Ujung = 4× Tengah</span>
+                        </div>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="fac-axis-bar" style="width:80%; background:var(--neon-emerald);"></div>
+                        </div>
+                        <p style="font-size:0.78rem; color:var(--text-muted);">Batang diputar di ujung (I = 1/3 ML²) memiliki inersia 4 kali lipat dibanding di tengah (I = 1/12 ML²).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             4. LABORATORIUM 2: SIMULATOR PUSAT MASSA SISTEM (x_pm, y_pm)
+             ========================================================================== -->
+        <section class="lab-section" id="sec-3">
+            <div class="section-banner" style="border-left-color: var(--neon-emerald);">
+                <div class="banner-icon">🎯</div>
+                <div class="banner-content">
+                    <h2 style="color:var(--neon-emerald)">Laboratorium Pusat Massa Sistem 2 Dimensi &amp; Lintasan Gerak Parabola</h2>
+                    <p>Geser langsung bola massa di atas bidang Kartesius (<em>Drag &amp; Drop</em>) atau gunakan slider. Saat sistem dilempar bebas, amati bagaimana seluruh rangka berputar mengelilingi <strong>Titik Pusat Massa (Hijau Zamrud)</strong>, sementara titik Pusat Massa itu sendiri melukis lintasan parabola yang mulus!</p>
+                </div>
+            </div>
+
+            <div class="split-grid">
+                <div class="canvas-box">
+                    <div class="canvas-topbar">
+                        <div class="canvas-label">
+                            <span class="live-dot"></span> Bidang Kartesius 2D Interaktif (Klik &amp; Geser Bola di Kanvas)
+                        </div>
+                        <div class="legend-group">
+                            <span class="legend-tag"><span class="swatch" style="background:var(--neon-emerald)"></span> Pusat Massa (x<sub>pm</sub>, y<sub>pm</sub>) &amp; Jejak Lintasan</span>
+                            <span class="legend-tag"><span class="swatch" style="background:var(--neon-cyan)"></span> Rangka Benda</span>
+                        </div>
+                    </div>
+                    <div class="canvas-holder">
+                        <canvas id="canvasCenterOfMass" style="cursor: grab;"></canvas>
+                    </div>
+                </div>
+
+                <div class="control-card">
+                    <div class="panel-heading">Koordinat &amp; Persamaan Pusat Massa</div>
+
+                    <div class="math-box">
+                        <span>x<sub>pm</sub> = </span>
+                        <span class="frac"><span class="num">&Sigma; m<sub>i</sub> x<sub>i</sub></span><span class="den">&Sigma; m<sub>i</sub></span></span>
+                        <span>&nbsp;,&nbsp;</span>
+                        <span>y<sub>pm</sub> = </span>
+                        <span class="frac"><span class="num">&Sigma; m<sub>i</sub> y<sub>i</sub></span><span class="den">&Sigma; m<sub>i</sub></span></span>
+                    </div>
+
+                    <!-- Massa & Posisi 3 Beban -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span style="color:var(--neon-yellow)">Beban 1 (m₁) &amp; Koordinat (x₁, y₁)</span>
+                            <span class="slider-val" id="cm-m1-lbl" style="color:var(--neon-yellow)">4.0 kg</span>
+                        </div>
+                        <input type="range" class="yellow-thumb" id="cm-m1" min="1" max="10" step="0.5" value="4" oninput="updateCOMFromSliders()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span style="color:var(--neon-cyan)">Beban 2 (m₂) &amp; Koordinat (x₂, y₂)</span>
+                            <span class="slider-val" id="cm-m2-lbl" style="color:var(--neon-cyan)">6.0 kg</span>
+                        </div>
+                        <input type="range" id="cm-m2" min="1" max="10" step="0.5" value="6" oninput="updateCOMFromSliders()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span style="color:var(--neon-magenta)">Beban 3 (m₃) &amp; Koordinat (x₃, y₃)</span>
+                            <span class="slider-val" id="cm-m3-lbl" style="color:var(--neon-magenta)">2.0 kg</span>
+                        </div>
+                        <input type="range" class="magenta-thumb" id="cm-m3" min="1" max="10" step="0.5" value="2" oninput="updateCOMFromSliders()">
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-emerald" onclick="launchCOMThrow()">
+                            🚀 UJI LEMPAR / ROTASI BEBAS
+                        </button>
+                        <button class="btn btn-outline" onclick="resetCOMSimulator()">
+                            🔄 KEMBALIKAN KE KOORDINAT
+                        </button>
+                    </div>
+
+                    <div class="telemetry-panel">
+                        <div class="telemetry-line">
+                            <span>Total Massa Sistem (&Sigma;m<sub>i</sub>):</span>
+                            <span id="cm-mtot-val" style="color:var(--text-white);font-weight:bold;">12.0 kg</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span>Koordinat Pusat Massa (x<sub>pm</sub>):</span>
+                            <span id="cm-xpm-val" style="color:var(--neon-emerald);font-weight:bold;">0.00 m</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span>Koordinat Pusat Massa (y<sub>pm</sub>):</span>
+                            <span id="cm-ypm-val" style="color:var(--neon-emerald);font-weight:bold;">0.00 m</span>
+                        </div>
+                        <div class="telemetry-line">
+                            <span>Status Gerak Sistem:</span>
+                            <span id="cm-status-val" style="color:var(--neon-cyan)">Mode Edit Koordinat (Geser Bola)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             5. APLIKASI KEHIDUPAN SEHARI-HARI & MINI-GAME INTERAKTIF
+             ========================================================================== -->
+        <section class="lab-section" id="sec-4">
+            <div class="mode-toggle">
+                <button class="mode-toggle-btn active" id="btn-app-skater" onclick="switchAppMode('skater')">
+                    ⛸️ Aplikasi 1: Penari Ice Skating &amp; Kekekalan Momentum Sudut
+                </button>
+                <button class="mode-toggle-btn" id="btn-app-game" onclick="switchAppMode('game')">
+                    🚙 Aplikasi 2 (Mini-Game): Tantangan Akrobatik &amp; Stabilitas Kendaraan
+                </button>
+            </div>
+
+            <!-- APLIKASI 1: PENARI ICE SKATING -->
+            <div id="app-skater-view">
+                <div class="split-grid">
+                    <div class="canvas-box">
+                        <div class="canvas-topbar">
+                            <div class="canvas-label">
+                                <span class="live-dot"></span> Arena Ice Skating 3D, Radar Proyeksi Atas &amp; Bar 3D
+                            </div>
+                            <div class="legend-group">
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-magenta)"></span> Momen Inersia (I)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-yellow)"></span> Kecepatan Sudut (&omega;)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-emerald)"></span> Momentum Sudut (L = Konstan)</span>
+                            </div>
+                        </div>
+                        <div class="canvas-holder">
+                            <canvas id="canvasSkater"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <div class="panel-heading">Hukum Kekekalan Momentum Sudut</div>
+
+                        <div class="math-box">
+                            <span>L<sub>awal</sub> = L<sub>akhir</sub></span>
+                            <span>&nbsp;&rarr;&nbsp;</span>
+                            <span>I<sub>1</sub> &middot; &omega;<sub>1</sub> = I<sub>2</sub> &middot; &omega;<sub>2</sub> = Konstan</span>
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span>Rentangkan / Lipat Tangan Penari (Jari-jari Efektif r)</span>
+                                <span class="slider-val" id="skater-r-lbl" style="color:var(--neon-yellow)">Tangan Terentang (100%)</span>
+                            </div>
+                            <input type="range" class="yellow-thumb" id="skater-arm-slider" min="0" max="100" step="1" value="100" oninput="updateSkaterPhysics()">
+                            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                                <span>&larr; Lipat Tangan ke Dada (r Kecil)</span>
+                                <span>Rentangkan Lebar (r Besar) &rarr;</span>
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-yellow" onclick="setSkaterArmPreset(0)">
+                                ⚡ LIPAT TANGAN PENUH (SPIN CEPAT)
+                            </button>
+                            <button class="btn btn-outline" onclick="setSkaterArmPreset(100)">
+                                👐 RENTANGKAN TANGAN (LAMBAT)
+                            </button>
+                        </div>
+
+                        <div class="telemetry-panel">
+                            <div class="telemetry-line">
+                                <span style="color:var(--neon-magenta)">Momen Inersia Penari (I):</span>
+                                <span id="skater-i-val" style="color:var(--neon-magenta);font-weight:bold;">4.80 kg&middot;m²</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span style="color:var(--neon-yellow)">Kecepatan Sudut Putaran (&omega;):</span>
+                                <span id="skater-w-val" style="color:var(--neon-yellow);font-weight:bold;">3.00 rad/s (0.48 RPS)</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span style="color:var(--neon-emerald)">Momentum Sudut (L = I&middot;&omega;):</span>
+                                <span id="skater-l-val" style="color:var(--neon-emerald);font-weight:bold;">14.40 kg&middot;m²/s (KEKAL)</span>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--bg-card); border-left:4px solid var(--neon-cyan); padding:0.75rem; border-radius:0 8px 8px 0; font-size:0.83rem; color:var(--text-light);">
+                            <strong>Mengapa Putaran Melonjak Cepat?</strong> Saat penari melipat tangannya mendekati sumbu tubuh, jarak massa <em>r</em> berkurang sehingga <strong>Momen Inersia (I) menyusut drastis</strong>. Agar Momentum Sudut (<em>L</em>) tetap kekal, <strong>Kecepatan Sudut (&omega;) wajib meningkat tajam!</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- APLIKASI 2 (MINI-GAME): TANTANGAN AKROBATIK & STABILITAS KENDARAAN -->
+            <div id="app-game-view" style="display:none;">
+                <div class="split-grid">
+                    <div class="canvas-box">
+                        <div class="canvas-topbar">
+                            <div class="canvas-label">
+                                <span class="live-dot"></span> Simulator 3D Rover Ekspedisi, Galah Gyro &amp; Klinometer (Geser Kanvas untuk Kamera 3D)
+                            </div>
+                            <div class="legend-group">
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-emerald)"></span> Pusat Massa (y<sub>pm</sub>) &amp; Bidang Tumpu</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-yellow)"></span> Vektor Gaya Berat (W)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-cyan)"></span> Torsi Angin (&tau;<sub>angin</sub>) &amp; Galah Inersia (I)</span>
+                                <span class="legend-tag"><span class="swatch" style="background:var(--neon-magenta)"></span> Titik Tumpu Kritis (Pivot)</span>
+                            </div>
+                        </div>
+                        <div class="canvas-holder">
+                            <canvas id="canvasStabilityGame" style="cursor: grab;"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <div class="panel-heading">Kontrol Pemain: Pusat Massa &amp; Galah Inersia</div>
+
+                        <div class="math-box">
+                            <span>&Sigma;&tau; = &tau;<sub>angin</sub> - W &middot; d<sub>tumpu</sub></span>
+                            <span>&nbsp;|&nbsp;</span>
+                            <span>&alpha; = </span>
+                            <span class="frac"><span class="num">&Sigma;&tau;</span><span class="den">I<sub>total</sub></span></span>
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-emerald)">1. Tinggi Muatan / Posisi Pusat Massa (y<sub>pm</sub>)</span>
+                                <span class="slider-val" id="game-ypm-lbl" style="color:var(--neon-emerald)">1.2 m (Rendah/Stabil)</span>
+                            </div>
+                            <input type="range" class="emerald-thumb" id="game-ypm-slider" min="0.8" max="3.2" step="0.1" value="1.2" oninput="updateStabilityGameParams()">
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-cyan)">2. Panjang Galah Penyeimbang (Inersia I)</span>
+                                <span class="slider-val" id="game-pole-lbl" style="color:var(--neon-cyan)">4.0 m (Inersia Besar)</span>
+                            </div>
+                            <input type="range" class="pole-thumb" id="game-pole-slider" min="1.0" max="6.0" step="0.5" value="4.0" oninput="updateStabilityGameParams()">
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-yellow)">3. Sudut Kemiringan Tebing Uji (&theta;)</span>
+                                <span class="slider-val" id="game-slope-lbl" style="color:var(--neon-yellow)">20&deg;</span>
+                            </div>
+                            <input type="range" class="yellow-thumb" id="game-slope-slider" min="0" max="50" step="1" value="20" oninput="updateStabilityGameParams()">
+                        </div>
+
+                        <div class="slider-item">
+                            <div class="slider-header">
+                                <span style="color:var(--neon-magenta)">4. Kekuatan Badai Angin &amp; Gempa (F<sub>uji</sub>)</span>
+                                <span class="slider-val" id="game-force-lbl" style="color:var(--neon-magenta)">Level 3 (Kencang - 600 N)</span>
+                            </div>
+                            <input type="range" class="magenta-thumb" id="game-force-slider" min="1" max="5" step="1" value="3" oninput="updateStabilityGameParams()">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-yellow" onclick="triggerWindGust()">
+                                💨 UJI TERPAAN ANGIN &amp; GUNCANGAN
+                            </button>
+                            <button class="btn btn-cyan" onclick="applyCounterBalanceImpulse()">
+                                🛡️ DORONG BALIK (TORSI KOREKSI)
+                            </button>
+                            <button class="btn btn-emerald" onclick="stabilizeVehicleAction()">
+                                🔄 RESET POSISI
+                            </button>
+                        </div>
+
+                        <div class="telemetry-panel">
+                            <div class="telemetry-line">
+                                <span>Sudut Kritis vs Sudut Aktual:</span>
+                                <span id="game-crit-val" style="color:var(--neon-yellow);font-weight:bold;">39.8&deg; vs 20.0&deg;</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Momen Inersia Total (I<sub>rover</sub> + I<sub>galah</sub>):</span>
+                                <span id="game-inertia-val" style="color:var(--neon-cyan);font-weight:bold;">285 kg&middot;m²</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Torsi Angin &amp; Percepatan Sudut (&alpha;):</span>
+                                <span id="game-alpha-val" style="color:var(--text-light);font-weight:bold;">0.00 rad/s² (Diam)</span>
+                            </div>
+                            <div class="telemetry-line">
+                                <span>Status Keselamatan Kendaraan:</span>
+                                <span id="game-status-val" style="color:var(--neon-emerald);font-weight:bold;">AMAN (Garis Berat di Dalam Roda)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==========================================================================
+         JAVASCRIPT ENGINE: FISIKA MURNI & ANIMASI REQUESTANIMATIONFRAME
+         ========================================================================== -->
+    <script>
+        /* ==========================================================================
+           GLOBAL STATE & MANAJEMEN NAVIGASI / CANVAS RESIZE
+           ========================================================================== */
+        let currentSection = 1;
+        let lab1Mode = 'discrete'; // 'discrete' | 'continuous'
+        let contSubMode = 'race';  // 'race' | 'inspect'
+        let appMode = 'skater';    // 'skater' | 'game'
+
+        function switchSection(secIdx) {
+            currentSection = secIdx;
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`sec-${i}`).classList.toggle('active', i === secIdx);
+                document.getElementById(`tab-${i}`).classList.toggle('active', i === secIdx);
+            }
+            resizeAllCanvases();
+        }
+
+        function setupHiDPICanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !canvas.parentElement) return null;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return null;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx, w: rect.width, h: rect.height, canvas };
+        }
+
+        function drawTechGrid(ctx, w, h) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(51, 65, 85, 0.3)";
+            ctx.lineWidth = 1;
+            const step = 36;
+            for (let x = 0; x <= w; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= h; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawVectorArrow(ctx, x1, y1, x2, y2, color, label = "") {
+            const headLen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            if (label) {
+                ctx.font = "bold 12px Consolas, monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(label, x2 + Math.cos(angle) * 18, y2 + Math.sin(angle) * 14);
+            }
+            ctx.restore();
+        }
+
+        window.addEventListener('resize', resizeAllCanvases);
+
+        /* ==========================================================================
+           TAHAP 1: VISUALISASI APERSEPSI (TONGKAT & PEMBERAT)
+           ========================================================================== */
+        const apState = {
+            m: 3.0,
+            tau: 24.0,
+            rA: 0.6, // dekat poros
+            rB: 2.2, // di ujung luar
+            IA: 2.16,
+            IB: 29.04,
+            alphaA: 11.11,
+            alphaB: 0.83,
+            omegaA: 0,
+            omegaB: 0,
+            angleA: 0,
+            angleB: 0,
+            isSpinning: false,
+            info: null
+        };
+
+        function updateApperceptionParams() {
+            apState.m = parseFloat(document.getElementById('ap-m-slider').value);
+            apState.tau = parseFloat(document.getElementById('ap-tau-slider').value);
+
+            // Dua bola pemberat pada masing-masing tongkat: I = 2 * m * r^2
+            apState.IA = 2 * apState.m * Math.pow(apState.rA, 2);
+            apState.IB = 2 * apState.m * Math.pow(apState.rB, 2);
+            apState.alphaA = apState.tau / apState.IA;
+            apState.alphaB = apState.tau / apState.IB;
+
+            document.getElementById('ap-m-lbl').textContent = `${apState.m.toFixed(1)} kg (Total ${(apState.m * 2).toFixed(1)} kg)`;
+            document.getElementById('ap-tau-lbl').textContent = `${apState.tau.toFixed(1)} N·m`;
+            document.getElementById('ap-ia-val').textContent = `I = ${apState.IA.toFixed(2)} kg·m²`;
+            document.getElementById('ap-aa-val').textContent = `${apState.alphaA.toFixed(2)} rad/s² (CEPAT)`;
+            document.getElementById('ap-ib-val').textContent = `I = ${apState.IB.toFixed(2)} kg·m²`;
+            document.getElementById('ap-ab-val').textContent = `${apState.alphaB.toFixed(2)} rad/s² (LAMBAT)`;
+        }
+
+        function triggerApperceptionTorque() {
+            updateApperceptionParams();
+            apState.isSpinning = true;
+            document.getElementById('ap-insight').classList.add('visible');
+        }
+
+        function resetApperception() {
+            apState.isSpinning = false;
+            apState.omegaA = 0;
+            apState.omegaB = 0;
+            apState.angleA = 0;
+            apState.angleB = 0;
+            document.getElementById('ap-insight').classList.remove('visible');
+            updateApperceptionParams();
+        }
+
+        function renderApperception(dt) {
+            if (!apState.info) apState.info = setupHiDPICanvas('canvasApperception');
+            if (!apState.info) return;
+            const { ctx, w, h } = apState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            if (apState.isSpinning) {
+                apState.omegaA = Math.min(22, apState.omegaA + apState.alphaA * dt * 0.45);
+                apState.omegaB = Math.min(22, apState.omegaB + apState.alphaB * dt * 0.45);
+                apState.angleA += apState.omegaA * dt;
+                apState.angleB += apState.omegaB * dt;
+            }
+
+            const centerX1 = w * 0.27;
+            const centerX2 = w * 0.73;
+            const centerY = h * 0.52;
+            const maxRodRadius = Math.min(w * 0.19, h * 0.34);
+            const scalePx = maxRodRadius / 2.4;
+
+            // Garis pemisah tengah
+            ctx.save();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = "#334155";
+            ctx.beginPath();
+            ctx.moveTo(w / 2, 20);
+            ctx.lineTo(w / 2, h - 20);
+            ctx.stroke();
+            ctx.restore();
+
+            // Gambar Sistem A (Kiri - Kuning Neon)
+            drawRodSystem(
+                ctx, centerX1, centerY, maxRodRadius,
+                apState.rA * scalePx, apState.m, apState.angleA, apState.omegaA,
+                "#FFD600", "SISTEM A: PEMBERAT DEKAT POROS",
+                `r = ${apState.rA} m | I = ${apState.IA.toFixed(2)} kg·m²`
+            );
+
+            // Gambar Sistem B (Kanan - Magenta)
+            drawRodSystem(
+                ctx, centerX2, centerY, maxRodRadius,
+                apState.rB * scalePx, apState.m, apState.angleB, apState.omegaB,
+                "#FF2A85", "SISTEM B: PEMBERAT DI UJUNG LUAR",
+                `r = ${apState.rB} m | I = ${apState.IB.toFixed(2)} kg·m²`
+            );
+        }
+
+        function drawRodSystem(ctx, cx, cy, rodHalfPx, massDistPx, massKg, angle, omega, color, title, subText) {
+            // Judul Sistem di Atas
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.fillStyle = color;
+            ctx.font = "bold 14px Segoe UI, sans-serif";
+            ctx.fillText(title, cx, 36);
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "12px Consolas, monospace";
+            ctx.fillText(subText, cx, 56);
+
+            // Lingkaran Jejak Lintasan Pemberat
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.arc(cx, cy, massDistPx, 0, Math.PI * 2);
+            ctx.strokeStyle = color + "55";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Rotasi Tongkat & Bola Pemberat
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+
+            // Batang Tongkat Identik
+            ctx.strokeStyle = "#94A3B8";
+            ctx.lineWidth = 6;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(-rodHalfPx, 0);
+            ctx.lineTo(rodHalfPx, 0);
+            ctx.stroke();
+
+            // Garis Jari-jari r (Cyan Elektrik)
+            ctx.strokeStyle = "#00F0FF";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-massDistPx, 0);
+            ctx.lineTo(massDistPx, 0);
+            ctx.stroke();
+
+            // Dua Bola Pemberat
+            const ballRadius = 13 + massKg * 2.2;
+            [-massDistPx, massDistPx].forEach(posX => {
+                ctx.beginPath();
+                ctx.arc(posX, 0, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 14;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 11px Consolas, monospace";
+                ctx.fillText(`${massKg}kg`, posX, 4);
+            });
+
+            // Poros Tengah Cyan Elektrik
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fillStyle = "#00F0FF";
+            ctx.fill();
+            ctx.restore();
+
+            // Readout Kecepatan Putar Omega di Bawah
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#00F0FF";
+            ctx.font = "bold 13px Consolas, monospace";
+            ctx.fillText(`Kecepatan Putar ω = ${omega.toFixed(2)} rad/s`, cx, cy + rodHalfPx + 36);
+            ctx.restore();
+        }
+
+        /* ==========================================================================
+           TAHAP 2 (LAB 1): SISTEM DISKRIT VS KONTINYU & 4 FAKTOR PENENTU
+           ========================================================================== */
+        const lab1DiscState = {
+            m1: 2, r1: 1.5,
+            m2: 4, r2: 3.0,
+            m3: 6, r3: 4.5,
+            tau: 50,
+            Itotal: 162,
+            alpha: 0.31,
+            omega: 1.2,
+            angle: 0,
+            spinning: true,
+            info: null
+        };
+
+        const lab1ContState = {
+            M: 5.0,
+            R: 1.0,
+            thetaDeg: 30,
+            runningRace: false,
+            inspectShape: 'solid_sphere',
+            inspectAngle: 0,
+            camYaw: -0.58,
+            camPitch: 0.42,
+            isDraggingCam: false,
+            lastMouseX: 0,
+            lastMouseY: 0,
+            racers: [
+                { id: 'solid_sphere', chkId: 'chk-solid-sphere', name: 'Bola Pejal', k: 0.4, kLabel: '2/5', color: '#FFD600', laneZ: -2.55, s: 0, v: 0, a: 0, finished: false, rank: 0 },
+                { id: 'solid_cyl', chkId: 'chk-solid-cyl', name: 'Silinder Pejal', k: 0.5, kLabel: '1/2', color: '#00E676', laneZ: -0.85, s: 0, v: 0, a: 0, finished: false, rank: 0 },
+                { id: 'hollow_sphere', chkId: 'chk-hollow-sphere', name: 'Bola Rongga', k: 2/3, kLabel: '2/3', color: '#00F0FF', laneZ: 0.85, s: 0, v: 0, a: 0, finished: false, rank: 0 },
+                { id: 'ring', chkId: 'chk-ring', name: 'Cincin Tipis', k: 1.0, kLabel: '1', color: '#FF2A85', laneZ: 2.55, s: 0, v: 0, a: 0, finished: false, rank: 0 }
+            ],
+            finishOrder: [],
+            info: null
+        };
+
+        function switchLab1Mode(mode) {
+            lab1Mode = mode;
+            document.getElementById('btn-lab1-disc').classList.toggle('active', mode === 'discrete');
+            document.getElementById('btn-lab1-cont').classList.toggle('active', mode === 'continuous');
+            document.getElementById('lab1-discrete-view').style.display = mode === 'discrete' ? 'block' : 'none';
+            document.getElementById('lab1-continuous-view').style.display = mode === 'continuous' ? 'block' : 'none';
+            resizeAllCanvases();
+            updateFourFactorsBars();
+        }
+
+        function updateLab1Discrete() {
+            lab1DiscState.m1 = parseFloat(document.getElementById('d-m1').value);
+            lab1DiscState.r1 = parseFloat(document.getElementById('d-r1').value);
+            lab1DiscState.m2 = parseFloat(document.getElementById('d-m2').value);
+            lab1DiscState.r2 = parseFloat(document.getElementById('d-r2').value);
+            lab1DiscState.m3 = parseFloat(document.getElementById('d-m3').value);
+            lab1DiscState.r3 = parseFloat(document.getElementById('d-r3').value);
+            lab1DiscState.tau = parseFloat(document.getElementById('d-tau').value);
+
+            const I1 = lab1DiscState.m1 * Math.pow(lab1DiscState.r1, 2);
+            const I2 = lab1DiscState.m2 * Math.pow(lab1DiscState.r2, 2);
+            const I3 = lab1DiscState.m3 * Math.pow(lab1DiscState.r3, 2);
+            lab1DiscState.Itotal = I1 + I2 + I3;
+            lab1DiscState.alpha = lab1DiscState.tau / lab1DiscState.Itotal;
+
+            document.getElementById('d-p1-lbl').textContent = `${lab1DiscState.m1} kg | ${lab1DiscState.r1} m`;
+            document.getElementById('d-p2-lbl').textContent = `${lab1DiscState.m2} kg | ${lab1DiscState.r2} m`;
+            document.getElementById('d-p3-lbl').textContent = `${lab1DiscState.m3} kg | ${lab1DiscState.r3} m`;
+            document.getElementById('d-tau-lbl').textContent = `${lab1DiscState.tau} N·m`;
+
+            document.getElementById('d-breakdown').textContent = `${I1.toFixed(1)} + ${I2.toFixed(1)} + ${I3.toFixed(1)}`;
+            document.getElementById('d-itotal').textContent = `${lab1DiscState.Itotal.toFixed(2)} kg·m²`;
+            document.getElementById('d-alpha').textContent = `${lab1DiscState.alpha.toFixed(2)} rad/s²`;
+
+            updateFourFactorsBars();
+        }
+
+        function toggleDiscreteSpin() {
+            lab1DiscState.spinning = !lab1DiscState.spinning;
+        }
+
+        function renderLab1Discrete(dt) {
+            if (!lab1DiscState.info) lab1DiscState.info = setupHiDPICanvas('canvasLab1Discrete');
+            if (!lab1DiscState.info) return;
+            const { ctx, w, h } = lab1DiscState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            if (lab1DiscState.spinning) {
+                // Kecepatan putar proporsional dengan percepatan sudut alpha = tau / I
+                const targetOmega = Math.max(0.25, Math.min(10, lab1DiscState.alpha * 2.5));
+                lab1DiscState.omega += (targetOmega - lab1DiscState.omega) * 0.1;
+                lab1DiscState.angle += lab1DiscState.omega * dt;
+            }
+
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = Math.min(w, h) * 0.41;
+            const scaleMeter = maxR / 5.0; // 1 s/d 5 meter
+
+            // Gambar Piringan Kisi Konsentris (1m s/d 5m)
+            ctx.save();
+            for (let r = 1; r <= 5; r++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r * scaleMeter, 0, Math.PI * 2);
+                ctx.strokeStyle = r === 5 ? "#475569" : "rgba(148, 163, 184, 0.22)";
+                ctx.lineWidth = r === 5 ? 2 : 1;
+                ctx.stroke();
+
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "11px Consolas, monospace";
+                ctx.fillText(`${r}m`, cx + r * scaleMeter + 4, cy - 4);
+            }
+
+            ctx.translate(cx, cy);
+            ctx.rotate(lab1DiscState.angle);
+
+            const particles = [
+                { m: lab1DiscState.m1, r: lab1DiscState.r1, ang: 0, color: "#FFD600", name: "m₁" },
+                { m: lab1DiscState.m2, r: lab1DiscState.r2, ang: (2 * Math.PI) / 3, color: "#00E676", name: "m₂" },
+                { m: lab1DiscState.m3, r: lab1DiscState.r3, ang: (4 * Math.PI) / 3, color: "#FF2A85", name: "m₃" }
+            ];
+
+            particles.forEach(p => {
+                const px = Math.cos(p.ang) * p.r * scaleMeter;
+                const py = Math.sin(p.ang) * p.r * scaleMeter;
+
+                // Garis Jari-jari Cyan Elektrik
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(px, py);
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Partikel Massa
+                const radPx = 11 + p.m * 1.6;
+                ctx.beginPath();
+                ctx.arc(px, py, radPx, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 11px Consolas, monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(p.name, px, py + 4);
+            });
+
+            // Sumbu Putar Pusat
+            ctx.beginPath();
+            ctx.arc(0, 0, 9, 0, Math.PI * 2);
+            ctx.fillStyle = "#00F0FF";
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /* SUB-MODE B: BENDA TEGAR KONTINYU */
+        function setContSubMode(sub) {
+            contSubMode = sub;
+            document.getElementById('sub-btn-race').classList.toggle('active', sub === 'race');
+            document.getElementById('sub-btn-inspect').classList.toggle('active', sub === 'inspect');
+
+            document.getElementById('cont-race-controls').style.display = sub === 'race' ? 'block' : 'none';
+            document.getElementById('cont-inspect-controls').style.display = sub === 'inspect' ? 'block' : 'none';
+            document.getElementById('cont-angle-wrap').style.display = sub === 'race' ? 'flex' : 'none';
+            document.getElementById('cont-race-btns').style.display = sub === 'race' ? 'flex' : 'none';
+            document.getElementById('mr-cancel-note').style.display = sub === 'race' ? 'block' : 'none';
+
+            updateContCalculations();
+        }
+
+        function onMassRadiusSliderChange() {
+            updateContCalculations();
+            // Highlight visual bahwa waktu tempuh tidak berubah saat M & R digeser
+            const note = document.getElementById('mr-cancel-note');
+            if (note) {
+                note.style.boxShadow = "0 0 18px rgba(0, 230, 118, 0.5)";
+                setTimeout(() => { note.style.boxShadow = "none"; }, 400);
+            }
+        }
+
+        function updateContCalculations() {
+            lab1ContState.M = parseFloat(document.getElementById('cont-m-slider').value);
+            lab1ContState.R = parseFloat(document.getElementById('cont-r-slider').value);
+            lab1ContState.thetaDeg = parseFloat(document.getElementById('cont-theta-slider').value);
+            lab1ContState.inspectShape = document.getElementById('inspect-shape-sel').value;
+
+            document.getElementById('cont-m-lbl').textContent = `${lab1ContState.M.toFixed(1)} kg`;
+            document.getElementById('cont-r-lbl').textContent = `${lab1ContState.R.toFixed(1)} m`;
+            document.getElementById('cont-theta-lbl').textContent = `${lab1ContState.thetaDeg}°`;
+
+            const g = 9.8;
+            const rad = (lab1ContState.thetaDeg * Math.PI) / 180;
+
+            lab1ContState.racers.forEach(r => {
+                // Rumus percepatan menggelinding tanpa slip: a = (g * sin(theta)) / (1 + k)
+                r.a = (g * Math.sin(rad)) / (1 + r.k);
+            });
+
+            const I_sphere = 0.4 * lab1ContState.M * Math.pow(lab1ContState.R, 2);
+            const I_ring = 1.0 * lab1ContState.M * Math.pow(lab1ContState.R, 2);
+            document.getElementById('race-inertia-cmp').textContent = `${I_sphere.toFixed(2)} vs ${I_ring.toFixed(2)} kg·m²`;
+
+            updateFourFactorsBars();
+        }
+
+        function resetContRace() {
+            lab1ContState.runningRace = false;
+            lab1ContState.finishOrder = [];
+            updateContCalculations();
+            lab1ContState.racers.forEach(r => {
+                r.s = 0;
+                r.v = 0;
+                r.finished = false;
+                r.rank = 0;
+            });
+            document.getElementById('race-podium-txt').textContent = "Siap di Garis Start 3D...";
+        }
+
+        function startContRace() {
+            resetContRace();
+            lab1ContState.runningRace = true;
+        }
+
+        function updateFourFactorsBars() {
+            const M = lab1Mode === 'discrete' ? (lab1DiscState.m1 + lab1DiscState.m2 + lab1DiscState.m3) : lab1ContState.M;
+            const R = lab1Mode === 'discrete' ? lab1DiscState.r3 : lab1ContState.R;
+
+            const mPct = Math.min(100, (M / 25) * 100);
+            const rPct = Math.min(100, (Math.pow(R, 2) / 25) * 100);
+
+            document.getElementById('fac-m-bar').style.width = `${Math.max(12, mPct)}%`;
+            document.getElementById('fac-r-bar').style.width = `${Math.max(15, rPct)}%`;
+            document.getElementById('fac-m-txt').textContent = `M = ${M.toFixed(1)} kg`;
+            document.getElementById('fac-r-txt').textContent = `R² = ${(R * R).toFixed(2)} m²`;
+        }
+
+        /* ==========================================================================
+           3D PROJECTION & GEOMETRY HELPER ENGINE (UNTUK LAB 1 MODE B, APP 1, APP 2)
+           ========================================================================== */
+        function projectPoint3D(x, y, z, cx, cy, scale, yaw, pitch) {
+            // Rotasi terhadap sumbu Y (Yaw)
+            const x1 = x * Math.cos(yaw) + z * Math.sin(yaw);
+            const z1 = -x * Math.sin(yaw) + z * Math.cos(yaw);
+            // Rotasi terhadap sumbu X (Pitch)
+            const y2 = y * Math.cos(pitch) - z1 * Math.sin(pitch);
+            const z2 = y * Math.sin(pitch) + z1 * Math.cos(pitch);
+            // Perspektif lembut
+            const fov = 24;
+            const persp = fov / (fov + z2 * 0.35 + 6);
+            return {
+                sx: cx + x1 * scale * persp,
+                sy: cy - y2 * scale * persp,
+                depth: z2,
+                persp: persp
+            };
+        }
+
+        function setupCont3DCameraEvents() {
+            const canvas = document.getElementById('canvasLab1Continuous');
+            if (!canvas) return;
+
+            const onDown = (e) => {
+                lab1ContState.isDraggingCam = true;
+                lab1ContState.lastMouseX = e.touches ? e.touches[0].clientX : e.clientX;
+                lab1ContState.lastMouseY = e.touches ? e.touches[0].clientY : e.clientY;
+                canvas.style.cursor = 'grabbing';
+            };
+
+            const onMove = (e) => {
+                if (!lab1ContState.isDraggingCam) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const dx = clientX - lab1ContState.lastMouseX;
+                const dy = clientY - lab1ContState.lastMouseY;
+                lab1ContState.lastMouseX = clientX;
+                lab1ContState.lastMouseY = clientY;
+
+                lab1ContState.camYaw = Math.max(-1.35, Math.min(0.65, lab1ContState.camYaw + dx * 0.007));
+                lab1ContState.camPitch = Math.max(0.12, Math.min(1.05, lab1ContState.camPitch + dy * 0.006));
+            };
+
+            const onUp = () => {
+                lab1ContState.isDraggingCam = false;
+                canvas.style.cursor = 'grab';
+            };
+
+            canvas.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            canvas.addEventListener('touchstart', onDown, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: true });
+            window.addEventListener('touchend', onUp);
+        }
+
+        // Fungsi Menggambar Objek 3D Benda Tegar Sesuai Karakteristik Fisiknya
+        function drawRigidBody3DObject(ctx, type, center3D, radiusPx, rollAngle, color, projFn) {
+            ctx.save();
+            if (type === 'solid_sphere') {
+                // 1. BOLA PEJAL 3D: Memiliki shading bola penuh + 2 sabuk meridian 3D yang berputar
+                const grad = ctx.createRadialGradient(
+                    center3D.sx - radiusPx * 0.32, center3D.sy - radiusPx * 0.32, radiusPx * 0.1,
+                    center3D.sx, center3D.sy, radiusPx
+                );
+                grad.addColorStop(0, "#FFF9C4");
+                grad.addColorStop(0.35, color);
+                grad.addColorStop(1, "#7A5900");
+
+                ctx.beginPath();
+                ctx.arc(center3D.sx, center3D.sy, radiusPx, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // Sabuk ekuator & meridian berputar untuk memperlihatkan rotasi bola pejal
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(center3D.sx, center3D.sy, radiusPx, 0, Math.PI * 2);
+                ctx.clip();
+
+                ctx.translate(center3D.sx, center3D.sy);
+                ctx.rotate(rollAngle);
+
+                ctx.strokeStyle = "rgba(11, 15, 25, 0.75)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, radiusPx, radiusPx * 0.38, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, radiusPx * 0.38, radiusPx, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Titik penanda permukaan bola
+                ctx.fillStyle = "#0B0F19";
+                ctx.beginPath();
+                ctx.arc(radiusPx * 0.55, 0, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+            } else if (type === 'hollow_sphere') {
+                // 2. BOLA BERONGGA 3D: Cangkang transparan berlapis dinding tipis & garis bujur/lintang wireframe 3D
+                ctx.beginPath();
+                ctx.arc(center3D.sx, center3D.sy, radiusPx, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(0, 240, 255, 0.10)";
+                ctx.fill();
+
+                // Dinding cangkang tipis di tepi luar (menunjukkan massa terkonsentrasi di kulit luar)
+                ctx.lineWidth = 3.5;
+                ctx.strokeStyle = color;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.setLineDash([3, 3]);
+                ctx.arc(center3D.sx, center3D.sy, radiusPx * 0.84, 0, Math.PI * 2);
+                ctx.lineWidth = 1.2;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Jaring-jaring Wireframe 3D berputar di dalam bola berongga
+                ctx.save();
+                ctx.translate(center3D.sx, center3D.sy);
+                ctx.rotate(rollAngle);
+                ctx.strokeStyle = color + "CC";
+                ctx.lineWidth = 1.6;
+                for (let a = 0; a < Math.PI; a += Math.PI / 3) {
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, radiusPx, radiusPx * Math.abs(Math.cos(a + rollAngle * 0.5)), a, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                // Indikator "Rongga Kosong" di pusat
+                ctx.beginPath();
+                ctx.arc(0, 0, radiusPx * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(11, 15, 25, 0.65)";
+                ctx.fill();
+                ctx.restore();
+
+            } else if (type === 'solid_cyl') {
+                // 3. SILINDER PEJAL 3D: Tabung ekstrusi 3D utuh dengan tutup depan & belakang pejal
+                const offsetX = -radiusPx * 0.34;
+                const offsetY = -radiusPx * 0.28;
+                const backX = center3D.sx + offsetX;
+                const backY = center3D.sy + offsetY;
+                const frontX = center3D.sx - offsetX * 0.3;
+                const frontY = center3D.sy - offsetY * 0.3;
+
+                // Badan selimut tabung 3D
+                const anglePerp = Math.atan2(frontY - backY, frontX - backX) + Math.PI / 2;
+                const dx = Math.cos(anglePerp) * radiusPx;
+                const dy = Math.sin(anglePerp) * radiusPx;
+
+                ctx.beginPath();
+                ctx.moveTo(backX - dx, backY - dy);
+                ctx.lineTo(frontX - dx, frontY - dy);
+                ctx.lineTo(frontX + dx, frontY + dy);
+                ctx.lineTo(backX + dx, backY + dy);
+                ctx.closePath();
+                ctx.fillStyle = "#008040";
+                ctx.fill();
+
+                // Tutup belakang silinder
+                ctx.beginPath();
+                ctx.arc(backX, backY, radiusPx, 0, Math.PI * 2);
+                ctx.fillStyle = "#007038";
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.fill();
+                ctx.stroke();
+
+                // Garis sambungan selimut
+                ctx.beginPath();
+                ctx.moveTo(backX - dx, backY - dy);
+                ctx.lineTo(frontX - dx, frontY - dy);
+                ctx.moveTo(backX + dx, backY + dy);
+                ctx.lineTo(frontX + dx, frontY + dy);
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Tutup depan silinder pejal (Penuh berisi)
+                const cylGrad = ctx.createRadialGradient(frontX - 4, frontY - 4, 2, frontX, frontY, radiusPx);
+                cylGrad.addColorStop(0, "#69F0AE");
+                cylGrad.addColorStop(1, "#00B25A");
+                ctx.beginPath();
+                ctx.arc(frontX, frontY, radiusPx, 0, Math.PI * 2);
+                ctx.fillStyle = cylGrad;
+                ctx.fill();
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Garis jari-jari indikator putaran pada penampang silinder pejal
+                ctx.save();
+                ctx.translate(frontX, frontY);
+                ctx.rotate(rollAngle);
+                ctx.strokeStyle = "#0B0F19";
+                ctx.lineWidth = 2.5;
+                for (let k = 0; k < 4; k++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos((k * Math.PI) / 2) * radiusPx, Math.sin((k * Math.PI) / 2) * radiusPx);
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#0B0F19";
+                ctx.fill();
+                ctx.restore();
+
+            } else if (type === 'ring') {
+                // 4. CINCIN TIPIS / SILINDER BERONGGA 3D: Pipa berlubang tembus pandang di bagian tengah
+                const offsetX = -radiusPx * 0.32;
+                const offsetY = -radiusPx * 0.26;
+                const backX = center3D.sx + offsetX;
+                const backY = center3D.sy + offsetY;
+                const frontX = center3D.sx - offsetX * 0.3;
+                const frontY = center3D.sy - offsetY * 0.3;
+                const innerR = radiusPx * 0.68;
+
+                // Cincin belakang
+                ctx.beginPath();
+                ctx.arc(backX, backY, radiusPx, 0, Math.PI * 2);
+                ctx.arc(backX, backY, innerR, 0, Math.PI * 2, true);
+                ctx.fillStyle = "rgba(180, 15, 85, 0.75)";
+                ctx.fill();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Garis rusuk 3D penghubung cincin depan & belakang (menunjukkan bentuk tabung berongga)
+                ctx.save();
+                for (let i = 0; i < 6; i++) {
+                    const ang = rollAngle + (i * Math.PI) / 3;
+                    const bx = backX + Math.cos(ang) * radiusPx;
+                    const by = backY + Math.sin(ang) * radiusPx;
+                    const fx = frontX + Math.cos(ang) * radiusPx;
+                    const fy = frontY + Math.sin(ang) * radiusPx;
+                    ctx.beginPath();
+                    ctx.moveTo(bx, by);
+                    ctx.lineTo(fx, fy);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // Cincin depan berlubang tengah (Donut / Hollow Ring)
+                ctx.beginPath();
+                ctx.arc(frontX, frontY, radiusPx, 0, Math.PI * 2);
+                ctx.arc(frontX, frontY, innerR, 0, Math.PI * 2, true);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.arc(frontX, frontY, radiusPx, 0, Math.PI * 2);
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(frontX, frontY, innerR, 0, Math.PI * 2);
+                ctx.strokeStyle = "#FFD1E6";
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function renderLab1Continuous(dt) {
+            if (!lab1ContState.info) lab1ContState.info = setupHiDPICanvas('canvasLab1Continuous');
+            if (!lab1ContState.info) return;
+            const { ctx, w, h } = lab1ContState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            const cx = w * 0.5;
+            const cy = h * 0.56;
+            const scale = Math.min(w, h) * 0.082;
+            const yaw = lab1ContState.camYaw;
+            const pitch = lab1ContState.camPitch;
+            const proj = (x, y, z) => projectPoint3D(x, y, z, cx, cy, scale, yaw, pitch);
+
+            if (contSubMode === 'race') {
+                const trackMeters = 9.0;
+                const rad = (lab1ContState.thetaDeg * Math.PI) / 180;
+                const rampLen3D = 9.2;
+                const H = rampLen3D * Math.sin(rad);
+                const L = rampLen3D * Math.cos(rad);
+                const xStart = -L * 0.52;
+                const xEnd = L * 0.48;
+                const yStart = H * 0.65 - 1.2;
+                const yBase = -1.2;
+                const zMin = -3.6;
+                const zMax = 3.6;
+
+                // 1. Gambar Struktur Bawah & Dinding Samping Bidang Miring 3D
+                const pTopBack = proj(xStart, yStart, zMin);
+                const pTopFront = proj(xStart, yStart, zMax);
+                const pBotBack = proj(xEnd, yBase, zMin);
+                const pBotFront = proj(xEnd, yBase, zMax);
+                const pBaseBack = proj(xStart, yBase, zMin);
+                const pBaseFront = proj(xStart, yBase, zMax);
+
+                // Dinding Segitiga Depan 3D
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(pTopFront.sx, pTopFront.sy);
+                ctx.lineTo(pBotFront.sx, pBotFront.sy);
+                ctx.lineTo(pBaseFront.sx, pBaseFront.sy);
+                ctx.closePath();
+                ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 2;
+                ctx.fill();
+                ctx.stroke();
+
+                // Permukaan Lintasan Bidang Miring 3D
+                ctx.beginPath();
+                ctx.moveTo(pTopBack.sx, pTopBack.sy);
+                ctx.lineTo(pBotBack.sx, pBotBack.sy);
+                ctx.lineTo(pBotFront.sx, pBotFront.sy);
+                ctx.lineTo(pTopFront.sx, pTopFront.sy);
+                ctx.closePath();
+                const rampGrad = ctx.createLinearGradient(pTopBack.sx, pTopBack.sy, pBotFront.sx, pBotFront.sy);
+                rampGrad.addColorStop(0, "rgba(30, 41, 59, 0.95)");
+                rampGrad.addColorStop(1, "rgba(15, 23, 42, 0.98)");
+                ctx.fillStyle = rampGrad;
+                ctx.fill();
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 2.2;
+                ctx.stroke();
+
+                // Garis Pembatas 4 Jalur Balapan (Lanes) di Atas Bidang Miring 3D
+                [-1.7, 0, 1.7].forEach(zDivider => {
+                    const dStart = proj(xStart, yStart, zDivider);
+                    const dEnd = proj(xEnd, yBase, zDivider);
+                    ctx.beginPath();
+                    ctx.setLineDash([6, 6]);
+                    ctx.moveTo(dStart.sx, dStart.sy);
+                    ctx.lineTo(dEnd.sx, dEnd.sy);
+                    ctx.strokeStyle = "rgba(148, 163, 184, 0.45)";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]);
+
+                // Sabuk Garis FINISH 3D di Ujung Bawah
+                const fin1 = proj(xEnd - 0.35 * Math.cos(rad), yBase + 0.35 * Math.sin(rad), zMin);
+                const fin2 = proj(xEnd, yBase, zMin);
+                const fin3 = proj(xEnd, yBase, zMax);
+                const fin4 = proj(xEnd - 0.35 * Math.cos(rad), yBase + 0.35 * Math.sin(rad), zMax);
+                ctx.beginPath();
+                ctx.moveTo(fin1.sx, fin1.sy);
+                ctx.lineTo(fin2.sx, fin2.sy);
+                ctx.lineTo(fin3.sx, fin3.sy);
+                ctx.lineTo(fin4.sx, fin4.sy);
+                ctx.closePath();
+                ctx.fillStyle = "rgba(255, 214, 0, 0.32)";
+                ctx.fill();
+
+                // Label Sudut Kemiringan pada Dinding Samping 3D
+                ctx.fillStyle = "#FFD600";
+                ctx.font = "bold 13px Consolas, monospace";
+                ctx.fillText(`θ = ${lab1ContState.thetaDeg}°`, pBotFront.sx - 68, pBotFront.sy - 8);
+                ctx.restore();
+
+                // 2. Update Fisika & Urutkan Rendering Benda 3D Berdasarkan Kedalaman Kamera (Z-Sorting)
+                const r3D = 0.32 + lab1ContState.R * 0.14;
+                const activeRacers = [];
+
+                lab1ContState.racers.forEach((r) => {
+                    const checked = document.getElementById(r.chkId).checked;
+                    if (!checked) return;
+
+                    if (lab1ContState.runningRace && !r.finished) {
+                        r.v += r.a * dt;
+                        r.s += r.v * dt;
+                        if (r.s >= trackMeters) {
+                            r.s = trackMeters;
+                            r.finished = true;
+                            lab1ContState.finishOrder.push(r.name);
+                            r.rank = lab1ContState.finishOrder.length;
+                            document.getElementById('race-podium-txt').textContent = lab1ContState.finishOrder.join(' → ');
+                        }
+                    }
+
+                    const frac = r.s / trackMeters;
+                    const dist3D = frac * (rampLen3D - 0.7);
+                    const wx = xStart + dist3D * Math.cos(rad) + Math.sin(rad) * r3D;
+                    const wy = yStart - dist3D * Math.sin(rad) + Math.cos(rad) * r3D;
+                    const wz = r.laneZ;
+
+                    const centerProj = proj(wx, wy, wz);
+                    const shadowProj = proj(xStart + dist3D * Math.cos(rad), yStart - dist3D * Math.sin(rad), wz);
+                    const rollRad = (r.s / lab1ContState.R) * 1.4;
+
+                    activeRacers.push({
+                        r,
+                        centerProj,
+                        shadowProj,
+                        rollRad,
+                        radiusPx: Math.max(13, r3D * scale * centerProj.persp)
+                    });
+                });
+
+                // Urutkan dari yang terjauh ke terdekat agar tumpang-tindih 3D akurat
+                activeRacers.sort((a, b) => a.centerProj.depth - b.centerProj.depth);
+
+                activeRacers.forEach(item => {
+                    const { r, centerProj, shadowProj, rollRad, radiusPx } = item;
+
+                    // Bayangan elips di atas permukaan bidang miring 3D
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(shadowProj.sx, shadowProj.sy, radiusPx * 0.9, radiusPx * 0.35, rad * 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+                    ctx.fill();
+                    ctx.restore();
+
+                    // Gambar Benda Tegar 3D Sesuai Jenisnya
+                    drawRigidBody3DObject(ctx, r.id, centerProj, radiusPx, rollRad, r.color, proj);
+
+                    // Badge Label & Peringkat di Atas Objek 3D
+                    ctx.save();
+                    ctx.font = "bold 11px Consolas, monospace";
+                    ctx.textAlign = "center";
+                    const tagText = r.rank > 0 ? `#${r.rank} ${r.name} (k=${r.kLabel})` : `${r.name} (k=${r.kLabel})`;
+                    const textW = ctx.measureText(tagText).width + 12;
+                    ctx.fillStyle = "rgba(11, 15, 25, 0.85)";
+                    ctx.strokeStyle = r.color;
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.roundRect(centerProj.sx - textW / 2, centerProj.sy - radiusPx - 26, textW, 18, 4);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = r.color;
+                    ctx.fillText(tagText, centerProj.sx, centerProj.sy - radiusPx - 13);
+                    ctx.restore();
+                });
+
+                // Petunjuk interaktif kamera 3D di pojok kiri bawah
+                ctx.save();
+                ctx.fillStyle = "#94A3B8";
+                ctx.font = "11px Segoe UI, sans-serif";
+                ctx.fillText("💡 Tips 3D: Klik & geser kanvas untuk memutar sudut pandang kamera 3D", 16, h - 14);
+                ctx.restore();
+
+            } else {
+                // =====================================================================
+                // MODE INSPEKSI STRUKTUR 3D DETAIL & KOMPARASI BATANG 3D
+                // =====================================================================
+                lab1ContState.inspectAngle += dt * 2.1;
+                const shape = lab1ContState.inspectShape;
+                const M = lab1ContState.M;
+                const R = lab1ContState.R;
+
+                let kVal = 0.4;
+                let titleTxt = "Bola Pejal 3D (I = 2/5 MR²)";
+                let formulaDesc = "Massa tersebar merata di seluruh volume bola pejal (k = 0.40)";
+                if (shape === 'solid_cyl') {
+                    kVal = 0.5;
+                    titleTxt = "Silinder Pejal 3D (I = 1/2 MR²)";
+                    formulaDesc = "Massa memenuhi seluruh penampang cakram/tabung pejal (k = 0.50)";
+                } else if (shape === 'hollow_sphere') {
+                    kVal = 2/3;
+                    titleTxt = "Bola Berongga 3D (I = 2/3 MR²)";
+                    formulaDesc = "Bagian dalam kosong; seluruh massa berada di kulit cangkang bola (k = 0.67)";
+                } else if (shape === 'ring') {
+                    kVal = 1.0;
+                    titleTxt = "Silinder Berongga / Cincin Tipis 3D (I = MR²)";
+                    formulaDesc = "Seluruh elemen massa dm berjarak maksimum R dari sumbu putar (k = 1.00)";
+                } else if (shape === 'rod_center') {
+                    kVal = 1/12;
+                    titleTxt = "Batang Homogen 3D Poros Tengah (I = 1/12 ML²)";
+                    formulaDesc = "Sumbu putar di titik pusat batang: jarak maksimum ujung hanya ½L (Mudah Diputar)";
+                } else if (shape === 'rod_end') {
+                    kVal = 1/3;
+                    titleTxt = "Batang Homogen 3D Poros Ujung (I = 1/3 ML²)";
+                    formulaDesc = "Sumbu putar di ujung batang: jarak ujung mencapai L penuh → Inersia 4× Lipat!";
+                }
+
+                const Ival = kVal * M * Math.pow(R, 2);
+                document.getElementById('race-podium-txt').textContent = titleTxt;
+                document.getElementById('race-inertia-cmp').textContent = `I = ${Ival.toFixed(3)} kg·m²`;
+
+                // Gambar Alas Platform Lingkaran Grid 3D
+                ctx.save();
+                ctx.strokeStyle = "rgba(0, 240, 255, 0.22)";
+                ctx.lineWidth = 1.2;
+                for (let radGrid = 1.5; radGrid <= 4.5; radGrid += 1.5) {
+                    ctx.beginPath();
+                    for (let a = 0; a <= Math.PI * 2; a += 0.15) {
+                        const gp = proj(Math.cos(a) * radGrid, -2.1, Math.sin(a) * radGrid);
+                        if (a === 0) ctx.moveTo(gp.sx, gp.sy);
+                        else ctx.lineTo(gp.sx, gp.sy);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+
+                // Sumbu Putar Vertikal 3D (Cyan Elektrik)
+                const axisTop = proj(0, 3.2, 0);
+                const axisBot = proj(0, -2.5, 0);
+                ctx.beginPath();
+                ctx.setLineDash([6, 5]);
+                ctx.moveTo(axisTop.sx, axisTop.sy);
+                ctx.lineTo(axisBot.sx, axisBot.sy);
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 2.8;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const originProj = proj(0, 0.2, 0);
+                const radius3DPx = (1.1 + R * 0.85) * scale * originProj.persp;
+
+                if (shape === 'rod_center' || shape === 'rod_end') {
+                    // Gambar Batang Silinder 3D Berputar Mengelilingi Sumbu Y
+                    const L3D = 2.2 + R * 1.4;
+                    const sMin = shape === 'rod_center' ? -L3D / 2 : 0;
+                    const sMax = shape === 'rod_center' ? L3D / 2 : L3D;
+                    const rotA = lab1ContState.inspectAngle;
+
+                    const pStart = proj(Math.cos(rotA) * sMin, 0.2, Math.sin(rotA) * sMin);
+                    const pEnd = proj(Math.cos(rotA) * sMax, 0.2, Math.sin(rotA) * sMax);
+
+                    // Jejak sapuan rotasi 3D di bidang horizontal
+                    ctx.beginPath();
+                    const sweepR = shape === 'rod_center' ? L3D / 2 : L3D;
+                    for (let a = 0; a <= Math.PI * 2; a += 0.1) {
+                        const sp = proj(Math.cos(a) * sweepR, 0.2, Math.sin(a) * sweepR);
+                        if (a === 0) ctx.moveTo(sp.sx, sp.sy);
+                        else ctx.lineTo(sp.sx, sp.sy);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = shape === 'rod_center' ? "rgba(255, 214, 0, 0.08)" : "rgba(255, 42, 133, 0.08)";
+                    ctx.strokeStyle = shape === 'rod_center' ? "#FFD60066" : "#FF2A8566";
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Batang 3D Tebal dengan segmen volume
+                    const rodColor = shape === 'rod_center' ? "#FFD600" : "#FF2A85";
+                    ctx.beginPath();
+                    ctx.moveTo(pStart.sx, pStart.sy);
+                    ctx.lineTo(pEnd.sx, pEnd.sy);
+                    ctx.strokeStyle = rodColor;
+                    ctx.lineWidth = 22;
+                    ctx.lineCap = "round";
+                    ctx.shadowColor = rodColor;
+                    ctx.shadowBlur = 15;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Highlight kilau silinder batang
+                    ctx.beginPath();
+                    ctx.moveTo(pStart.sx, pStart.sy - 3);
+                    ctx.lineTo(pEnd.sx, pEnd.sy - 3);
+                    ctx.strokeStyle = "#FFFFFF";
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+
+                    // Titik Poros Putar Cyan
+                    ctx.beginPath();
+                    ctx.arc(originProj.sx, originProj.sy, 9, 0, Math.PI * 2);
+                    ctx.fillStyle = "#00F0FF";
+                    ctx.fill();
+                    ctx.strokeStyle = "#FFFFFF";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    const colorMap = {
+                        solid_sphere: '#FFD600',
+                        solid_cyl: '#00E676',
+                        hollow_sphere: '#00F0FF',
+                        ring: '#FF2A85'
+                    };
+                    drawRigidBody3DObject(ctx, shape, originProj, radius3DPx, lab1ContState.inspectAngle, colorMap[shape], proj);
+                }
+
+                // Panel Keterangan Struktur 3D di Atas Kanvas
+                ctx.fillStyle = "rgba(17, 24, 39, 0.88)";
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(18, 16, w - 36, 54, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = "#FFD600";
+                ctx.font = "bold 13px Segoe UI, sans-serif";
+                ctx.fillText(`struktur 3D: ${titleTxt}  |  I = ${Ival.toFixed(2)} kg·m²`, 32, 37);
+                ctx.fillStyle = "#E2E8F0";
+                ctx.font = "12px Segoe UI, sans-serif";
+                ctx.fillText(formulaDesc, 32, 57);
+                ctx.restore();
+            }
+        }
+
+        /* ==========================================================================
+           TAHAP 4: APLIKASI ICE SKATING 3D & MINI-GAME STABILITAS KENDARAAN 3D
+           ========================================================================== */
+        const skaterState = {
+            armPct: 100, // 0 = lipat penuh, 100 = rentang penuh
+            L_const: 14.4,
+            I_curr: 4.8,
+            omega_curr: 3.0,
+            angle: 0,
+            trailParticles: [],
+            info: null
+        };
+
+        const gameState = {
+            ypm: 1.2,
+            poleLen: 4.0,
+            slopeDeg: 20,
+            gustLevel: 3,
+            tiltAngle: 0,       // Sudut angkat roda kiri terhadap papan tebing (rad)
+            tiltOmega: 0,       // Kecepatan sudut guling (rad/s)
+            tiltAlpha: 0,       // Percepatan sudut guling (rad/s^2)
+            windTimer: 0,       // Durasi terpaan badai angin aktif (detik)
+            quakeTimer: 0,      // Durasi guncangan seismik tanah (detik)
+            quakeOffsetX: 0,
+            quakeOffsetY: 0,
+            suspBounce: 0,      // Osilasi pegas suspensi
+            windParticles: [],  // Partikel hembusan angin 3D
+            debrisParticles: [],// Percikan batu/api saat terguling
+            camYaw: -0.36,
+            camPitch: 0.32,
+            isDraggingCam: false,
+            lastMouseX: 0,
+            lastMouseY: 0,
+            isToppled: false,
+            info: null
+        };
+
+        function switchAppMode(mode) {
+            appMode = mode;
+            document.getElementById('btn-app-skater').classList.toggle('active', mode === 'skater');
+            document.getElementById('btn-app-game').classList.toggle('active', mode === 'game');
+            document.getElementById('app-skater-view').style.display = mode === 'skater' ? 'block' : 'none';
+            document.getElementById('app-game-view').style.display = mode === 'game' ? 'block' : 'none';
+            resizeAllCanvases();
+        }
+
+        function updateSkaterPhysics() {
+            skaterState.armPct = parseFloat(document.getElementById('skater-arm-slider').value);
+            const ratio = skaterState.armPct / 100;
+            // I_body = 1.2, I_arms proporsional dengan r^2
+            skaterState.I_curr = 1.2 + 3.6 * Math.pow(0.2 + 0.8 * ratio, 2);
+            skaterState.omega_curr = skaterState.L_const / skaterState.I_curr;
+
+            const statusPose = ratio < 0.3 ? "Tangan Didekap ke Dada (r Kecil → Spin Cepat!)" :
+                               ratio > 0.75 ? "Tangan & Kaki Terentang Lebar (r Besar → Lambat)" :
+                               `Setengah Merentang (${skaterState.armPct.toFixed(0)}%)`;
+
+            document.getElementById('skater-r-lbl').textContent = statusPose;
+            document.getElementById('skater-i-val').textContent = `${skaterState.I_curr.toFixed(2)} kg·m²`;
+            document.getElementById('skater-w-val').textContent = `${skaterState.omega_curr.toFixed(2)} rad/s (${(skaterState.omega_curr / (2 * Math.PI)).toFixed(2)} RPS)`;
+        }
+
+        function setSkaterArmPreset(val) {
+            document.getElementById('skater-arm-slider').value = val;
+            updateSkaterPhysics();
+        }
+
+        // Helper Menggambar Balok Bar 3D Isometrik
+        function drawBar3DColumn(ctx, x, bottomY, width, height, colorFront, colorTop, colorSide, labelTop, labelBottom) {
+            const depthX = 12;
+            const depthY = -9;
+            const topY = bottomY - height;
+
+            ctx.save();
+            // Sisi Depan
+            ctx.fillStyle = colorFront;
+            ctx.fillRect(x, topY, width, height);
+
+            // Sisi Atas 3D
+            ctx.beginPath();
+            ctx.moveTo(x, topY);
+            ctx.lineTo(x + depthX, topY + depthY);
+            ctx.lineTo(x + width + depthX, topY + depthY);
+            ctx.lineTo(x + width, topY);
+            ctx.closePath();
+            ctx.fillStyle = colorTop;
+            ctx.fill();
+
+            // Sisi Kanan 3D
+            ctx.beginPath();
+            ctx.moveTo(x + width, topY);
+            ctx.lineTo(x + width + depthX, topY + depthY);
+            ctx.lineTo(x + width + depthX, bottomY + depthY);
+            ctx.lineTo(x + width, bottomY);
+            ctx.closePath();
+            ctx.fillStyle = colorSide;
+            ctx.fill();
+
+            // Teks Nilai di Atas Kolom 3D
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 11px Consolas, monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(labelTop, x + width / 2 + 5, topY + depthY - 6);
+
+            ctx.fillStyle = "#E2E8F0";
+            ctx.font = "bold 11px Segoe UI, sans-serif";
+            ctx.fillText(labelBottom, x + width / 2, bottomY + 18);
+            ctx.restore();
+        }
+
+        function renderSkater(dt) {
+            if (!skaterState.info) skaterState.info = setupHiDPICanvas('canvasSkater');
+            if (!skaterState.info) return;
+            const { ctx, w, h } = skaterState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            skaterState.angle += skaterState.omega_curr * dt * 1.45;
+            const ratio = skaterState.armPct / 100;
+
+            // =========================================================================
+            // 1. ARENA RINK ES 3D & KARAKTER PENARI ICE SKATING 3D (SISI KIRI-TENGAH)
+            // =========================================================================
+            const cx = w * 0.28;
+            const cy = h * 0.56;
+            const scale = Math.min(w, h) * 0.085;
+            const proj = (x, y, z) => projectPoint3D(x, y, z, cx, cy, scale, 0.0, 0.35);
+
+            // Lantai Rink Es Perspektif 3D dengan Cincin Konsentris
+            ctx.save();
+            const iceCenter = proj(0, -2.1, 0);
+            for (let rRing = 3.2; rRing >= 0.8; rRing -= 0.8) {
+                ctx.beginPath();
+                ctx.ellipse(iceCenter.sx, iceCenter.sy, rRing * scale * 0.95, rRing * scale * 0.34, 0, 0, Math.PI * 2);
+                ctx.fillStyle = rRing === 3.2 ? "rgba(0, 240, 255, 0.07)" : "transparent";
+                ctx.strokeStyle = rRing === 3.2 ? "#00F0FF" : "rgba(0, 240, 255, 0.25)";
+                ctx.lineWidth = rRing === 3.2 ? 2 : 1;
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Sumbu Rotasi Vertikal 3D (Cyan Elektrik)
+            const topAxis = proj(0, 2.9, 0);
+            const botAxis = proj(0, -2.3, 0);
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(topAxis.sx, topAxis.sy);
+            ctx.lineTo(botAxis.sx, botAxis.sy);
+            ctx.strokeStyle = "#00F0FF";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Posisi 3D anggota tubuh penari yang berputar terhadap sumbu Y
+            const theta = skaterState.angle;
+            const armRadius3D = 0.35 + ratio * 1.65; // Jari-jari rentang tangan (r)
+            const freeLegRadius3D = 0.22 + ratio * 1.15; // Kaki bebas ikut merentang/merapat
+
+            // Vektor arah tangan kiri & kanan dalam ruang 3D
+            const lx = Math.cos(theta) * (-armRadius3D);
+            const lz = Math.sin(theta) * (-armRadius3D);
+            const rx = Math.cos(theta) * armRadius3D;
+            const rz = Math.sin(theta) * armRadius3D;
+
+            // Jejak Pusaran Kecepatan (Motion Blur / Vortex) saat berputar cepat
+            const handLProj = proj(lx, 0.65, lz);
+            const handRProj = proj(rx, 0.65, rz);
+            skaterState.trailParticles.push({ sx: handLProj.sx, sy: handLProj.sy, alpha: 0.85, color: "#FF2A85" });
+            skaterState.trailParticles.push({ sx: handRProj.sx, sy: handRProj.sy, alpha: 0.85, color: "#FFD600" });
+            if (skaterState.trailParticles.length > 36) {
+                skaterState.trailParticles.splice(0, 2);
+            }
+
+            skaterState.trailParticles.forEach((pt) => {
+                pt.alpha *= 0.90;
+                ctx.beginPath();
+                ctx.arc(pt.sx, pt.sy, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = Math.max(0, pt.alpha);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Gambar Kaki Tumpu & Kaki Bebas 3D
+            const hipProj = proj(0, -0.35, 0);
+            const skateBaseProj = proj(0, -2.05, 0);
+            const freeFootProj = proj(Math.cos(theta + 0.4) * freeLegRadius3D, -1.25 - (1 - ratio) * 0.5, Math.sin(theta + 0.4) * freeLegRadius3D);
+
+            ctx.strokeStyle = "#E2E8F0";
+            ctx.lineWidth = 7;
+            ctx.lineCap = "round";
+            // Kaki tumpu di pusat poros
+            ctx.beginPath();
+            ctx.moveTo(hipProj.sx, hipProj.sy);
+            ctx.lineTo(skateBaseProj.sx, skateBaseProj.sy);
+            ctx.stroke();
+
+            // Kaki penyeimbang 3D
+            ctx.beginPath();
+            ctx.moveTo(hipProj.sx, hipProj.sy);
+            ctx.lineTo(freeFootProj.sx, freeFootProj.sy);
+            ctx.stroke();
+
+            // Badan / Torso Kostum Penari 3D (Silinder Meruncing)
+            const shoulderProj = proj(0, 1.05, 0);
+            const torsoGrad = ctx.createLinearGradient(shoulderProj.sx - 20, shoulderProj.sy, hipProj.sx + 20, hipProj.sy);
+            torsoGrad.addColorStop(0, "#00F0FF");
+            torsoGrad.addColorStop(1, "#006680");
+
+            ctx.beginPath();
+            ctx.moveTo(shoulderProj.sx - 19, shoulderProj.sy);
+            ctx.lineTo(shoulderProj.sx + 19, shoulderProj.sy);
+            ctx.lineTo(hipProj.sx + 13, hipProj.sy);
+            ctx.lineTo(hipProj.sx - 13, hipProj.sy);
+            ctx.closePath();
+            ctx.fillStyle = torsoGrad;
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+
+            // Rok Skating 3D
+            ctx.beginPath();
+            ctx.ellipse(hipProj.sx, hipProj.sy + 4, 22, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "#FF2A85";
+            ctx.fill();
+
+            // Lengan Kiri & Kanan 3D beserta Bola Tangan Pemberat
+            const shL = proj(Math.cos(theta) * (-0.35), 0.95, Math.sin(theta) * (-0.35));
+            const shR = proj(Math.cos(theta) * 0.35, 0.95, Math.sin(theta) * 0.35);
+
+            ctx.strokeStyle = "#FF2A85";
+            ctx.lineWidth = 6.5;
+            ctx.beginPath();
+            ctx.moveTo(shL.sx, shL.sy);
+            ctx.lineTo(handLProj.sx, handLProj.sy);
+            ctx.moveTo(shR.sx, shR.sy);
+            ctx.lineTo(handRProj.sx, handRProj.sy);
+            ctx.stroke();
+
+            [handLProj, handRProj].forEach(hp => {
+                ctx.beginPath();
+                ctx.arc(hp.sx, hp.sy, 7.5, 0, Math.PI * 2);
+                ctx.fillStyle = "#FFD600";
+                ctx.fill();
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            // Kepala Penari 3D
+            const headProj = proj(0, 1.55, 0);
+            ctx.beginPath();
+            ctx.arc(headProj.sx, headProj.sy, 14, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFD600";
+            ctx.fill();
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            // =========================================================================
+            // 2. RADAR PROYEKSI TAMPAK ATAS (TOP-DOWN VIEW) DI TENGAH ATAS KANVAS
+            // =========================================================================
+            const radarX = w * 0.61;
+            const radarY = h * 0.29;
+            const radarMaxR = Math.min(w, h) * 0.16;
+
+            ctx.save();
+            ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(radarX, radarY, radarMaxR + 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Lingkaran jari-jari efektif r saat ini
+            const currRadPx = 14 + ratio * (radarMaxR - 16);
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.arc(radarX, radarY, currRadPx, 0, Math.PI * 2);
+            ctx.strokeStyle = "#00F0FF";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Lengan berputar dilihat dari atas
+            const topLx = radarX + Math.cos(theta) * currRadPx;
+            const topLy = radarY + Math.sin(theta) * currRadPx;
+            const topRx = radarX - Math.cos(theta) * currRadPx;
+            const topRy = radarY - Math.sin(theta) * currRadPx;
+
+            ctx.strokeStyle = "#FF2A85";
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(topLx, topLy);
+            ctx.lineTo(topRx, topRy);
+            ctx.stroke();
+
+            // Bahu & Kepala dari atas
+            ctx.beginPath();
+            ctx.arc(radarX, radarY, 11, 0, Math.PI * 2);
+            ctx.fillStyle = "#00F0FF";
+            ctx.fill();
+
+            [ { x: topLx, y: topLy }, { x: topRx, y: topRy } ].forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = "#FFD600";
+                ctx.fill();
+            });
+
+            ctx.fillStyle = "#00F0FF";
+            ctx.font = "bold 11px Consolas, monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("PROYEKSI ATAS (Jari-Jari r)", radarX, radarY - radarMaxR - 18);
+            ctx.fillStyle = "#FFD600";
+            ctx.fillText(`r_efektif = ${(0.25 + ratio * 0.95).toFixed(2)} m`, radarX, radarY + radarMaxR + 26);
+            ctx.restore();
+
+            // =========================================================================
+            // 3. DIAGRAM BALOK 3D REAL-TIME: I, OMEGA, DAN L (KANAN BAWAH)
+            // =========================================================================
+            const barBaseY = h - 42;
+            const maxBarH = h * 0.34;
+            const startBarX = w * 0.56;
+
+            const iBarH = Math.max(14, (skaterState.I_curr / 5.2) * maxBarH);
+            const wBarH = Math.max(14, (skaterState.omega_curr / 11.2) * maxBarH);
+            const lBarH = Math.max(14, (skaterState.L_const / 20.0) * maxBarH);
+
+            drawBar3DColumn(
+                ctx, startBarX, barBaseY, 42, iBarH,
+                "#FF2A85", "#FF7EB3", "#B0004E",
+                `I=${skaterState.I_curr.toFixed(1)}`, "Inersia (I)"
+            );
+
+            drawBar3DColumn(
+                ctx, startBarX + 82, barBaseY, 42, wBarH,
+                "#FFD600", "#FFEA70", "#B39500",
+                `ω=${skaterState.omega_curr.toFixed(1)}`, "Putaran (ω)"
+            );
+
+            drawBar3DColumn(
+                ctx, startBarX + 164, barBaseY, 42, lBarH,
+                "#00E676", "#69F0AE", "#00994D",
+                `L=${skaterState.L_const.toFixed(1)}`, "L (Kekal)"
+            );
+        }
+
+        /* ==========================================================================
+           MINI-GAME 3D: TANTANGAN AKROBATIK & STABILITAS KENDARAAN EKSPEDISI
+           ========================================================================== */
+        function setupStabilityGameCameraEvents() {
+            const canvas = document.getElementById('canvasStabilityGame');
+            if (!canvas) return;
+
+            const onDown = (e) => {
+                gameState.isDraggingCam = true;
+                gameState.lastMouseX = e.touches ? e.touches[0].clientX : e.clientX;
+                gameState.lastMouseY = e.touches ? e.touches[0].clientY : e.clientY;
+                canvas.style.cursor = 'grabbing';
+            };
+
+            const onMove = (e) => {
+                if (!gameState.isDraggingCam) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const dx = clientX - gameState.lastMouseX;
+                const dy = clientY - gameState.lastMouseY;
+                gameState.lastMouseX = clientX;
+                gameState.lastMouseY = clientY;
+
+                gameState.camYaw = Math.max(-1.15, Math.min(0.55, gameState.camYaw + dx * 0.007));
+                gameState.camPitch = Math.max(0.10, Math.min(0.85, gameState.camPitch + dy * 0.006));
+            };
+
+            const onUp = () => {
+                gameState.isDraggingCam = false;
+                canvas.style.cursor = 'grab';
+            };
+
+            canvas.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            canvas.addEventListener('touchstart', onDown, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: true });
+            window.addEventListener('touchend', onUp);
+        }
+
+        function updateStabilityGameParams() {
+            gameState.ypm = parseFloat(document.getElementById('game-ypm-slider').value);
+            gameState.poleLen = parseFloat(document.getElementById('game-pole-slider').value);
+            gameState.slopeDeg = parseFloat(document.getElementById('game-slope-slider').value);
+            const forceSlider = document.getElementById('game-force-slider');
+            if (forceSlider) {
+                gameState.gustLevel = parseInt(forceSlider.value, 10);
+            }
+
+            const halfTrackWidth = 1.0; // Setengah lebar poros roda (1.0 m)
+            const critDeg = (Math.atan(halfTrackWidth / gameState.ypm) * 180) / Math.PI;
+            // Momen inersia total terhadap pivot roda kanan bawah:
+            // I_total = M_rover * (d^2 + y_pm^2) + 1/12 * M_pole * L^2
+            const I_rover = 35 * (Math.pow(halfTrackWidth, 2) + Math.pow(gameState.ypm, 2));
+            const I_pole = 18 * Math.pow(gameState.poleLen, 2);
+            const I_total = I_rover + I_pole;
+
+            const ypmDesc = gameState.ypm <= 1.4 ? "Rendah/Stabil" : gameState.ypm <= 2.2 ? "Sedang" : "Tinggi/Rawan Guling!";
+            const forceNames = ["", "Level 1 (Sepoi - 250 N)", "Level 2 (Sedang - 420 N)", "Level 3 (Kencang - 600 N)", "Level 4 (Badai - 820 N)", "Level 5 (Ekstrem - 1100 N)"];
+
+            document.getElementById('game-ypm-lbl').textContent = `${gameState.ypm.toFixed(1)} m (${ypmDesc})`;
+            document.getElementById('game-pole-lbl').textContent = `${gameState.poleLen.toFixed(1)} m (I = ${I_total.toFixed(0)} kg·m²)`;
+            document.getElementById('game-slope-lbl').textContent = `${gameState.slopeDeg}°`;
+            if (document.getElementById('game-force-lbl')) {
+                document.getElementById('game-force-lbl').textContent = forceNames[gameState.gustLevel];
+            }
+
+            const actualDeg = gameState.slopeDeg + (gameState.tiltAngle * 180) / Math.PI;
+            document.getElementById('game-crit-val').textContent = `${critDeg.toFixed(1)}° vs ${actualDeg.toFixed(1)}°`;
+            document.getElementById('game-inertia-val').textContent = `${I_total.toFixed(0)} kg·m²`;
+        }
+
+        function triggerWindGust() {
+            if (gameState.isToppled) {
+                gameState.tiltAngle = 0.05;
+                gameState.tiltOmega = 0;
+                gameState.isToppled = false;
+            }
+            updateStabilityGameParams();
+
+            // Bangkitkan durasi badai angin & guncangan gempa bumi
+            gameState.windTimer = 2.4;
+            gameState.quakeTimer = 1.8;
+
+            // Impuls guncangan awal: berbanding lurus dengan tinggi pusat massa (lengan momen angin)
+            // dan berbanding terbalik dengan Momen Inersia total (I_total)!
+            const halfTrackWidth = 1.0;
+            const I_total = 35 * (1 + Math.pow(gameState.ypm, 2)) + 18 * Math.pow(gameState.poleLen, 2);
+            const gustForce = 120 + gameState.gustLevel * 165;
+            const windTorqueImpulse = gustForce * gameState.ypm * 0.42;
+
+            // Tambahan dorongan kecepatan sudut awal akibat hentakan gempa + terpaan angin
+            gameState.tiltOmega += windTorqueImpulse / I_total;
+
+            // Inisialisasi partikel badai angin 3D
+            gameState.windParticles = [];
+            for (let i = 0; i < 28; i++) {
+                gameState.windParticles.push({
+                    x: -4.8 + Math.random() * 3.5,
+                    y: 0.3 + Math.random() * 3.4,
+                    z: -1.6 + Math.random() * 3.2,
+                    speed: 6.5 + Math.random() * 4.5 + gameState.gustLevel * 1.2,
+                    len: 0.55 + Math.random() * 0.65
+                });
+            }
+        }
+
+        function applyCounterBalanceImpulse() {
+            // Pemain memberikan torsi koreksi darurat (pendorong thruster/gyro) ke arah berlawanan
+            if (gameState.isToppled && gameState.tiltAngle > 1.2) {
+                gameState.tiltAngle = 0.35;
+                gameState.isToppled = false;
+            }
+            gameState.tiltOmega -= 0.85;
+            gameState.suspBounce = 0.12;
+        }
+
+        function stabilizeVehicleAction() {
+            gameState.tiltAngle = 0;
+            gameState.tiltOmega = 0;
+            gameState.tiltAlpha = 0;
+            gameState.windTimer = 0;
+            gameState.quakeTimer = 0;
+            gameState.quakeOffsetX = 0;
+            gameState.quakeOffsetY = 0;
+            gameState.isToppled = false;
+            gameState.windParticles = [];
+            gameState.debrisParticles = [];
+            updateStabilityGameParams();
+        }
+
+        // Helper menggambar kubus/balok 3D bertransformasi untuk Rover Ekspedisi
+        function drawTransformedBox3D(ctx, xMin, xMax, yMin, yMax, zMin, zMax, toWorldScreen, fillFront, fillTop, fillSide, strokeCol) {
+            const p = [
+                toWorldScreen(xMin, yMin, zMax), // 0: front-bottom-left
+                toWorldScreen(xMax, yMin, zMax), // 1: front-bottom-right
+                toWorldScreen(xMax, yMax, zMax), // 2: front-top-right
+                toWorldScreen(xMin, yMax, zMax), // 3: front-top-left
+                toWorldScreen(xMin, yMin, zMin), // 4: back-bottom-left
+                toWorldScreen(xMax, yMin, zMin), // 5: back-bottom-right
+                toWorldScreen(xMax, yMax, zMin), // 6: back-top-right
+                toWorldScreen(xMin, yMax, zMin)  // 7: back-top-left
+            ];
+
+            ctx.save();
+            ctx.strokeStyle = strokeCol;
+            ctx.lineWidth = 1.4;
+
+            // Sisi Belakang/Kiri jika terlihat
+            ctx.beginPath();
+            ctx.moveTo(p[4].sx, p[4].sy);
+            ctx.lineTo(p[5].sx, p[5].sy);
+            ctx.lineTo(p[6].sx, p[6].sy);
+            ctx.lineTo(p[7].sx, p[7].sy);
+            ctx.closePath();
+            ctx.fillStyle = fillSide;
+            ctx.fill();
+
+            // Sisi Atas (3-2-6-7)
+            ctx.beginPath();
+            ctx.moveTo(p[3].sx, p[3].sy);
+            ctx.lineTo(p[2].sx, p[2].sy);
+            ctx.lineTo(p[6].sx, p[6].sy);
+            ctx.lineTo(p[7].sx, p[7].sy);
+            ctx.closePath();
+            ctx.fillStyle = fillTop;
+            ctx.fill();
+            ctx.stroke();
+
+            // Sisi Kanan (1-5-6-2)
+            ctx.beginPath();
+            ctx.moveTo(p[1].sx, p[1].sy);
+            ctx.lineTo(p[5].sx, p[5].sy);
+            ctx.lineTo(p[6].sx, p[6].sy);
+            ctx.lineTo(p[2].sx, p[2].sy);
+            ctx.closePath();
+            ctx.fillStyle = fillSide;
+            ctx.fill();
+            ctx.stroke();
+
+            // Sisi Depan (0-1-2-3)
+            ctx.beginPath();
+            ctx.moveTo(p[0].sx, p[0].sy);
+            ctx.lineTo(p[1].sx, p[1].sy);
+            ctx.lineTo(p[2].sx, p[2].sy);
+            ctx.lineTo(p[3].sx, p[3].sy);
+            ctx.closePath();
+            ctx.fillStyle = fillFront;
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper menggambar Roda Silinder 3D Bervolume untuk Rover Off-Road
+        function drawWheel3DCylinder(ctx, vx, vy, vz, radius3D, width3D, toWorldScreen, isPivotHighlight) {
+            const segments = 14;
+            const zFront = vz + width3D / 2;
+            const zBack = vz - width3D / 2;
+            const frontPts = [];
+            const backPts = [];
+
+            for (let i = 0; i < segments; i++) {
+                const ang = (i / segments) * Math.PI * 2;
+                const wx = vx + Math.cos(ang) * radius3D;
+                const wy = vy + Math.sin(ang) * radius3D;
+                frontPts.push(toWorldScreen(wx, wy, zFront));
+                backPts.push(toWorldScreen(wx, wy, zBack));
+            }
+
+            ctx.save();
+            // Tapak Ban Silinder (Menghubungkan lingkar depan & belakang)
+            for (let i = 0; i < segments; i++) {
+                const next = (i + 1) % segments;
+                ctx.beginPath();
+                ctx.moveTo(frontPts[i].sx, frontPts[i].sy);
+                ctx.lineTo(frontPts[next].sx, frontPts[next].sy);
+                ctx.lineTo(backPts[next].sx, backPts[next].sy);
+                ctx.lineTo(backPts[i].sx, backPts[i].sy);
+                ctx.closePath();
+                ctx.fillStyle = i % 2 === 0 ? "#1E293B" : "#0F172A";
+                ctx.strokeStyle = "#334155";
+                ctx.lineWidth = 1;
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Penampang Depan Ban
+            ctx.beginPath();
+            frontPts.forEach((pt, idx) => {
+                if (idx === 0) ctx.moveTo(pt.sx, pt.sy);
+                else ctx.lineTo(pt.sx, pt.sy);
+            });
+            ctx.closePath();
+            ctx.fillStyle = "#0B0F19";
+            ctx.fill();
+            ctx.lineWidth = isPivotHighlight ? 3.2 : 2.2;
+            ctx.strokeStyle = isPivotHighlight ? "#FF2A85" : "#94A3B8";
+            ctx.stroke();
+
+            // Velg & Jari-jari Roda
+            const centerFront = toWorldScreen(vx, vy, zFront);
+            ctx.strokeStyle = isPivotHighlight ? "#FF2A85" : "#00F0FF";
+            ctx.lineWidth = 1.8;
+            for (let i = 0; i < segments; i += 2) {
+                ctx.beginPath();
+                ctx.moveTo(centerFront.sx, centerFront.sy);
+                ctx.lineTo(
+                    centerFront.sx + (frontPts[i].sx - centerFront.sx) * 0.55,
+                    centerFront.sy + (frontPts[i].sy - centerFront.sy) * 0.55
+                );
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(centerFront.sx, centerFront.sy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = isPivotHighlight ? "#FF2A85" : "#00F0FF";
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function renderStabilityGame(dt) {
+            if (!gameState.info) gameState.info = setupHiDPICanvas('canvasStabilityGame');
+            if (!gameState.info) return;
+            const { ctx, w, h } = gameState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            // =========================================================================
+            // 1. SIMULASI FISIKA DINAMIKA ROTASI, TERPAAN ANGIN, & GUNCANGAN SEISMIK
+            // =========================================================================
+            const halfBaseMeters = 1.0; // Jarak pusat ke titik tumpu roda kanan (1.0 m)
+            const slopeRad = (gameState.slopeDeg * Math.PI) / 180;
+            const critRad = Math.atan(halfBaseMeters / gameState.ypm);
+            const critDeg = (critRad * 180) / Math.PI;
+
+            // Momen Inersia Total terhadap poros guling (roda kanan bawah)
+            const I_rover = 35 * (Math.pow(halfBaseMeters, 2) + Math.pow(gameState.ypm, 2));
+            const I_pole = 18 * Math.pow(gameState.poleLen, 2);
+            const I_total = I_rover + I_pole;
+
+            // Berat efektif kendaraan W = M * g
+            const W_eff = 420; // Newton
+            const currentTotalRad = slopeRad + gameState.tiltAngle;
+
+            // Jarak lengan momen gaya berat terhadap titik tumpu roda kanan (positif jika melewati roda kanan)
+            const d_pivot = Math.hypot(halfBaseMeters, gameState.ypm) * Math.sin(currentTotalRad - critRad);
+            // Torsi Gravitasi: bernilai negatif (menahan/mengembalikan ke papan) jika belum melewati sudut kritis,
+            // dan bernilai positif (menggulingkan rover) jika sudah melewati sudut kritis!
+            const torqueGravity = W_eff * d_pivot;
+
+            // Torsi Eksternal dari Terpaan Badai Angin & Guncangan Tanah
+            let torqueWind = 0;
+            let torqueQuake = 0;
+
+            if (gameState.windTimer > 0) {
+                gameState.windTimer = Math.max(0, gameState.windTimer - dt);
+                const gustForce = (110 + gameState.gustLevel * 155) * (0.75 + 0.25 * Math.sin(performance.now() * 0.018));
+                // Torsi angin = F_angin * lengan vertikal Pusat Massa (y_pm)
+                torqueWind = gustForce * gameState.ypm * Math.cos(gameState.tiltAngle * 0.6);
+            }
+
+            if (gameState.quakeTimer > 0) {
+                gameState.quakeTimer = Math.max(0, gameState.quakeTimer - dt);
+                const quakeAmp = gameState.gustLevel * 2.2 * (gameState.quakeTimer / 1.8);
+                gameState.quakeOffsetX = Math.sin(performance.now() * 0.055) * quakeAmp;
+                gameState.quakeOffsetY = Math.cos(performance.now() * 0.072) * quakeAmp * 0.7;
+                // Guncangan seismik memberikan torsi bolak-balik asimetris yang memicu terangkatnya roda
+                torqueQuake = Math.abs(Math.sin(performance.now() * 0.032)) * (65 * gameState.gustLevel) * (gameState.ypm / 1.5);
+            } else {
+                gameState.quakeOffsetX = 0;
+                gameState.quakeOffsetY = 0;
+            }
+
+            // Total Torsi & Percepatan Sudut alpha = Sigma_Tau / I_total
+            const netTorque = torqueGravity + torqueWind + torqueQuake;
+            gameState.tiltAlpha = netTorque / I_total;
+
+            // Integrasi Kecepatan Sudut (omega) dan Sudut Miring (tiltAngle)
+            gameState.tiltOmega += gameState.tiltAlpha * dt;
+            // Redaman udara / gesekan poros
+            gameState.tiltOmega *= 0.985;
+            gameState.tiltAngle += gameState.tiltOmega * dt;
+
+            // Osilasi suspensi saat mendarat kembali di atas papan tebing
+            if (gameState.tiltAngle <= 0) {
+                if (gameState.tiltOmega < -0.15) {
+                    gameState.suspBounce = Math.min(0.18, Math.abs(gameState.tiltOmega) * 0.08);
+                }
+                gameState.tiltAngle = 0;
+                gameState.tiltOmega = 0;
+                if (netTorque < 0) gameState.tiltAlpha = 0;
+                gameState.isToppled = false;
+            }
+
+            // Batas terguling penuh di tepi jurang tebing (90 derajat = 1.52 rad)
+            if (gameState.tiltAngle >= 1.48) {
+                if (!gameState.isToppled) {
+                    gameState.isToppled = true;
+                    // Buat percikan benturan saat rover menghantam tebing
+                    for (let i = 0; i < 18; i++) {
+                        gameState.debrisParticles.push({
+                            vx: (Math.random() - 0.3) * 4,
+                            vy: Math.random() * 4.5,
+                            vz: (Math.random() - 0.5) * 3,
+                            x: halfBaseMeters + 0.8,
+                            y: 0.2,
+                            z: (Math.random() - 0.5) * 1.5,
+                            alpha: 1.0
+                        });
+                    }
+                }
+                gameState.tiltAngle = 1.48;
+                gameState.tiltOmega = 0;
+                gameState.tiltAlpha = 0;
+            }
+
+            gameState.suspBounce *= 0.86;
+
+            // Update Telemetri UI Real-Time
+            const actualDeg = gameState.slopeDeg + (gameState.tiltAngle * 180) / Math.PI;
+            const isPastCritical = actualDeg > critDeg;
+            const isTilting = gameState.tiltAngle > 0.015;
+
+            document.getElementById('game-crit-val').textContent = `${critDeg.toFixed(1)}° vs ${actualDeg.toFixed(1)}°`;
+            const alphaEl = document.getElementById('game-alpha-val');
+            if (alphaEl) {
+                alphaEl.textContent = `${gameState.tiltAlpha >= 0 ? '+' : ''}${gameState.tiltAlpha.toFixed(2)} rad/s² | ω = ${gameState.tiltOmega.toFixed(2)} rad/s`;
+                alphaEl.style.color = isPastCritical || gameState.windTimer > 0 ? "var(--neon-yellow)" : "var(--text-light)";
+            }
+
+            const statusEl = document.getElementById('game-status-val');
+            if (gameState.isToppled) {
+                statusEl.textContent = "💥 KENDARAAN TERGULING! Tekan 'DORONG BALIK' atau 'RESET'";
+                statusEl.style.color = "var(--neon-magenta)";
+            } else if (isPastCritical) {
+                statusEl.textContent = `⚠️ KRITIS! Garis Berat Lewat Pivot (Inersia I=${I_total.toFixed(0)} Menahan Laju Guling)`;
+                statusEl.style.color = "var(--neon-magenta)";
+            } else if (isTilting || gameState.windTimer > 0) {
+                statusEl.textContent = "💨 TERGUNCANG ANGIN! Roda Kiri Terangkat, Torsi Berat Menarik Kembali";
+                statusEl.style.color = "var(--neon-yellow)";
+            } else {
+                statusEl.textContent = "✅ STABIL / AMAN (Proyeksi Gaya Berat di Dalam Bidang Tumpu 3D)";
+                statusEl.style.color = "var(--neon-emerald)";
+            }
+
+            // =========================================================================
+            // 2. TRANSFORMASI KOORDINAT 3D TEBING & ROVER EKSPEDISI
+            // =========================================================================
+            const cx = w * 0.48 + gameState.quakeOffsetX;
+            const cy = h * 0.68 + gameState.quakeOffsetY;
+            const scale = Math.min(w, h) * 0.092;
+            const camYaw = gameState.camYaw;
+            const camPitch = gameState.camPitch;
+
+            // Transformasi koordinat lokal papan tebing miring ke layar 3D
+            const rampToScreen = (rx, ry, rz) => {
+                const wx = rx * Math.cos(slopeRad) + ry * Math.sin(slopeRad);
+                const wy = -rx * Math.sin(slopeRad) + ry * Math.cos(slopeRad);
+                return projectPoint3D(wx, wy, rz, cx, cy, scale, camYaw, camPitch);
+            };
+
+            // Transformasi koordinat lokal kendaraan yang berputar terhadap titik tumpu (Pivot) roda kanan bawah (x = +halfBaseMeters, y = 0)
+            const vehicleToScreen = (vx, vy, vz) => {
+                const dx = vx - halfBaseMeters;
+                const dy = vy - gameState.suspBounce;
+                const rx = halfBaseMeters + dx * Math.cos(gameState.tiltAngle) + dy * Math.sin(gameState.tiltAngle);
+                const ry = -dx * Math.sin(gameState.tiltAngle) + dy * Math.cos(gameState.tiltAngle);
+                return rampToScreen(rx, ry, vz);
+            };
+
+            // =========================================================================
+            // 3. GAMBAR LINGKUNGAN TEBING BATU 3D, BIDANG TUMPU, & PIVOT RODA KANAN
+            // =========================================================================
+            // Lapisan batu dasar tebing 3D
+            drawTransformedBox3D(
+                ctx, -3.7, 3.7, -0.95, -0.35, -2.0, 2.0, rampToScreen,
+                "#0F172A", "#1E293B", "#090D16", "#334155"
+            );
+            // Dek permukaan jalan uji tebing 3D
+            drawTransformedBox3D(
+                ctx, -3.7, 3.7, -0.35, 0, -2.0, 2.0, rampToScreen,
+                "#1E293B", "#0F172A", "#334155", "#00F0FF"
+            );
+
+            // Garis Marka Skala Meter pada Permukaan Tebing
+            ctx.save();
+            ctx.strokeStyle = "rgba(148, 163, 184, 0.28)";
+            ctx.lineWidth = 1;
+            for (let mx = -3; mx <= 3; mx += 1) {
+                const mFront = rampToScreen(mx, 0.01, 1.9);
+                const mBack = rampToScreen(mx, 0.01, -1.9);
+                ctx.beginPath();
+                ctx.moveTo(mFront.sx, mFront.sy);
+                ctx.lineTo(mBack.sx, mBack.sy);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Karpet Zona Bidang Tumpu 3D (Antara Roda Kiri x=-1m s/d Roda Kanan x=+1m)
+            const z1 = rampToScreen(-halfBaseMeters, 0.02, 1.45);
+            const z2 = rampToScreen(halfBaseMeters, 0.02, 1.45);
+            const z3 = rampToScreen(halfBaseMeters, 0.02, -1.45);
+            const z4 = rampToScreen(-halfBaseMeters, 0.02, -1.45);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(z1.sx, z1.sy);
+            ctx.lineTo(z2.sx, z2.sy);
+            ctx.lineTo(z3.sx, z3.sy);
+            ctx.lineTo(z4.sx, z4.sy);
+            ctx.closePath();
+            ctx.fillStyle = isPastCritical ? "rgba(255, 42, 133, 0.28)" : isTilting ? "rgba(255, 214, 0, 0.24)" : "rgba(0, 230, 118, 0.25)";
+            ctx.strokeStyle = isPastCritical ? "#FF2A85" : isTilting ? "#FFD600" : "#00E676";
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            // Sorotan Garis Sumbu Titik Tumpu Guling (Pivot Axis) pada Roda Kanan (x = +1.0 m)
+            const pivFront = rampToScreen(halfBaseMeters, 0.04, 1.65);
+            const pivBack = rampToScreen(halfBaseMeters, 0.04, -1.65);
+            ctx.beginPath();
+            ctx.setLineDash([5, 4]);
+            ctx.moveTo(pivFront.sx, pivFront.sy);
+            ctx.lineTo(pivBack.sx, pivBack.sy);
+            ctx.strokeStyle = "#FF2A85";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#FF2A85";
+            ctx.font = "bold 11px Consolas, monospace";
+            ctx.fillText("POROS TUMPU (PIVOT)", pivFront.sx + 8, pivFront.sy + 14);
+            ctx.restore();
+
+            // =========================================================================
+            // 4. GAMBAR SASIS ROVER EKSPEDISI 3D, RODA SILINDER, & MENARA TELESKOPIK
+            // =========================================================================
+            // Urutkan roda belakang dulu, baru sasis, lalu roda depan agar perspektif 3D rapi
+            drawWheel3DCylinder(ctx, -halfBaseMeters, 0.36, -1.05, 0.36, 0.32, vehicleToScreen, false);
+            drawWheel3DCylinder(ctx, halfBaseMeters, 0.36, -1.05, 0.36, 0.32, vehicleToScreen, isPastCritical || isTilting);
+
+            // Sasis Utama Lower Deck Rover 3D
+            drawTransformedBox3D(
+                ctx, -1.18, 1.18, 0.32, 0.68, -0.92, 0.92, vehicleToScreen,
+                "#1E293B", "#334155", "#0F172A", "#00F0FF"
+            );
+
+            // Kabin Kokpit Depan Rover (di sisi kanan/depan) + Lampu Sorot
+            drawTransformedBox3D(
+                ctx, 0.45, 1.25, 0.68, 1.05, -0.70, 0.70, vehicleToScreen,
+                "rgba(0, 240, 255, 0.35)", "rgba(0, 240, 255, 0.5)", "rgba(15, 23, 42, 0.9)", "#00F0FF"
+            );
+
+            // 4 Tiang Rangka Teleskopik Hidrolik Penyangga Muatan Kargo (Menghubungkan Sasis ke Ketinggian y_pm)
+            const cargoHalfH = 0.38;
+            const cargoMinY = Math.max(0.70, gameState.ypm - cargoHalfH);
+            const cargoMaxY = gameState.ypm + cargoHalfH;
+
+            const strutCorners = [
+                { x: -0.82, z: -0.65 },
+                { x: 0.82, z: -0.65 },
+                { x: -0.82, z: 0.65 },
+                { x: 0.82, z: 0.65 }
+            ];
+            ctx.save();
+            strutCorners.forEach(sc => {
+                const sBot = vehicleToScreen(sc.x, 0.68, sc.z);
+                const sTop = vehicleToScreen(sc.x, cargoMinY, sc.z);
+                ctx.beginPath();
+                ctx.moveTo(sBot.sx, sBot.sy);
+                ctx.lineTo(sTop.sx, sTop.sy);
+                ctx.strokeStyle = "#94A3B8";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Garis silang penguat (truss)
+                ctx.strokeStyle = "rgba(0, 240, 255, 0.4)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(sBot.sx, sBot.sy);
+                ctx.lineTo(sTop.sx, sBot.sy * 0.5 + sTop.sy * 0.5);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // Kontainer Kargo Berat 3D pada Ketinggian Pusat Massa (y_pm)
+            drawTransformedBox3D(
+                ctx, -0.98, 0.98, cargoMinY, cargoMaxY, -0.78, 0.78, vehicleToScreen,
+                "rgba(30, 41, 59, 0.95)", "rgba(51, 65, 85, 0.98)", "rgba(15, 23, 42, 0.98)",
+                isPastCritical ? "#FF2A85" : "#00E676"
+            );
+
+            // Roda Silinder Bagian Depan
+            drawWheel3DCylinder(ctx, -halfBaseMeters, 0.36, 1.05, 0.36, 0.32, vehicleToScreen, false);
+            drawWheel3DCylinder(ctx, halfBaseMeters, 0.36, 1.05, 0.36, 0.32, vehicleToScreen, isPastCritical || isTilting);
+
+            // =========================================================================
+            // 5. GALAH PENYEIMBANG GYRO-INERSIA 3D & PEMBERAT UJUNG
+            // =========================================================================
+            const halfPole = gameState.poleLen * 0.60;
+            const poleL = vehicleToScreen(-halfPole, gameState.ypm, 0);
+            const poleR = vehicleToScreen(halfPole, gameState.ypm, 0);
+            const com3D = vehicleToScreen(0, gameState.ypm, 0);
+
+            ctx.save();
+            // Batang Galah Utama 3D
+            ctx.beginPath();
+            ctx.moveTo(poleL.sx, poleL.sy);
+            ctx.lineTo(poleR.sx, poleR.sy);
+            ctx.strokeStyle = "#00F0FF";
+            ctx.lineWidth = 6.5;
+            ctx.lineCap = "round";
+            ctx.shadowColor = "#00F0FF";
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Dua Bola Pemberat Gyro di Ujung Galah (ukurannya menegaskan besarnya Momen Inersia I = mr^2)
+            [poleL, poleR].forEach(endPt => {
+                ctx.beginPath();
+                ctx.arc(endPt.sx, endPt.sy, 12, 0, Math.PI * 2);
+                ctx.fillStyle = "#00F0FF";
+                ctx.shadowColor = "#00F0FF";
+                ctx.shadowBlur = 14;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2.2;
+                ctx.stroke();
+
+                // Cincin gyro di sekeliling pemberat ujung
+                ctx.beginPath();
+                ctx.ellipse(endPt.sx, endPt.sy, 17, 6, gameState.tiltAngle, 0, Math.PI * 2);
+                ctx.strokeStyle = "#FFD600";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // =========================================================================
+            // 6. GARIS KERJA GAYA BERAT (W) VERTIKAL MURNI & PROYEKSI PADA BIDANG TUMPU
+            // =========================================================================
+            // Hitung koordinat dunia (World Space) dari Pusat Massa untuk menggambar panah gravitasi vertikal murni
+            const comDx = 0 - halfBaseMeters;
+            const comDy = gameState.ypm - gameState.suspBounce;
+            const comRampX = halfBaseMeters + comDx * Math.cos(gameState.tiltAngle) + comDy * Math.sin(gameState.tiltAngle);
+            const comRampY = -comDx * Math.sin(gameState.tiltAngle) + comDy * Math.cos(gameState.tiltAngle);
+
+            // Titik potong garis vertikal gravitasi (x_world = konstan) terhadap permukaan bidang miring tebing
+            // Karena garis vertikal memiliki arah (-sin(slopeRad), -cos(slopeRad)) dalam koordinat lokal tebing:
+            const floorInterceptRampX = comRampX + comRampY * Math.tan(slopeRad);
+            const weightFloorPt = rampToScreen(floorInterceptRampX, 0.02, 0);
+
+            // Garis putus-putus proyeksi garis kerja gaya berat menembus lantai tebing
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([5, 4]);
+            ctx.moveTo(com3D.sx, com3D.sy);
+            ctx.lineTo(weightFloorPt.sx, weightFloorPt.sy);
+            ctx.strokeStyle = isPastCritical ? "#FF2A85" : "#FFD600";
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Titik Jatuh Proyeksi Gaya Berat pada Bidang Tumpu
+            ctx.beginPath();
+            ctx.arc(weightFloorPt.sx, weightFloorPt.sy, 7, 0, Math.PI * 2);
+            ctx.fillStyle = isPastCritical ? "#FF2A85" : "#00E676";
+            ctx.shadowColor = isPastCritical ? "#FF2A85" : "#00E676";
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.restore();
+
+            // Vektor Panah Gaya Berat W (Tegak Lurus ke Pusat Bumi)
+            const comWorldX = comRampX * Math.cos(slopeRad) + comRampY * Math.sin(slopeRad);
+            const comWorldY = -comRampX * Math.sin(slopeRad) + comRampY * Math.cos(slopeRad);
+            const weightTip3D = projectPoint3D(comWorldX, comWorldY - 1.85, 0, cx, cy, scale, camYaw, camPitch);
+
+            drawVectorArrow(ctx, com3D.sx, com3D.sy, weightTip3D.sx, weightTip3D.sy, "#FFD600", "Gaya Berat (W)");
+            drawEmeraldTarget(ctx, com3D.sx, com3D.sy, `R_pm (y=${gameState.ypm.toFixed(1)}m)`);
+
+            // =========================================================================
+            // 7. VISUALISASI BADAI ANGIN 3D, VEKTOR GAYA ANGIN, & PERCIKAN BENTURAN
+            // =========================================================================
+            if (gameState.windTimer > 0) {
+                ctx.save();
+                gameState.windParticles.forEach(wp => {
+                    wp.x += wp.speed * dt;
+                    if (wp.x > 3.8) {
+                        wp.x = -4.8;
+                        wp.y = 0.3 + Math.random() * 3.4;
+                    }
+                    const pStart = rampToScreen(wp.x, wp.y, wp.z);
+                    const pEnd = rampToScreen(wp.x + wp.len, wp.y, wp.z);
+
+                    ctx.beginPath();
+                    ctx.moveTo(pStart.sx, pStart.sy);
+                    ctx.lineTo(pEnd.sx, pEnd.sy);
+                    ctx.strokeStyle = "rgba(0, 240, 255, 0.72)";
+                    ctx.lineWidth = 2.2;
+                    ctx.stroke();
+                });
+
+                // Panah Vektor Gaya Dorong Angin (F_angin) yang Mengenai Pusat Massa Muatan Kargo
+                const windStart3D = vehicleToScreen(-2.3, gameState.ypm, 0);
+                const windTarget3D = vehicleToScreen(-0.98, gameState.ypm, 0);
+                drawVectorArrow(
+                    ctx, windStart3D.sx, windStart3D.sy, windTarget3D.sx, windTarget3D.sy,
+                    "#00F0FF", `F_angin (Lv.${gameState.gustLevel})`
+                );
+
+                // Busur Torsi Guling di Sekitar Titik Tumpu Roda Kanan
+                const pivotScreen = rampToScreen(halfBaseMeters, 0.35, 1.05);
+                ctx.beginPath();
+                ctx.arc(pivotScreen.sx, pivotScreen.sy, 34, -Math.PI * 0.85, -Math.PI * 0.15);
+                ctx.strokeStyle = "#FF2A85";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = "#FF2A85";
+                ctx.font = "bold 11px Consolas, monospace";
+                ctx.fillText("τ_guling", pivotScreen.sx - 20, pivotScreen.sy - 40);
+                ctx.restore();
+            }
+
+            // Percikan Benturan Saat Rover Terguling
+            if (gameState.debrisParticles.length > 0) {
+                ctx.save();
+                gameState.debrisParticles.forEach(dp => {
+                    dp.x += dp.vx * dt;
+                    dp.y += dp.vy * dt;
+                    dp.vy -= 9.8 * dt;
+                    dp.alpha = Math.max(0, dp.alpha - dt * 0.9);
+                    const pt = rampToScreen(dp.x, Math.max(0, dp.y), dp.z);
+                    ctx.globalAlpha = dp.alpha;
+                    ctx.fillStyle = "#FFD600";
+                    ctx.beginPath();
+                    ctx.arc(pt.sx, pt.sy, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1.0;
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // 8. HUD KLINOMETER BUSUR DERAJAT REAL-TIME (POJOK KANAN ATAS KANVAS)
+            // =========================================================================
+            drawInclinometerHUD(ctx, w - 105, 88, actualDeg, critDeg, isPastCritical);
+
+            // Petunjuk Interaksi Kamera 3D di Kiri Bawah
+            ctx.save();
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "11px Segoe UI, sans-serif";
+            ctx.fillText("💡 Tips: Geser kanvas untuk putar kamera 3D | Perbesar panjang galah (I) agar rover tahan badai angin!", 16, h - 14);
+            ctx.restore();
+        }
+
+        function drawInclinometerHUD(ctx, hudX, hudY, actualDeg, critDeg, isPastCritical) {
+            const radius = 58;
+            ctx.save();
+
+            // Lingkaran Dasbor Klinometer
+            ctx.beginPath();
+            ctx.arc(hudX, hudY, radius + 10, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = isPastCritical ? "#FF2A85" : "#334155";
+            ctx.stroke();
+
+            // Zona Aman Hijau vs Zona Bahaya Terguling Magenta pada Busur Klinometer
+            const startArc = -Math.PI;
+            const critArcOffset = (Math.min(75, critDeg) / 90) * (Math.PI / 2);
+
+            // Busur Aman (Kiri ke Kanan sampai Sudut Kritis)
+            ctx.beginPath();
+            ctx.arc(hudX, hudY + 12, radius - 6, -Math.PI / 2, -Math.PI / 2 + critArcOffset);
+            ctx.strokeStyle = "#00E676";
+            ctx.lineWidth = 7;
+            ctx.stroke();
+
+            // Busur Bahaya Terguling (Melewati Sudut Kritis)
+            ctx.beginPath();
+            ctx.arc(hudX, hudY + 12, radius - 6, -Math.PI / 2 + critArcOffset, 0);
+            ctx.strokeStyle = "#FF2A85";
+            ctx.lineWidth = 7;
+            ctx.stroke();
+
+            // Jarum Penunjuk Sudut Kemiringan Aktual Rover
+            const clampedDeg = Math.max(0, Math.min(90, actualDeg));
+            const needleRad = -Math.PI / 2 + (clampedDeg / 90) * (Math.PI / 2);
+            const nx = hudX + Math.cos(needleRad) * (radius - 10);
+            const ny = (hudY + 12) + Math.sin(needleRad) * (radius - 10);
+
+            ctx.beginPath();
+            ctx.moveTo(hudX, hudY + 12);
+            ctx.lineTo(nx, ny);
+            ctx.strokeStyle = "#FFD600";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(hudX, hudY + 12, 5, 0, Math.PI * 2);
+            ctx.fillStyle = "#00F0FF";
+            ctx.fill();
+
+            // Teks Indikator Klinometer
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#00F0FF";
+            ctx.font = "bold 10px Consolas, monospace";
+            ctx.fillText("KLINOMETER ROVER", hudX, hudY - radius + 6);
+
+            ctx.fillStyle = isPastCritical ? "#FF2A85" : "#FFD600";
+            ctx.font = "bold 13px Consolas, monospace";
+            ctx.fillText(`${actualDeg.toFixed(1)}°`, hudX, hudY + 32);
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "10px Consolas, monospace";
+            ctx.fillText(`Batas: ${critDeg.toFixed(1)}°`, hudX, hudY + 46);
+            ctx.restore();
+        }
+
+        function renderStabilityGame(dt) {
+            if (!gameState.info) gameState.info = setupHiDPICanvas('canvasStabilityGame');
+            if (!gameState.info) return;
+            const { ctx, w, h } = gameState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            if (gameState.windTimer > 0) {
+                gameState.windTimer = Math.max(0, gameState.windTimer - dt);
+            }
+
+            const halfBaseMeters = 1.0; // lebar setengah poros roda = 1.0 m
+            const slopeRad = (gameState.slopeDeg * Math.PI) / 180;
+            const totalAngleRad = slopeRad + gameState.tiltAngle;
+
+            // Jarak pergeseran proyeksi garis berat terhadap titik pusat bidang tumpu roda
+            const horizOffset = gameState.ypm * Math.sin(totalAngleRad);
+            const I_total = 45 + 12 * Math.pow(gameState.poleLen, 2);
+            const statusEl = document.getElementById('game-status-val');
+            const isDanger = horizOffset > halfBaseMeters;
+
+            if (isDanger) {
+                const torqueOverturn = (horizOffset - halfBaseMeters) * 180;
+                const alphaOverturn = torqueOverturn / I_total;
+                gameState.tiltOmega += alphaOverturn * dt;
+                gameState.tiltAngle = Math.min(0.95, gameState.tiltAngle + gameState.tiltOmega * dt);
+                statusEl.textContent = `TERGULING! Garis Berat Lewat Tumpuan (α = ${alphaOverturn.toFixed(2)} rad/s²)`;
+                statusEl.style.color = "var(--neon-magenta)";
+            } else {
+                gameState.tiltOmega *= 0.90;
+                gameState.tiltAngle *= 0.88;
+                statusEl.textContent = "STABIL / AMAN (Proyeksi Gaya Berat di Dalam Bidang Tumpu 3D)";
+                statusEl.style.color = "var(--neon-emerald)";
+            }
+
+            // Proyeksi 3D Isometrik Tebing & Kendaraan
+            const cx = w * 0.48;
+            const cy = h * 0.66;
+            const scale = Math.min(w, h) * 0.095;
+            const camYaw = -0.35;
+            const camPitch = 0.34;
+
+            // Transformasi koordinat lokal papan miring ke layar 3D
+            const rampToScreen = (rx, ry, rz) => {
+                // Rotasi papan sebesar slopeRad (miring ke kanan bawah)
+                const wx = rx * Math.cos(slopeRad) + ry * Math.sin(slopeRad);
+                const wy = -rx * Math.sin(slopeRad) + ry * Math.cos(slopeRad);
+                return projectPoint3D(wx, wy, rz, cx, cy, scale, camYaw, camPitch);
+            };
+
+            // Transformasi koordinat lokal kendaraan (yang bisa miring/terguling terhadap roda kanan x = +halfBaseMeters)
+            const vehicleToScreen = (vx, vy, vz) => {
+                const dx = vx - halfBaseMeters;
+                const dy = vy;
+                const rx = halfBaseMeters + dx * Math.cos(gameState.tiltAngle) + dy * Math.sin(gameState.tiltAngle);
+                const ry = -dx * Math.sin(gameState.tiltAngle) + dy * Math.cos(gameState.tiltAngle);
+                return rampToScreen(rx, ry, vz);
+            };
+
+            // 1. Gambar Platform Tebing Miring 3D
+            drawTransformedBox3D(
+                ctx, -3.4, 3.4, -0.35, 0, -1.8, 1.8, rampToScreen,
+                "#1E293B", "#0F172A", "#334155", "#00F0FF"
+            );
+
+            // 2. Gambar Karpet Zona Bidang Tumpu 3D (Antara Roda Kiri x=-1m s/d Roda Kanan x=+1m)
+            const z1 = rampToScreen(-halfBaseMeters, 0.02, 1.3);
+            const z2 = rampToScreen(halfBaseMeters, 0.02, 1.3);
+            const z3 = rampToScreen(halfBaseMeters, 0.02, -1.3);
+            const z4 = rampToScreen(-halfBaseMeters, 0.02, -1.3);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(z1.sx, z1.sy);
+            ctx.lineTo(z2.sx, z2.sy);
+            ctx.lineTo(z3.sx, z3.sy);
+            ctx.lineTo(z4.sx, z4.sy);
+            ctx.closePath();
+            ctx.fillStyle = isDanger ? "rgba(255, 42, 133, 0.28)" : "rgba(0, 230, 118, 0.28)";
+            ctx.strokeStyle = isDanger ? "#FF2A85" : "#00E676";
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. Gambar 4 Roda Off-Road 3D & Penyangga Suspensi
+            const wheelCoords = [
+                { x: -halfBaseMeters, z: -1.0 },
+                { x: halfBaseMeters, z: -1.0 },
+                { x: -halfBaseMeters, z: 1.0 },
+                { x: halfBaseMeters, z: 1.0 }
+            ];
+
+            wheelCoords.forEach(wc => {
+                const wp = vehicleToScreen(wc.x, 0.35, wc.z);
+                const strutTop = vehicleToScreen(wc.x * 0.85, gameState.ypm - 0.15, wc.z * 0.75);
+                const rWheel = 0.35 * scale * wp.persp;
+
+                // Batang suspensi hidrolik menuju kargo
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(wp.sx, wp.sy);
+                ctx.lineTo(strutTop.sx, strutTop.sy);
+                ctx.strokeStyle = "#94A3B8";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Ban 3D
+                ctx.beginPath();
+                ctx.arc(wp.sx, wp.sy, rWheel, 0, Math.PI * 2);
+                ctx.fillStyle = "#0B0F19";
+                ctx.fill();
+                ctx.lineWidth = 4.5;
+                ctx.strokeStyle = wc.x > 0 && isDanger ? "#FF2A85" : "#E2E8F0";
+                ctx.stroke();
+
+                // Velg Cyan
+                ctx.beginPath();
+                ctx.arc(wp.sx, wp.sy, rWheel * 0.42, 0, Math.PI * 2);
+                ctx.fillStyle = "#00F0FF";
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 4. Gambar Kontainer Kargo 3D pada Ketinggian Pusat Massa (y_pm)
+            const cargoMinY = Math.max(0.48, gameState.ypm - 0.45);
+            const cargoMaxY = gameState.ypm + 0.45;
+            drawTransformedBox3D(
+                ctx, -1.05, 1.05, cargoMinY, cargoMaxY, -0.85, 0.85, vehicleToScreen,
+                "rgba(30, 41, 59, 0.92)", "rgba(51, 65, 85, 0.95)", "rgba(15, 23, 42, 0.95)", "#94A3B8"
+            );
+
+            // 5. Gambar Galah Penyeimbang Gyro-Inersia 3D beserta Bola Pemberat Ujung
+            const halfPole = gameState.poleLen * 0.58;
+            const poleL = vehicleToScreen(-halfPole, gameState.ypm, 0);
+            const poleR = vehicleToScreen(halfPole, gameState.ypm, 0);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(poleL.sx, poleL.sy);
+            ctx.lineTo(poleR.sx, poleR.sy);
+            ctx.strokeStyle = "#00F0FF";
+            ctx.lineWidth = 6;
+            ctx.shadowColor = "#00F0FF";
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            [poleL, poleR].forEach(endPt => {
+                ctx.beginPath();
+                ctx.arc(endPt.sx, endPt.sy, 11, 0, Math.PI * 2);
+                ctx.fillStyle = "#00F0FF";
+                ctx.fill();
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // 6. Titik Pusat Massa 3D (Hijau Zamrud) & Vektor Garis Kerja Gaya Berat (W) Vertikal ke Bawah
+            const com3D = vehicleToScreen(0, gameState.ypm, 0);
+            // Titik tembus garis gaya berat pada bidang alas tumpuan
+            const projFloorX = horizOffset;
+            const weightFloorPt = rampToScreen(projFloorX, 0.02, 0);
+
+            // Garis putus-putus proyeksi gaya berat ke lantai bidang tumpu
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(com3D.sx, com3D.sy);
+            ctx.lineTo(weightFloorPt.sx, weightFloorPt.sy);
+            ctx.strokeStyle = isDanger ? "#FF2A85" : "#FFD600";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Titik jatuh proyeksi berat di atas lantai
+            ctx.beginPath();
+            ctx.arc(weightFloorPt.sx, weightFloorPt.sy, 6, 0, Math.PI * 2);
+            ctx.fillStyle = isDanger ? "#FF2A85" : "#00E676";
+            ctx.fill();
+            ctx.restore();
+
+            // Vektor Panah Gaya Berat W Vertikal Tegak Lurus Bumi
+            drawVectorArrow(ctx, com3D.sx, com3D.sy, com3D.sx, com3D.sy + 88, "#FFD600", "Gaya Berat (W)");
+            drawEmeraldTarget(ctx, com3D.sx, com3D.sy, `Pusat Massa (y_pm = ${gameState.ypm.toFixed(1)}m)`);
+
+            // Efek Visual Terpaan Angin saat Tombol Uji Guncangan Ditekan
+            if (gameState.windTimer > 0) {
+                ctx.save();
+                ctx.strokeStyle = "#00F0FF";
+                ctx.lineWidth = 2.5;
+                for (let i = 0; i < 5; i++) {
+                    const wy = cy - 120 + i * 28;
+                    const wx = 40 + ((performance.now() * 0.4 + i * 50) % 140);
+                    drawVectorArrow(ctx, wx, wy, wx + 55, wy, "#00F0FF", i === 0 ? "Hembusan Angin!" : "");
+                }
+                ctx.restore();
+            }
+        }
+
+        function drawEmeraldTarget(ctx, x, y, label) {
+            ctx.save();
+            ctx.strokeStyle = "#00E676";
+            ctx.fillStyle = "#00E676";
+            ctx.shadowColor = "#00E676";
+            ctx.shadowBlur = 14;
+            ctx.lineWidth = 2.5;
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x - 16, y);
+            ctx.lineTo(x + 16, y);
+            ctx.moveTo(x, y - 16);
+            ctx.lineTo(x, y + 16);
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.font = "bold 12px Consolas, monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(label, x, y - 20);
+            ctx.restore();
+        }
+
+        /* ==========================================================================
+           TAHAP 3 (LAB 2): SIMULATOR PUSAT MASSA SISTEM 2D & GERAK PARABOLA
+           ========================================================================== */
+        const comState = {
+            nodes: [
+                { m: 4.0, x: -3.0, y: 1.5, color: "#FFD600", label: "m₁" },
+                { m: 6.0, x: 2.5, y: 2.0, color: "#00F0FF", label: "m₂" },
+                { m: 2.0, x: 0.5, y: -2.5, color: "#FF2A85", label: "m₃" }
+            ],
+            xpm: 0,
+            ypm: 0,
+            mtot: 12,
+            draggingIdx: -1,
+            isThrown: false,
+            throwTime: 0,
+            startXpm: 0,
+            startYpm: 0,
+            vx: 4.2,
+            vy: 5.8,
+            omegaThrow: 3.8,
+            rotAngle: 0,
+            relOffsets: [],
+            trail: [],
+            info: null
+        };
+
+        function computeCenterOfMass() {
+            let sumM = 0;
+            let sumMX = 0;
+            let sumMY = 0;
+            comState.nodes.forEach(n => {
+                sumM += n.m;
+                sumMX += n.m * n.x;
+                sumMY += n.m * n.y;
+            });
+            comState.mtot = sumM;
+            comState.xpm = sumMX / sumM;
+            comState.ypm = sumMY / sumM;
+
+            document.getElementById('cm-m1-lbl').textContent = `${comState.nodes[0].m.toFixed(1)} kg (${comState.nodes[0].x.toFixed(1)}, ${comState.nodes[0].y.toFixed(1)})`;
+            document.getElementById('cm-m2-lbl').textContent = `${comState.nodes[1].m.toFixed(1)} kg (${comState.nodes[1].x.toFixed(1)}, ${comState.nodes[1].y.toFixed(1)})`;
+            document.getElementById('cm-m3-lbl').textContent = `${comState.nodes[2].m.toFixed(1)} kg (${comState.nodes[2].x.toFixed(1)}, ${comState.nodes[2].y.toFixed(1)})`;
+
+            document.getElementById('cm-mtot-val').textContent = `${comState.mtot.toFixed(1)} kg`;
+            document.getElementById('cm-xpm-val').textContent = `${comState.xpm.toFixed(2)} m`;
+            document.getElementById('cm-ypm-val').textContent = `${comState.ypm.toFixed(2)} m`;
+        }
+
+        function updateCOMFromSliders() {
+            comState.nodes[0].m = parseFloat(document.getElementById('cm-m1').value);
+            comState.nodes[1].m = parseFloat(document.getElementById('cm-m2').value);
+            comState.nodes[2].m = parseFloat(document.getElementById('cm-m3').value);
+            computeCenterOfMass();
+        }
+
+        function launchCOMThrow() {
+            computeCenterOfMass();
+            comState.isThrown = true;
+            comState.throwTime = 0;
+            comState.rotAngle = 0;
+            comState.trail = [];
+            comState.startXpm = -4.8;
+            comState.startYpm = -1.5;
+
+            comState.relOffsets = comState.nodes.map(n => ({
+                dx: n.x - comState.xpm,
+                dy: n.y - comState.ypm,
+                m: n.m,
+                color: n.color,
+                label: n.label
+            }));
+            document.getElementById('cm-status-val').textContent = "Melayang: Rotasi Mengelilingi Pusat Massa!";
+        }
+
+        function resetCOMSimulator() {
+            comState.isThrown = false;
+            comState.trail = [];
+            computeCenterOfMass();
+            document.getElementById('cm-status-val').textContent = "Mode Edit Koordinat (Geser Bola)";
+        }
+
+        function setupCOMDragEvents() {
+            const canvas = document.getElementById('canvasCenterOfMass');
+            if (!canvas) return;
+
+            const getScaleAndOrigin = () => {
+                const rect = canvas.getBoundingClientRect();
+                const scale = Math.min(rect.width, rect.height) / 14;
+                return { ox: rect.width / 2, oy: rect.height / 2, scale, rect };
+            };
+
+            const onDown = (e) => {
+                if (comState.isThrown) return;
+                const { ox, oy, scale, rect } = getScaleAndOrigin();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+
+                comState.nodes.forEach((n, idx) => {
+                    const sx = ox + n.x * scale;
+                    const sy = oy - n.y * scale;
+                    if (Math.hypot(mx - sx, my - sy) < 26) {
+                        comState.draggingIdx = idx;
+                    }
+                });
+            };
+
+            const onMove = (e) => {
+                if (comState.draggingIdx === -1 || comState.isThrown) return;
+                const { ox, oy, scale, rect } = getScaleAndOrigin();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+
+                const nx = Math.max(-5.5, Math.min(5.5, (mx - ox) / scale));
+                const ny = Math.max(-4.0, Math.min(4.0, (oy - my) / scale));
+                comState.nodes[comState.draggingIdx].x = nx;
+                comState.nodes[comState.draggingIdx].y = ny;
+                computeCenterOfMass();
+            };
+
+            const onUp = () => {
+                comState.draggingIdx = -1;
+            };
+
+            canvas.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            canvas.addEventListener('touchstart', onDown, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: true });
+            window.addEventListener('touchend', onUp);
+        }
+
+        function renderCenterOfMass(dt) {
+            if (!comState.info) comState.info = setupHiDPICanvas('canvasCenterOfMass');
+            if (!comState.info) return;
+            const { ctx, w, h } = comState.info;
+
+            ctx.clearRect(0, 0, w, h);
+            drawTechGrid(ctx, w, h);
+
+            const ox = w / 2;
+            const oy = h / 2;
+            const scale = Math.min(w, h) / 14;
+
+            // Sumbu Kartesius X dan Y
+            ctx.save();
+            ctx.strokeStyle = "#475569";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, oy);
+            ctx.lineTo(w, oy);
+            ctx.moveTo(ox, 0);
+            ctx.lineTo(ox, h);
+            ctx.stroke();
+
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "11px Consolas, monospace";
+            for (let i = -5; i <= 5; i++) {
+                if (i === 0) continue;
+                ctx.fillText(`${i}m`, ox + i * scale - 8, oy + 15);
+                if (i >= -4 && i <= 4) {
+                    ctx.fillText(`${i}m`, ox + 6, oy - i * scale + 4);
+                }
+            }
+            ctx.restore();
+
+            let currXpm = comState.xpm;
+            let currYpm = comState.ypm;
+            let drawNodes = [];
+
+            if (comState.isThrown) {
+                comState.throwTime += dt * 1.15;
+                const t = comState.throwTime;
+                const g = 3.8;
+                currXpm = comState.startXpm + comState.vx * t;
+                currYpm = comState.startYpm + comState.vy * t - 0.5 * g * t * t;
+                comState.rotAngle = comState.omegaThrow * t;
+
+                comState.trail.push({ x: currXpm, y: currYpm });
+                if (currXpm > 5.8 || currYpm < -4.5) {
+                    comState.throwTime = 0;
+                    comState.trail = [];
+                }
+
+                drawNodes = comState.relOffsets.map(off => {
+                    const rx = off.dx * Math.cos(comState.rotAngle) - off.dy * Math.sin(comState.rotAngle);
+                    const ry = off.dx * Math.sin(comState.rotAngle) + off.dy * Math.cos(comState.rotAngle);
+                    return {
+                        x: currXpm + rx,
+                        y: currYpm + ry,
+                        m: off.m,
+                        color: off.color,
+                        label: off.label
+                    };
+                });
+            } else {
+                drawNodes = comState.nodes;
+            }
+
+            // Gambar Jejak Lintasan Parabola Pusat Massa (Hijau Zamrud Putus-putus)
+            if (comState.trail.length > 1) {
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = "#00E676";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                comState.trail.forEach((pt, i) => {
+                    const sx = ox + pt.x * scale;
+                    const sy = oy - pt.y * scale;
+                    if (i === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Rangka Batang Penghubung Antar Partikel
+            ctx.save();
+            ctx.strokeStyle = "rgba(0, 240, 255, 0.55)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            drawNodes.forEach((n, i) => {
+                const sx = ox + n.x * scale;
+                const sy = oy - n.y * scale;
+                if (i === 0) ctx.moveTo(sx, sy);
+                else ctx.lineTo(sx, sy);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            // Gambar Bola Massa
+            drawNodes.forEach(n => {
+                const sx = ox + n.x * scale;
+                const sy = oy - n.y * scale;
+                const rPx = 12 + n.m * 1.4;
+
+                ctx.beginPath();
+                ctx.arc(sx, sy, rPx, 0, Math.PI * 2);
+                ctx.fillStyle = n.color;
+                ctx.shadowColor = n.color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 11px Consolas, monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(n.label, sx, sy + 4);
+            });
+
+            // Gambar Target Silang Pusat Massa (x_pm, y_pm) Hijau Zamrud
+            const pmScreenX = ox + currXpm * scale;
+            const pmScreenY = oy - currYpm * scale;
+            drawEmeraldTarget(ctx, pmScreenX, pmScreenY, `R_pm (${currXpm.toFixed(1)}, ${currYpm.toFixed(1)})`);
+            ctx.restore();
+        }
+
+        /* ==========================================================================
+           RESIZE HANDLER & MAIN ANIMATION LOOP
+           ========================================================================== */
+        function resizeAllCanvases() {
+            apState.info = setupHiDPICanvas('canvasApperception');
+            lab1DiscState.info = setupHiDPICanvas('canvasLab1Discrete');
+            lab1ContState.info = setupHiDPICanvas('canvasLab1Continuous');
+            comState.info = setupHiDPICanvas('canvasCenterOfMass');
+            skaterState.info = setupHiDPICanvas('canvasSkater');
+            gameState.info = setupHiDPICanvas('canvasStabilityGame');
+        }
+
+        let lastFrameTime = performance.now();
+
+        function mainLoop(now) {
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
+            if (currentSection === 1) {
+                renderApperception(dt);
+            } else if (currentSection === 2) {
+                if (lab1Mode === 'discrete') renderLab1Discrete(dt);
+                else renderLab1Continuous(dt);
+            } else if (currentSection === 3) {
+                renderCenterOfMass(dt);
+            } else if (currentSection === 4) {
+                if (appMode === 'skater') renderSkater(dt);
+                else renderStabilityGame(dt);
+            }
+
+            window.requestAnimationFrame(mainLoop);
+        }
+
+        window.onload = function () {
+            resizeAllCanvases();
+            updateApperceptionParams();
+            updateLab1Discrete();
+            resetContRace();
+            setupCont3DCameraEvents();
+            computeCenterOfMass();
+            setupCOMDragEvents();
+            updateSkaterPhysics();
+            updateStabilityGameParams();
+            setupStabilityGameCameraEvents();
+            window.requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>
