@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optic Geometry Lab: Bayangan Virtual & Nyata</title>
+    <style>
+        /* ========================================================
+           TEMA DESAIN: CYBERPUNK BLUEPRINT LABORATORY
+           ======================================================== */
+        :root {
+            --bg-color: #050510;
+            --panel-bg: #0d0d1a;
+            --blueprint-grid: rgba(0, 255, 255, 0.1);
+            --neon-cyan: #00ffff;      /* Sinar Datang */
+            --neon-yellow: #ffff00;    /* Sinar Pantul/Bias */
+            --vibrant-pink: #ff007f;   /* Bayangan Hasil */
+            --neon-green: #39ff14;     /* Aksen UI */
+            --text-main: #e0e0ff;
+            --text-muted: #8888aa;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .container { max-width: 1300px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER */
+        header {
+            text-align: center; padding: 20px; background-color: var(--panel-bg);
+            border: 1px solid #1a1a3a; border-radius: 8px; border-bottom: 3px solid var(--neon-cyan);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.1);
+        }
+        header h1 { color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(0,255,255,0.5); }
+        header p { color: var(--text-muted); }
+
+        /* MAIN WORKSPACE */
+        .workspace { display: flex; flex-direction: column; gap: 20px; }
+        
+        /* TOP ROW: KONTROL & MATH PANEL */
+        .top-row { display: flex; gap: 20px; flex-wrap: wrap; width: 100%; }
+
+        .panel {
+            background-color: var(--panel-bg); border: 1px solid #1a1a3a; border-radius: 8px;
+            padding: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .control-panel { flex: 2; min-width: 350px; }
+        .formula-panel { flex: 1; min-width: 300px; }
+
+        .panel h2 { font-size: 1.2rem; color: var(--neon-cyan); margin-bottom: 15px; border-bottom: 1px solid #223; padding-bottom: 5px; }
+
+        /* TABS */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .tab-btn {
+            flex: 1 1 30%; background: #112; color: var(--text-muted); border: 1px solid #334;
+            padding: 10px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s;
+            text-align: center; min-width: 90px; font-size: 0.8rem;
+        }
+        .tab-btn:hover { background: #224; color: #fff; }
+        .tab-btn.active { background: rgba(0, 255, 255, 0.1); color: var(--neon-cyan); border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+
+        /* CONTROLS */
+        .control-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .control-group label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-main); }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: #223; height: 6px; border-radius: 3px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--neon-cyan); cursor: pointer; box-shadow: 0 0 8px var(--neon-cyan); }
+        
+        /* TOGGLE CHECKBOXES SINAR ISTIMEWA */
+        .checkbox-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; margin-bottom: 15px;}
+        .checkbox-label {
+            display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
+            color: var(--text-main); cursor: pointer;
+        }
+        .checkbox-label input[type="checkbox"] {
+            appearance: none; width: 16px; height: 16px; border: 1px solid var(--neon-cyan);
+            border-radius: 3px; background: #112; cursor: pointer; position: relative;
+        }
+        .checkbox-label input[type="checkbox"]:checked {
+            background: var(--neon-cyan);
+        }
+        .checkbox-label input[type="checkbox"]:checked::after {
+            content: '✔'; position: absolute; color: #000; font-size: 12px;
+            top: -1px; left: 2px; font-weight: bold;
+        }
+
+        /* MATH PANEL (Live Update) */
+        .math-panel { background: #000; border: 1px dashed var(--vibrant-pink); padding: 15px; border-radius: 8px; font-family: var(--font-mono); }
+        .math-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
+        .math-val { color: var(--vibrant-pink); font-weight: bold; text-shadow: 0 0 5px rgba(255,0,127,0.5); }
+        
+        .status-box { margin-top: 10px; padding: 10px; background: rgba(255, 0, 127, 0.1); border-left: 4px solid var(--vibrant-pink); font-weight: bold; color: #fff; }
+
+        .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+
+        /* CANVAS AREA */
+        .canvas-container {
+            width: 100%; height: 550px; background-color: #000; border: 2px solid #224; border-radius: 8px;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.8); overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        canvas { width: 100%; height: 100%; cursor: grab; display: block; flex: 1; }
+        canvas:active { cursor: grabbing; }
+
+        .legend {
+            display: flex; justify-content: center; gap: 20px; padding: 10px; background: #0d0d1a;
+            border-top: 1px solid #224; font-size: 0.85rem; flex-wrap: wrap;
+        }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .box { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* INFO PANELS (Esbach & Signs) */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { border: 1px solid #334; padding: 8px; text-align: left; }
+        th { background: #112; color: var(--neon-cyan); }
+        .pos { color: var(--neon-green); font-weight: bold; }
+        .neg { color: var(--neon-red); font-weight: bold; }
+
+        .esbach-diagram { display: flex; justify-content: space-between; padding: 10px; background: #000; border-radius: 4px; margin-top: 10px; border: 1px solid #223; text-align: center; }
+        .esbach-room { flex: 1; padding: 5px; font-weight: bold; color: var(--neon-yellow); }
+        .esbach-room span { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: normal; }
+
+        @media (max-width: 768px) {
+            .workspace { flex-direction: column; }
+            .canvas-container { height: 400px; }
+            canvas { height: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Laboratorium Optika Geometri</h1>
+            <p>Eksperimen Interaktif Pembentukan Bayangan Virtual & Nyata pada Cermin dan Lensa</p>
+        </header>
+
+        <div class="workspace">
+            <!-- CANVAS AREA (DIPINDAHKAN KE ATAS) -->
+            <div class="canvas-container" id="cvsContainer">
+                <canvas id="opticCanvas"></canvas>
+                <div class="legend">
+                    <span><div class="box" style="background: var(--neon-green);"></div> Cermin / Lensa</span>
+                    <span><div class="box" style="background: var(--text-main);"></div> Benda (Objek)</span>
+                    <span><div class="box" style="background: var(--neon-cyan);"></div> Sinar Datang</span>
+                    <span><div class="box" style="background: var(--neon-yellow);"></div> Sinar Bias/Pantul</span>
+                    <span><div class="box" style="background: var(--vibrant-pink);"></div> Bayangan Akhir</span>
+                </div>
+                <div style="position: absolute; top:10px; left:15px; color:#aaa; font-size:0.8rem; border:1px solid #334; padding:5px; border-radius:4px; background:rgba(0,0,0,0.5);">💡 Drag objek untuk memindahkan</div>
+            </div>
+
+            <!-- PANEL KONTROL & RUMUS (DIPINDAHKAN KE BAWAH) -->
+            <div class="top-row">
+                <div class="panel control-panel">
+                    <h2>⚙️ Panel Kontrol Simulasi</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="setMode('cermin_datar')" id="btn_cd">Cermin Datar</button>
+                        <button class="tab-btn" onclick="setMode('lensa_cembung')" id="btn_lcx">Lensa (+)</button>
+                        <button class="tab-btn" onclick="setMode('lensa_cekung')" id="btn_lcv">Lensa (-)</button>
+                        <button class="tab-btn" onclick="setMode('cermin_cekung')" id="btn_ccx">Cermin (+)</button>
+                        <button class="tab-btn" onclick="setMode('cermin_cembung')" id="btn_ccv">Cermin (-)</button>
+                        <button class="tab-btn" onclick="setMode('mikroskop')" id="btn_mikro">Mikroskop</button>
+                        <button class="tab-btn" onclick="setMode('teropong_bintang')" id="btn_tb">T. Bintang</button>
+                        <button class="tab-btn" onclick="setMode('teropong_panggung')" id="btn_tp">T. Panggung / Bumi</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label><span>Tampilkan Sinar Istimewa:</span></label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label"><input type="checkbox" id="chk_ray1" checked> Sinar 1 (Sejajar)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="chk_ray2" checked> Sinar 2 (Pusat)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="chk_ray3" checked> Sinar 3 (Fokus)</label>
+                        </div>
+                    </div>
+
+                    <!-- KONTROL STANDAR -->
+                    <div id="standard-controls" class="controls-grid">
+                        <div class="control-group">
+                            <label><span>Jarak Benda (s)</span><span id="val_s">30 cm</span></label>
+                            <input type="range" id="slider_s" min="1" max="100" step="1" value="30">
+                        </div>
+                        <div class="control-group">
+                            <label><span>Tinggi Benda (h)</span><span id="val_h">10 cm</span></label>
+                            <input type="range" id="slider_h" min="1" max="30" step="1" value="10">
+                        </div>
+                        <div class="control-group" id="group_f">
+                            <label><span>Jarak Fokus Absolut (f)</span><span id="val_f">15 cm</span></label>
+                            <input type="range" id="slider_f" min="5" max="50" step="1" value="15">
+                        </div>
+                    </div>
+
+                    <!-- KONTROL MIKROSKOP -->
+                    <div id="microscope-controls" class="controls-grid" style="display: none;">
+                        <div class="control-group">
+                            <label><span>Jarak Benda (s_ob)</span><span id="val_sob">15 cm</span></label>
+                            <input type="range" id="slider_sob" min="5" max="50" step="1" value="15">
+                        </div>
+                        <div class="control-group">
+                            <label><span>Fokus Objektif (f_ob)</span><span id="val_fob">10 cm</span></label>
+                            <input type="range" id="slider_fob" min="5" max="30" step="1" value="10">
+                        </div>
+                        <div class="control-group">
+                            <label><span>Fokus Okuler (f_ok)</span><span id="val_fok">20 cm</span></label>
+                            <input type="range" id="slider_fok" min="5" max="50" step="1" value="20">
+                        </div>
+                    </div>
+
+                    <!-- KONTROL TEROPONG -->
+                    <div id="telescope-controls" class="controls-grid" style="display: none;">
+                        <div class="control-group">
+                            <label><span>Fokus Objektif (f_ob)</span><span id="val_fob_t">50 cm</span></label>
+                            <input type="range" id="slider_fob_t" min="20" max="100" step="1" value="50">
+                        </div>
+                        <div class="control-group">
+                            <label><span>Fokus Okuler (|f_ok|)</span><span id="val_fok_t">10 cm</span></label>
+                            <input type="range" id="slider_fok_t" min="5" max="50" step="1" value="10">
+                        </div>
+                        <div class="control-group">
+                            <label><span>Panjang Tubus / Jarak Lensa (d)</span><span id="val_d_t">60 cm</span></label>
+                            <input type="range" id="slider_d_t" min="10" max="150" step="1" value="60">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel formula-panel">
+                    <h2>📐 Panel Rumus (Live Update)</h2>
+                    <!-- RUMUS STANDAR -->
+                    <div class="math-panel" id="math_standard">
+                        <div class="math-row"><span>Persamaan:</span> <span>1/f = 1/s + 1/s'</span></div>
+                        <div class="math-row"><span>Jarak Bayangan (s'):</span> <span class="math-val" id="out_s_prime">30.00 cm</span></div>
+                        <div class="math-row"><span>Perbesaran (M):</span> <span class="math-val" id="out_M">1.00 x</span></div>
+                        <div class="math-row"><span>Tinggi Bayangan (h'):</span> <span class="math-val" id="out_h_prime">-10.00 cm</span></div>
+                        <div class="math-row"><span>Kekuatan (P = 100/f):</span> <span class="math-val" id="out_P">+6.67 Dioptri</span></div>
+                        <div class="status-box" id="out_sifat">Sifat: Nyata, Terbalik, Sama Besar</div>
+                    </div>
+                    <!-- RUMUS MIKROSKOP -->
+                    <div class="math-panel" id="math_micro" style="display: none;">
+                        <div class="math-row"><span>s' Objektif:</span> <span class="math-val" id="out_sob_prime">30.00 cm</span></div>
+                        <div class="math-row"><span>M Objektif:</span> <span class="math-val" id="out_Mob">2.00 x</span></div>
+                        <div class="math-row"><span>Panjang Tubus (d):</span> <span class="math-val" id="out_d">50.00 cm</span></div>
+                        <div class="math-row"><span>M Total (M_ob × M_ok):</span> <span class="math-val" id="out_Mtot">10.00 x</span></div>
+                        <div class="status-box" id="out_sifat_mikro">Bayangan Akhir: Maya, Terbalik, Diperbesar</div>
+                    </div>
+                    <!-- RUMUS TEROPONG -->
+                    <div class="math-panel" id="math_telescope" style="display: none;">
+                        <div class="math-row"><span>s Benda (s_ob):</span> <span class="math-val">∞ (Tak Terhingga)</span></div>
+                        <div class="math-row"><span>s' Objektif (s'_ob):</span> <span class="math-val" id="out_sob_prime_t">50.00 cm</span></div>
+                        <div class="math-row"><span>Jarak s_ok (Benda Okuler):</span> <span class="math-val" id="out_s_ok_t">10.00 cm</span></div>
+                        <div class="math-row"><span>s' Okuler (Bayangan Akhir):</span> <span class="math-val" id="out_s_prime_t">Tak Hingga</span></div>
+                        <div class="math-row"><span>Perbesaran Sudut (M = f_ob/s_ok):</span> <span class="math-val" id="out_M_t">5.00 x</span></div>
+                        <div class="status-box" id="out_sifat_t">Bayangan Akhir: Maya, Terbalik</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFO PANELS -->
+        <div class="info-grid">
+            <div class="panel">
+                <h2 style="color: var(--neon-yellow);">📚 Dalil Esbach (Ruang Optik)</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">
+                    Dalil Esbach memudahkan prediksi letak dan sifat bayangan. Aturan utama:<br>
+                    <b style="color:var(--text-main);">Ruang Benda + Ruang Bayangan = 5</b>
+                </p>
+                <div class="esbach-diagram">
+                    <div class="esbach-room">R IV <br><span>(Maya, blk cermin)</span></div>
+                    <div style="border-right: 2px dashed #444;"></div>
+                    <div class="esbach-room">R I <br><span>(Antara O dan F)</span></div>
+                    <div class="esbach-room">R II <br><span>(Antara F dan 2F)</span></div>
+                    <div class="esbach-room">R III <br><span>(Lebih dari 2F)</span></div>
+                </div>
+                <p style="font-size: 0.8rem; margin-top:10px; color:var(--text-muted);">
+                    * Jika R.Bayangan > R.Benda $\rightarrow$ <b>Diperbesar</b><br>
+                    * Bayangan di R. IV selalu <b>Maya & Tegak</b>. Di R. I,II,III selalu <b>Nyata & Terbalik</b>.
+                </p>
+            </div>
+            
+            <div class="panel">
+                <h2 style="color: var(--neon-cyan);">⚖️ Tanda Matematis (Sign Convention)</h2>
+                <table>
+                    <tr>
+                        <th>Komponen</th>
+                        <th>Positif (+)</th>
+                        <th>Negatif (-)</th>
+                    </tr>
+                    <tr>
+                        <td>Fokus ($f$)</td>
+                        <td class="pos">Cermin Cekung / Lensa Cembung (Konvergen)</td>
+                        <td class="neg">Cermin Cembung / Lensa Cekung (Divergen)</td>
+                    </tr>
+                    <tr>
+                        <td>Jarak Bayangan ($s'$)</td>
+                        <td class="pos"><b>Nyata</b> (Tertangkap Layar, Terbalik)</td>
+                        <td class="neg"><b>Maya</b> (Hanya terlihat di alat, Tegak)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: LOGIKA OPTIKA GEOMETRI & CANVAS -->
+    <script>
+        // ========================================================
+        // 1. PENGATURAN STATE & REFERENSI DOM
+        // ========================================================
+        const canvas = document.getElementById('opticCanvas');
+        const ctx = canvas.getContext('2d');
+        const cvsContainer = document.getElementById('cvsContainer');
+        
+        let state = {
+            mode: 'lensa_cembung', 
+            s: 30,  
+            h: 15,  
+            f: 15,  
+            s_ob: 15,
+            f_ob: 10,
+            f_ok: 20,
+            f_ob_t: 50,  // Teleskop
+            f_ok_t: 10,
+            d_t: 60,
+            showRay1: true,
+            showRay2: true,
+            showRay3: true,
+            scale: 6, // 1 cm = 6 pixel
+            cx: 0,    
+            cy: 0,    
+            isDragging: false
+        };
+
+        // Resize Canvas Internal Logic ensuring strict bounding
+        function resizeCanvas() {
+            canvas.width = cvsContainer.clientWidth;
+            canvas.height = cvsContainer.clientHeight - 40; // Kurangi tinggi area legend
+            state.cx = canvas.width / 2;
+            state.cy = canvas.height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Referensi UI Sliders & Values
+        const sliders = {
+            s: document.getElementById('slider_s'), h: document.getElementById('slider_h'), f: document.getElementById('slider_f'),
+            sob: document.getElementById('slider_sob'), fob: document.getElementById('slider_fob'), fok: document.getElementById('slider_fok'),
+            fob_t: document.getElementById('slider_fob_t'), fok_t: document.getElementById('slider_fok_t'), dt: document.getElementById('slider_d_t')
+        };
+        const vals = {
+            s: document.getElementById('val_s'), h: document.getElementById('val_h'), f: document.getElementById('val_f'),
+            sob: document.getElementById('val_sob'), fob: document.getElementById('val_fob'), fok: document.getElementById('val_fok'),
+            fob_t: document.getElementById('val_fob_t'), fok_t: document.getElementById('val_fok_t'), dt: document.getElementById('val_d_t')
+        };
+
+        // ========================================================
+        // 2. FUNGSI HELPER MENGGAMBAR CANVAS (RAY TRACING)
+        // ========================================================
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            let step = state.scale * 5; 
+            for (let x = state.cx % step; x < canvas.width; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            for (let y = state.cy % step; y < canvas.height; y += step) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            ctx.stroke();
+
+            // Sumbu Utama
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, state.cy); ctx.lineTo(canvas.width, state.cy); ctx.stroke();
+        }
+
+        function drawObject(x, y, height, color = '#e0e0ff', label = "Benda") {
+            const pxX = state.cx + x * state.scale;
+            const pxY = state.cy - y * state.scale;
+            const pxBase = state.cy;
+
+            ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(pxX, pxBase); ctx.lineTo(pxX, pxY); ctx.stroke();
+
+            // Kepala Panah
+            ctx.beginPath();
+            let arrDir = height > 0 ? 1 : -1;
+            ctx.moveTo(pxX, pxY); ctx.lineTo(pxX - 6, pxY + 10 * arrDir); ctx.lineTo(pxX + 6, pxY + 10 * arrDir); ctx.fill();
+
+            // Label
+            ctx.font = '12px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(label, pxX, height > 0 ? pxY - 15 : pxY + 25);
+        }
+
+        function drawPoint(x, label) {
+            const pxX = state.cx + x * state.scale;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(pxX, state.cy, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.font = '12px Courier New'; ctx.fillText(label, pxX, state.cy + 15);
+        }
+
+        function drawOpticCenter(label="O", xOffset = 0) {
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(state.cx + xOffset*state.scale, state.cy - 100); ctx.lineTo(state.cx + xOffset*state.scale, state.cy + 100); ctx.stroke();
+        }
+
+        function drawRay(x1, y1, x2, y2, color, isDashed = false) {
+            ctx.strokeStyle = color; ctx.lineWidth = 2;
+            ctx.setLineDash(isDashed ? [5, 5] : []);
+            ctx.beginPath();
+            ctx.moveTo(state.cx + x1 * state.scale, state.cy - y1 * state.scale);
+            ctx.lineTo(state.cx + x2 * state.scale, state.cy - y2 * state.scale);
+            ctx.stroke(); ctx.setLineDash([]);
+            
+            if(!isDashed) {
+                let midX = (x1 + x2) / 2; let midY = (y1 + y2) / 2;
+                let angle = Math.atan2(-(y2 - y1), x2 - x1); 
+                
+                ctx.fillStyle = color; ctx.beginPath();
+                ctx.moveTo(state.cx + midX * state.scale, state.cy - midY * state.scale);
+                ctx.lineTo(state.cx + midX * state.scale - 8 * Math.cos(angle - Math.PI/6), state.cy - midY * state.scale - 8 * Math.sin(angle - Math.PI/6));
+                ctx.lineTo(state.cx + midX * state.scale - 8 * Math.cos(angle + Math.PI/6), state.cy - midY * state.scale - 8 * Math.sin(angle + Math.PI/6));
+                ctx.fill();
+            }
+        }
+
+        // ========================================================
+        // 3. LOGIKA FISIKA & RENDERING PER MODUL
+        // ========================================================
+        
+        function getFocalLength() {
+            if (state.mode === 'lensa_cembung' || state.mode === 'cermin_cekung') return state.f; // Konvergen
+            if (state.mode === 'lensa_cekung' || state.mode === 'cermin_cembung') return -state.f; // Divergen
+            return Infinity; 
+        }
+
+        function isMirror() { return state.mode.includes('cermin'); }
+
+        function calculateOptics(s, f, h) {
+            let s_prime = (Math.abs(s - f) < 0.01) ? Infinity : 1 / ((1 / f) - (1 / s)); 
+            let m = (s_prime === Infinity) ? Infinity : -s_prime / s; 
+            let h_prime = (m === Infinity) ? Infinity : m * h;
+            return { s_prime, m, h_prime };
+        }
+
+        // ------------------ STANDAR OPTIK ------------------
+        function renderSingleOptic() {
+            let f = getFocalLength();
+            let s = state.s;
+            let h = state.h;
+            
+            let { s_prime, m, h_prime } = calculateOptics(s, f, h);
+            
+            let x_obj = -s;
+            let x_img = isMirror() ? -s_prime : s_prime;
+
+            // Update Math Panel
+            let p_dioptri = (100 / f).toFixed(2);
+            let isInfinity = !isFinite(s_prime);
+            
+            document.getElementById('out_s_prime').innerText = isInfinity ? "∞ (Tak Hingga)" : s_prime.toFixed(2) + " cm";
+            document.getElementById('out_M').innerText = isInfinity ? "∞" : Math.abs(m).toFixed(2) + " x";
+            document.getElementById('out_h_prime').innerText = isInfinity ? "∞" : h_prime.toFixed(2) + " cm";
+            document.getElementById('out_P').innerText = (f === Infinity) ? "0 D" : (f > 0 ? "+" : "") + p_dioptri + " Dioptri";
+
+            let sifatStr = "";
+            if (isInfinity) {
+                sifatStr = "Sifat: Benda di Titik Fokus (Bayangan di Tak Hingga)";
+            } else if (state.mode === 'cermin_datar') {
+                sifatStr = "Sifat: Maya, Tegak, Sama Besar";
+                document.getElementById('out_s_prime').innerText = "-"+s.toFixed(2) + " cm";
+                document.getElementById('out_M').innerText = "1.00 x";
+                document.getElementById('out_h_prime').innerText = h.toFixed(2) + " cm";
+                document.getElementById('out_P').innerText = "0 Dioptri";
+                x_img = s; h_prime = h;
+            } else {
+                let isNyata = s_prime > 0;
+                let isTegak = m > 0;
+                let size = Math.abs(m) > 1.05 ? "Diperbesar" : (Math.abs(m) < 0.95 ? "Diperkecil" : "Sama Besar");
+                sifatStr = `Sifat: ${isNyata ? "Nyata" : "Maya"}, ${isTegak ? "Tegak" : "Terbalik"}, ${size}`;
+            }
+            document.getElementById('out_sifat').innerText = sifatStr;
+
+            drawGrid();
+
+            // Gambar Alat Optik (Hijau Neon)
+            ctx.lineWidth = 4;
+            let colorOptic = '#39ff14'; // Neon Green
+            let colorOpticTranslucent = 'rgba(57, 255, 20, 0.6)';
+
+            if (state.mode === 'cermin_datar') {
+                ctx.strokeStyle = colorOptic;
+                ctx.beginPath(); ctx.moveTo(state.cx, state.cy - 120); ctx.lineTo(state.cx, state.cy + 120); ctx.stroke();
+                ctx.lineWidth = 1;
+                for(let i=-110; i<120; i+=10) { ctx.beginPath(); ctx.moveTo(state.cx, state.cy+i); ctx.lineTo(state.cx+10, state.cy+i-10); ctx.stroke(); }
+            } 
+            else if (state.mode === 'lensa_cembung') {
+                drawOpticCenter("O"); ctx.strokeStyle = colorOpticTranslucent;
+                ctx.beginPath(); ctx.ellipse(state.cx, state.cy, 10, 100, 0, 0, Math.PI*2); ctx.stroke();
+                drawPoint(-f, "F1"); drawPoint(f, "F2"); drawPoint(-2*f, "2F1"); drawPoint(2*f, "2F2");
+            }
+            else if (state.mode === 'lensa_cekung') {
+                drawOpticCenter("O"); ctx.strokeStyle = colorOpticTranslucent;
+                ctx.beginPath(); ctx.moveTo(state.cx-5, state.cy-100); ctx.lineTo(state.cx+5, state.cy-100); ctx.lineTo(state.cx+2, state.cy); ctx.lineTo(state.cx+5, state.cy+100); ctx.lineTo(state.cx-5, state.cy+100); ctx.lineTo(state.cx-2, state.cy); ctx.closePath(); ctx.stroke();
+                let absF = Math.abs(f); drawPoint(-absF, "F1"); drawPoint(absF, "F2");
+            }
+            else if (state.mode === 'cermin_cekung') {
+                ctx.strokeStyle = colorOpticTranslucent;
+                ctx.beginPath(); ctx.arc(state.cx - 2*f*state.scale, state.cy, 2*f*state.scale, -0.4, 0.4); ctx.stroke();
+                drawPoint(-f, "F"); drawPoint(-2*f, "R (2F)");
+            }
+            else if (state.mode === 'cermin_cembung') {
+                let absF = Math.abs(f); ctx.strokeStyle = colorOpticTranslucent;
+                ctx.beginPath(); ctx.arc(state.cx + 2*absF*state.scale, state.cy, 2*absF*state.scale, Math.PI-0.4, Math.PI+0.4); ctx.stroke();
+                drawPoint(absF, "F"); drawPoint(2*absF, "R (2F)");
+            }
+
+            drawObject(x_obj, h, h, '#e0e0ff', "Benda");
+            if (!isInfinity) drawObject(x_img, h_prime, h_prime, '#ff007f', "Bayangan");
+
+            // ENGINE 3 SINAR ISTIMEWA (RAY TRACING)
+            let cIn = '#00ffff', cOut = '#ffff00', cVirt = '#ff007f';
+            
+            if (isInfinity) {
+                let slope = -h/s;
+                if(state.showRay1) drawRay(x_obj, h, 0, h, cIn); 
+                if(state.showRay2) drawRay(x_obj, h, 0, 0, cIn);
+                if (!isMirror()) {
+                    if(state.showRay1) drawRay(0, h, 200, h + 200*slope, cOut); 
+                    if(state.showRay2) drawRay(0, 0, 200, 200*slope, cOut); 
+                } else {
+                    if(state.showRay1) drawRay(0, h, -200, h - 200*slope, cOut); 
+                    if(state.showRay2) drawRay(0, 0, -200, -200*slope, cOut);
+                }
+                return;
+            }
+
+            if (state.mode === 'cermin_datar') {
+                if(state.showRay1) { drawRay(x_obj, h, 0, h, cIn); drawRay(0, h, -100, h, cOut); drawRay(0, h, x_img, h_prime, cVirt, true); }
+                if(state.showRay2) { drawRay(x_obj, h, 0, 0, cIn); drawRay(0, 0, -100, -100 * (h/s), cOut); drawRay(0, 0, x_img, h_prime, cVirt, true); }
+            }
+            else if (!isMirror()) {
+                if(state.showRay1) {
+                    drawRay(x_obj, h, 0, h, cIn); let slope1 = (h_prime - h) / x_img;
+                    if(s_prime > 0) drawRay(0, h, x_img + 50, h + slope1*(x_img + 50), cOut); 
+                    else { drawRay(0, h, 100, h + 100*slope1, cOut); drawRay(0, h, x_img, h_prime, cVirt, true); }
+                }
+                if(state.showRay2) {
+                    drawRay(x_obj, h, 0, 0, cIn); let slope2 = h_prime / x_img;
+                    if(s_prime > 0) drawRay(0, 0, x_img + 50, slope2*(x_img + 50), cOut);
+                    else { drawRay(0, 0, 100, 100*slope2, cOut); drawRay(0, 0, x_img, h_prime, cVirt, true); }
+                }
+                if(state.showRay3) {
+                    drawRay(x_obj, h, 0, h_prime, cIn);
+                    if(s_prime > 0) drawRay(0, h_prime, x_img + 50, h_prime, cOut);
+                    else { drawRay(0, h_prime, 100, h_prime, cOut); drawRay(0, h_prime, x_img, h_prime, cVirt, true); }
+                }
+            }
+            else {
+                if(state.showRay1) {
+                    drawRay(x_obj, h, 0, h, cIn); let slope1 = (h_prime - h) / x_img;
+                    if (s_prime > 0) drawRay(0, h, x_img - 50, h + slope1*(x_img - 50), cOut); 
+                    else { drawRay(0, h, -100, h - 100*slope1, cOut); drawRay(0, h, x_img, h_prime, cVirt, true); }
+                }
+                if(state.showRay2) {
+                    drawRay(x_obj, h, 0, 0, cIn); let slope2 = h_prime / x_img;
+                    if(s_prime > 0) drawRay(0, 0, x_img - 50, slope2*(x_img - 50), cOut);
+                    else { drawRay(0, 0, -100, -100*slope2, cOut); drawRay(0, 0, x_img, h_prime, cVirt, true); }
+                }
+                if(state.showRay3) {
+                    drawRay(x_obj, h, 0, h_prime, cIn);
+                    if (s_prime > 0) drawRay(0, h_prime, x_img - 50, h_prime, cOut);
+                    else { drawRay(0, h_prime, -100, h_prime, cOut); drawRay(0, h_prime, x_img, h_prime, cVirt, true); }
+                }
+            }
+        }
+
+        // ------------------ MIKROSKOP ------------------
+        function renderMicroscope() {
+            let sob = state.s_ob, fob = state.f_ob, fok = state.f_ok;
+            let { s_prime: sob_prime, m: Mob, h_prime: hob_prime } = calculateOptics(sob, fob, state.h);
+            
+            let d = sob_prime + (fok - 2); if(d < 0) d = 20;
+            let sok = d - sob_prime; 
+            let { s_prime: sok_prime, m: Mok, h_prime: hok_prime } = calculateOptics(sok, fok, hob_prime);
+            let Mtot = Math.abs(Mob * Mok);
+
+            document.getElementById('out_sob_prime').innerText = sob_prime.toFixed(2) + " cm";
+            document.getElementById('out_Mob').innerText = Math.abs(Mob).toFixed(2) + " x";
+            document.getElementById('out_d').innerText = d.toFixed(2) + " cm";
+            document.getElementById('out_Mtot').innerText = Mtot.toFixed(2) + " x";
+            document.getElementById('out_sifat_mikro').innerText = `Bayangan Akhir: ${sok_prime<0?"Maya":"Nyata"}, Terbalik, Diperbesar`;
+
+            drawGrid();
+            let originScale = state.scale, originCx = state.cx;
+            state.scale = 3.5; state.cx = canvas.width / 4; 
+
+            let x_ob = 0, x_ok = d;
+
+            drawOpticCenter("Objektif", x_ob); ctx.beginPath(); ctx.ellipse(state.cx + x_ob*state.scale, state.cy, 12, 60, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(57, 255, 20, 0.6)'; ctx.stroke();
+            drawOpticCenter("Okuler", x_ok); ctx.beginPath(); ctx.ellipse(state.cx + x_ok*state.scale, state.cy, 20, 100, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(57, 255, 20, 0.6)'; ctx.stroke();
+
+            drawPoint(x_ob - fob, "F_ob"); drawPoint(x_ob + fob, "F_ob");
+            drawPoint(x_ok - fok, "F_ok"); drawPoint(x_ok + fok, "F_ok");
+
+            let x_obj = x_ob - sob; drawObject(x_obj, state.h, state.h, '#e0e0ff', "Preparat");
+            let x_img1 = x_ob + sob_prime; drawObject(x_img1, hob_prime, hob_prime, '#ffaa00', "Bayangan 1"); 
+            let x_img2 = x_ok + sok_prime; drawObject(x_img2, hok_prime, hok_prime, '#ff007f', "Bayangan Akhir");
+
+            let cIn = '#00ffff', cOut = '#ffff00', cVirt = '#ff007f';
+
+            if(state.showRay1) {
+                drawRay(x_obj, state.h, x_ob, state.h, cIn); drawRay(x_ob, state.h, x_img1, hob_prime, cOut); 
+                drawRay(x_img1, hob_prime, x_ok, hob_prime, cIn); 
+                let slope_ok_1 = -hob_prime / fok; 
+                drawRay(x_ok, hob_prime, x_ok + 50, hob_prime + 50*slope_ok_1, cOut);
+                if(sok_prime < 0) drawRay(x_ok, hob_prime, x_img2, hok_prime, cVirt, true);
+            }
+            if(state.showRay2) {
+                drawRay(x_obj, state.h, x_ob, 0, cIn); drawRay(x_ob, 0, x_img1, hob_prime, cOut); 
+                drawRay(x_img1, hob_prime, x_ok, 0, cIn); 
+                let slope_ok_2 = -hob_prime / sok;
+                drawRay(x_ok, 0, x_ok + 50, 50*slope_ok_2, cOut);
+                if(sok_prime < 0) drawRay(x_ok, 0, x_img2, hok_prime, cVirt, true);
+            }
+
+            state.scale = originScale; state.cx = originCx;
+        }
+
+        // ------------------ TEROPONG (Bintang & Panggung) ------------------
+        function renderTelescope() {
+            let fob = state.f_ob_t;
+            let isPanggung = state.mode === 'teropong_panggung';
+            let fok = isPanggung ? -state.f_ok_t : state.f_ok_t;
+            let d = state.d_t;
+
+            // Benda di Tak Terhingga, s' Objektif tepat di fokus objektif
+            let sob_prime = fob;
+            let sok = d - sob_prime; // Jarak bayangan 1 ke Okuler
+            let h_img1 = -15; // Visual Dummy Height
+
+            let { s_prime: sok_prime, m: Mok, h_prime: hok_prime } = calculateOptics(sok, fok, h_img1);
+
+            let isInfinity = !isFinite(sok_prime) || Math.abs(sok_prime) > 2000;
+            // Perbesaran Sudut M = f_ob / |s_ok| (pendekatan umum)
+            let Mang = Math.abs(fob / sok);
+
+            // Update UI Panel
+            document.getElementById('out_sob_prime_t').innerText = sob_prime.toFixed(2) + " cm";
+            document.getElementById('out_s_ok_t').innerText = sok.toFixed(2) + " cm";
+            document.getElementById('out_s_prime_t').innerText = isInfinity ? "∞ (Mata Tak Berakomodasi)" : sok_prime.toFixed(2) + " cm";
+            document.getElementById('out_M_t').innerText = isInfinity ? Math.abs(fob/fok).toFixed(2) + " x" : Mang.toFixed(2) + " x";
+            
+            let sifat = isPanggung ? "Maya, Tegak" : "Maya, Terbalik";
+            if(!isInfinity && sok_prime > 0) sifat = isPanggung ? "Nyata, Terbalik" : "Nyata, Tegak";
+            document.getElementById('out_sifat_t').innerText = `Bayangan Akhir: ${sifat}`;
+
+            drawGrid();
+
+            let originScale = state.scale, originCx = state.cx;
+            state.scale = 2.5; // Scale diperkecil agar f yang besar muat di canvas
+            state.cx = canvas.width / 2;
+            
+            let x_ob = -d/2;
+            let x_ok = d/2;
+
+            // Draw Lensa Objektif (Selalu Cembung)
+            drawOpticCenter("Objektif", x_ob); 
+            ctx.beginPath(); ctx.ellipse(state.cx + x_ob*state.scale, state.cy, 12, 80, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(57, 255, 20, 0.6)'; ctx.stroke();
+            drawPoint(x_ob + fob, "F_ob");
+
+            // Draw Lensa Okuler (Cekung untuk Panggung, Cembung untuk Bintang)
+            drawOpticCenter("Okuler", x_ok);
+            if(isPanggung) {
+                let pxOk = state.cx + x_ok*state.scale, pyOk = state.cy;
+                ctx.beginPath(); ctx.moveTo(pxOk-8, pyOk-70); ctx.lineTo(pxOk+8, pyOk-70); ctx.lineTo(pxOk+3, pyOk); ctx.lineTo(pxOk+8, pyOk+70); ctx.lineTo(pxOk-8, pyOk+70); ctx.lineTo(pxOk-3, pyOk); ctx.closePath();
+                ctx.strokeStyle='rgba(57, 255, 20, 0.6)'; ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.ellipse(state.cx + x_ok*state.scale, state.cy, 12, 70, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(57, 255, 20, 0.6)'; ctx.stroke();
+            }
+            drawPoint(x_ok - Math.abs(fok), "F_ok"); drawPoint(x_ok + Math.abs(fok), "F_ok");
+
+            let x_img1 = x_ob + fob;
+            drawObject(x_img1, h_img1, h_img1, '#ffaa00', "Bayangan 1 (f_ob)");
+
+            let x_img2 = x_ok + sok_prime;
+            if(!isInfinity) {
+                drawObject(x_img2, hok_prime, hok_prime, '#ff007f', "Bayangan Akhir");
+            }
+
+            // Ray Tracing Teleskop
+            let cIn = '#00ffff', cOut = '#ffff00', cVirt = '#ff007f';
+            
+            // Sinar masuk dari benda di Tak Terhingga (Kita simulasikan asalnya sangat jauh di x_fake)
+            let x_fake = x_ob - 150;
+            let h_fake = h_img1 * (-150 / fob);
+            
+            if(state.showRay1) {
+                // Sinar 1: Melalui pusat optik Objektif
+                drawRay(x_fake, h_fake, x_ob, 0, cIn);
+                drawRay(x_ob, 0, x_img1, h_img1, cOut);
+
+                // Diteruskan ke Okuler: Sinar sejajar sumbu utama
+                drawRay(x_img1, h_img1, x_ok, h_img1, cIn); 
+                let slope_ok_1 = -h_img1 / fok; // Berlaku universal untuk + maupun -
+                drawRay(x_ok, h_img1, x_ok + 100, h_img1 + 100*slope_ok_1, cOut);
+                
+                if(isInfinity) {
+                    drawRay(x_ok, h_img1, x_ok - 100, h_img1 - 100*slope_ok_1, cVirt, true);
+                } else if(sok_prime < 0) {
+                    drawRay(x_ok, h_img1, x_img2, hok_prime, cVirt, true);
+                }
+            }
+
+            if(state.showRay2) {
+                // Sinar 2: Sinar masuk sejajar yang menuju tepi lensa objektif
+                drawRay(x_fake, h_img1, x_ob, h_img1, cIn);
+                drawRay(x_ob, h_img1, x_img1, h_img1, cOut);
+
+                // Diteruskan ke Okuler: Sinar melalui pusat okuler
+                drawRay(x_img1, h_img1, x_ok, 0, cIn);
+                let m_ok_2 = (0 - h_img1) / (x_ok - x_img1); // slope dari Bayangan 1 menuju Pusat
+                drawRay(x_ok, 0, x_ok + 100, 100 * m_ok_2, cOut);
+                
+                if(isInfinity) {
+                    drawRay(x_ok, 0, x_ok - 100, -100 * m_ok_2, cVirt, true);
+                } else if(sok_prime < 0) {
+                    drawRay(x_ok, 0, x_img2, hok_prime, cVirt, true);
+                }
+            }
+
+            state.scale = originScale; state.cx = originCx;
+        }
+
+        // ========================================================
+        // 4. MAIN GAME LOOP & INPUT HANDLING
+        // ========================================================
+        function gameLoop() {
+            if (state.mode === 'mikroskop') renderMicroscope();
+            else if (state.mode === 'teropong_bintang' || state.mode === 'teropong_panggung') renderTelescope();
+            else renderSingleOptic();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeMap = {
+                'cermin_datar': 'btn_cd', 'lensa_cembung': 'btn_lcx', 'lensa_cekung': 'btn_lcv',
+                'cermin_cekung': 'btn_ccx', 'cermin_cembung': 'btn_ccv', 'mikroskop': 'btn_mikro',
+                'teropong_bintang': 'btn_tb', 'teropong_panggung': 'btn_tp'
+            };
+            document.getElementById(activeMap[mode]).classList.add('active');
+
+            if(mode === 'mikroskop') {
+                document.getElementById('standard-controls').style.display = 'none';
+                document.getElementById('telescope-controls').style.display = 'none';
+                document.getElementById('microscope-controls').style.display = 'block';
+                
+                document.getElementById('math_standard').style.display = 'none';
+                document.getElementById('math_telescope').style.display = 'none';
+                document.getElementById('math_micro').style.display = 'block';
+            } else if (mode === 'teropong_bintang' || mode === 'teropong_panggung') {
+                document.getElementById('standard-controls').style.display = 'none';
+                document.getElementById('microscope-controls').style.display = 'none';
+                document.getElementById('telescope-controls').style.display = 'block';
+                
+                document.getElementById('math_standard').style.display = 'none';
+                document.getElementById('math_micro').style.display = 'none';
+                document.getElementById('math_telescope').style.display = 'block';
+
+                // Menyesuaikan posisi slider tubus ideal untuk jenis teropong agar bayangan terlihat rapi (Tak Akomodasi Default)
+                if(mode === 'teropong_panggung' && state.d_t >= state.f_ob_t) {
+                    state.d_t = state.f_ob_t - state.f_ok_t;
+                    if(state.d_t < 10) state.d_t = 10;
+                    sliders.dt.value = state.d_t; vals.dt.innerText = state.d_t + " cm";
+                } else if (mode === 'teropong_bintang' && state.d_t <= state.f_ob_t) {
+                    state.d_t = state.f_ob_t + state.f_ok_t;
+                    sliders.dt.value = state.d_t; vals.dt.innerText = state.d_t + " cm";
+                }
+            } else {
+                document.getElementById('standard-controls').style.display = 'block';
+                document.getElementById('microscope-controls').style.display = 'none';
+                document.getElementById('telescope-controls').style.display = 'none';
+                
+                document.getElementById('math_standard').style.display = 'block';
+                document.getElementById('math_micro').style.display = 'none';
+                document.getElementById('math_telescope').style.display = 'none';
+                
+                if(mode === 'cermin_datar') document.getElementById('group_f').style.display = 'none';
+                else document.getElementById('group_f').style.display = 'flex';
+            }
+        }
+
+        // Event Listeners Masing-Masing Slider
+        sliders.s.addEventListener('input', e => { state.s = parseFloat(e.target.value); vals.s.innerText = state.s + " cm"; });
+        sliders.h.addEventListener('input', e => { state.h = parseFloat(e.target.value); vals.h.innerText = state.h + " cm"; });
+        sliders.f.addEventListener('input', e => { state.f = parseFloat(e.target.value); vals.f.innerText = state.f + " cm"; });
+        
+        sliders.sob.addEventListener('input', e => { state.s_ob = parseFloat(e.target.value); vals.sob.innerText = state.s_ob + " cm"; });
+        sliders.fob.addEventListener('input', e => { state.f_ob = parseFloat(e.target.value); vals.fob.innerText = state.f_ob + " cm"; });
+        sliders.fok.addEventListener('input', e => { state.f_ok = parseFloat(e.target.value); vals.fok.innerText = state.f_ok + " cm"; });
+
+        sliders.fob_t.addEventListener('input', e => { state.f_ob_t = parseFloat(e.target.value); vals.fob_t.innerText = state.f_ob_t + " cm"; });
+        sliders.fok_t.addEventListener('input', e => { state.f_ok_t = parseFloat(e.target.value); vals.fok_t.innerText = state.f_ok_t + " cm"; });
+        sliders.dt.addEventListener('input', e => { state.d_t = parseFloat(e.target.value); vals.dt.innerText = state.d_t + " cm"; });
+
+        // Event Checkboxes Sinar Istimewa
+        document.getElementById('chk_ray1').addEventListener('change', e => state.showRay1 = e.target.checked);
+        document.getElementById('chk_ray2').addEventListener('change', e => state.showRay2 = e.target.checked);
+        document.getElementById('chk_ray3').addEventListener('change', e => state.showRay3 = e.target.checked);
+
+        // Fitur Drag & Drop
+        canvas.addEventListener('mousedown', e => {
+            if(state.mode === 'mikroskop' || state.mode === 'teropong_bintang' || state.mode === 'teropong_panggung') return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+            let objPxX = state.cx - state.s * state.scale; let objPxY = state.cy - state.h * state.scale;
+            if (Math.abs(mouseX - objPxX) < 30 && Math.abs(mouseY - objPxY) < 40) state.isDragging = true;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (state.isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+                let newS = (state.cx - mouseX) / state.scale; let newH = (state.cy - mouseY) / state.scale;
+                
+                if (newS < 1) newS = 1; if (newS > 100) newS = 100;
+                if (newH < 1) newH = 1; if (newH > 30) newH = 30;
+
+                state.s = newS; state.h = newH;
+                sliders.s.value = newS; vals.s.innerText = newS.toFixed(1) + " cm";
+                sliders.h.value = newH; vals.h.innerText = newH.toFixed(1) + " cm";
+            }
+        });
+
+        window.addEventListener('mouseup', () => { state.isDragging = false; });
+        canvas.addEventListener('mouseleave', () => { state.isDragging = false; });
+
+        // Init App
+        resizeCanvas();
+        setMode('lensa_cembung');
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
