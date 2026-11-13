@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metrology Pro: Master of Measurement</title>
+    <style>
+        /* ========================================================
+           TEMA DESAIN: INDUSTRIAL LABORATORY / BLUEPRINT
+           ======================================================== */
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-panel: #242424;
+            --blueprint-grid: rgba(0, 255, 255, 0.05);
+            --neon-yellow: #facc15;
+            --neon-cyan: #06b6d4;
+            --neon-red: #f43f5e;
+            --neon-green: #10b981;
+            --metal-light: #9ca3af;
+            --metal-dark: #4b5563;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --font-sans: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            padding: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* HEADER & NAVIGATION */
+        header {
+            text-align: center; background: linear-gradient(180deg, #2a2a2a 0%, var(--bg-dark) 100%);
+            padding: 20px; border: 1px solid #333; border-radius: 8px; border-bottom: 3px solid var(--neon-cyan);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        header h1 { color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 5px; }
+
+        .nav-tabs { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .tab-btn {
+            background: var(--bg-panel); color: var(--text-muted); border: 1px solid #444;
+            padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            transition: all 0.3s ease; text-transform: uppercase; font-size: 0.85rem;
+        }
+        .tab-btn:hover { background: #333; color: var(--text-main); }
+        .tab-btn.active {
+            background: rgba(6, 182, 212, 0.1); color: var(--neon-cyan);
+            border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+        .tab-btn.exam { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+        .tab-btn.exam.active { background: rgba(250, 204, 21, 0.1); box-shadow: 0 0 10px rgba(250, 204, 21, 0.3); }
+
+        /* MODULE SECTIONS */
+        .module { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.4s ease; }
+        .module.active { display: flex; }
+
+        .panel {
+            background: var(--bg-panel); border: 1px solid #333; border-radius: 8px;
+            padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap;
+        }
+        .panel-title { color: var(--neon-yellow); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        
+        /* CANVAS & INTERACTIVE AREAS */
+        .canvas-wrapper {
+            position: relative; width: 100%; background: #0a0a0a; border: 2px solid #444;
+            border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 20px #000;
+        }
+        
+        /* Penting: touch-action none mencegah scrolling saat menggeser simulasi di HP */
+        canvas { display: block; width: 100%; cursor: grab; touch-action: none; }
+        canvas:active { cursor: grabbing; }
+        
+        .zoom-overlay {
+            position: absolute; top: 10px; right: 10px; width: 320px; height: 180px;
+            background: #111; border: 2px solid var(--neon-cyan); border-radius: 12px;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); pointer-events: none;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+            z-index: 10;
+        }
+        .zoom-overlay::after {
+            content: 'ZOOM 3X'; position: absolute; bottom: 15px; font-size: 10px;
+            color: var(--neon-cyan); font-weight: bold; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px;
+        }
+
+        /* DATA DISPLAY & CONTROLS */
+        .data-display {
+            background: #000; border: 1px dashed var(--neon-cyan); padding: 15px;
+            border-radius: 6px; font-family: var(--font-mono); margin-top: 15px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .data-row { display: flex; justify-content: space-between; font-size: 1.1rem; }
+        .data-val { color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 5px rgba(6,182,212,0.5); }
+        .data-highlight { color: var(--neon-yellow); }
+
+        /* EXAM PANEL (UJIAN PRAKTIKUM) */
+        .exam-panel { background: linear-gradient(45deg, #111, #2a2a00); border: 2px solid var(--neon-yellow); }
+        .exam-input-group { display: flex; gap: 15px; align-items: center; margin-top: 15px; flex-wrap: wrap; }
+        .exam-input-group input {
+            background: #000; border: 1px solid var(--neon-yellow); color: var(--neon-yellow);
+            padding: 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 1.2rem;
+            width: 120px; text-align: center; outline: none;
+        }
+        .exam-input-group input:focus { box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+        .btn-submit {
+            background: var(--neon-yellow); color: #000; border: none; padding: 10px 20px;
+            font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: 0.3s;
+        }
+        .btn-submit:hover { background: #fff; box-shadow: 0 0 15px var(--neon-yellow); }
+        .feedback-box { margin-top: 15px; padding: 15px; border-radius: 4px; font-weight: bold; display: none; }
+        .feedback-box.correct { background: rgba(16, 185, 129, 0.2); border-left: 4px solid var(--neon-green); color: var(--neon-green); display: block; }
+        .feedback-box.wrong { background: rgba(244, 63, 94, 0.2); border-left: 4px solid var(--neon-red); color: var(--neon-red); display: block; }
+
+        /* DIGITAL DISPLAYS */
+        .digital-clock {
+            font-family: var(--font-mono); font-size: 3rem; color: var(--neon-cyan);
+            background: #000; padding: 20px; text-align: center; border-radius: 8px;
+            border: 2px solid #333; text-shadow: 0 0 10px var(--neon-cyan); letter-spacing: 2px;
+        }
+        .btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-action { background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: bold;}
+        .btn-action:hover { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); }
+
+        .info-box { background: rgba(255,255,255,0.05); padding: 15px; border-left: 3px solid var(--text-muted); font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.5; }
+        .info-box strong { color: var(--text-main); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .zoom-overlay { width: 100px; height: 100px; }
+            .zoom-overlay::after { font-size: 8px; bottom: 10px; }
+            .exam-input-group { flex-direction: column; align-items: stretch; }
+            .exam-input-group input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Metrology Pro</h1>
+            <p>Laboratorium Pengukuran Presisi & Analisis Ketidakpastian Interaktif</p>
+            <nav class="nav-tabs">
+                <button class="tab-btn active" onclick="switchTab('panjang')">Panjang (J.Sorong & Mikrometer)</button>
+                <button class="tab-btn" onclick="switchTab('massa')">Massa (Neraca Ohaus)</button>
+                <button class="tab-btn" onclick="switchTab('listrik')">Listrik (Multimeter)</button>
+                <button class="tab-btn" onclick="switchTab('suhu')">Suhu & Waktu</button>
+                <button class="tab-btn exam" onclick="switchTab('ujian')">Ujian Praktikum 🎯</button>
+            </nav>
+        </header>
+
+        <!-- MODUL 1: PANJANG -->
+        <main id="mod-panjang" class="module active">
+            <div class="info-box">
+                <strong>Ketentuan Ketidakpastian (Δx):</strong><br>
+                - Untuk alat ukur <b>Analog</b>, nilai Ketidakpastian (Δx) = ½ × Nilai Skala Terkecil (NST).<br>
+                - Untuk alat ukur <b>Digital</b>, nilai Ketidakpastian (Δx) = 1 × Nilai Skala Terkecil (NST).<br>
+                - Pelaporan hasil pengukuran (x₀ ± Δx) harus memiliki <b>jumlah desimal yang sama</b>!
+            </div>
+            
+            <!-- JANGKA SORONG -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">📏 Jangka Sorong (Vernier Caliper)</h2>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                        Jenis: <b>Analog</b> | NST: 0.1 mm (0.01 cm)<br>Δx = ½ × NST = 0.005 cm
+                    </span>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="cvs-jangka" height="250"></canvas>
+                    <div class="zoom-overlay" id="zoom-jangka">
+                        <canvas id="cvs-jangka-zoom" width="250" height="150"></canvas>
+                    </div>
+                </div>
+                <div class="data-display">
+                    <div class="data-row"><span>Skala Utama (SU):</span> <span class="data-val" id="js-su">0.00 cm</span></div>
+                    <div class="data-row"><span>Skala Nonius (SN):</span> <span class="data-val" id="js-sn">0.000 cm</span></div>
+                    <hr style="border-color: #333; margin: 5px 0;">
+                    <div class="data-row"><span>Hasil Pengukuran (x₀):</span> <span class="data-val data-highlight" id="js-result">0.000 cm</span></div>
+                    <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                        <span>Pelaporan Fisika (x₀ ± Δx):</span> <span id="js-report">0.000 ± 0.005 cm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIKROMETER SEKRUP -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">🗜️ Mikrometer Sekrup</h2>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                        Jenis: <b>Analog</b> | NST: 0.01 mm<br>Δx = ½ × NST = 0.005 mm
+                    </span>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="cvs-mikro" height="350"></canvas>
+                    <div class="zoom-overlay" id="zoom-mikro">
+                        <canvas id="cvs-mikro-zoom" width="320" height="180"></canvas>
+                    </div>
+                </div>
+                <div class="data-display">
+                    <div class="data-row"><span>Skala Utama (SU):</span> <span class="data-val" id="ms-su">0.00 mm</span></div>
+                    <div class="data-row"><span>Skala Putar (SP):</span> <span class="data-val" id="ms-sp">0.00 mm</span></div>
+                    <hr style="border-color: #333; margin: 5px 0;">
+                    <div class="data-row"><span>Hasil Pengukuran (x₀):</span> <span class="data-val data-highlight" id="ms-result">0.000 mm</span></div>
+                    <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                        <span>Pelaporan Fisika (x₀ ± Δx):</span> <span id="ms-report">0.000 ± 0.005 mm</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODUL 2: MASSA (OHAUS) -->
+        <main id="mod-massa" class="module">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">⚖️ Neraca Ohaus (3 Lengan)</h2>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                        Jenis: <b>Analog</b> | NST (Lengan 1g): 0.1 g<br>Δx = ½ × NST = 0.05 g
+                    </span>
+                </div>
+                <div class="info-box">
+                    <strong>Simulasi Interaktif:</strong> Sentuh/klik dan <b>geser beban (anting) ke kanan atau kiri</b> secara langsung pada ketiga lengan neraca di bawah ini untuk menyeimbangkan massa.
+                </div>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="cvs-ohaus" height="300" style="background-color: #1a1a1a; cursor: pointer;"></canvas>
+                </div>
+
+                <div class="data-display">
+                    <div class="data-row"><span>Rincian Skala:</span> <span class="data-val" id="ohaus-detail" style="font-size: 1rem;">0g + 0g + 0g</span></div>
+                    <hr style="border-color: #333; margin: 5px 0;">
+                    <div class="data-row"><span>Massa Total Terukur (x₀):</span> <span class="data-val data-highlight" id="ohaus-total" style="font-size:1.5rem;">0.00 g</span></div>
+                    <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                        <span>Pelaporan Fisika (x₀ ± Δx):</span> <span id="ohaus-report">0.00 ± 0.05 g</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODUL 3: LISTRIK (MULTIMETER) -->
+        <main id="mod-listrik" class="module">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">⚡ Multimeter Analog (Voltmeter)</h2>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                        Jenis: <b>Analog</b> | NST = (Batas / Skala Max) × 1<br>Δx = ½ × NST
+                    </span>
+                </div>
+                <div class="info-box">
+                    <strong>Simulasi Interaktif:</strong> <br>
+                    1. <b>Putar/Geser Jarum:</b> Klik dan tahan (drag) langsung jarum pengukur pada kanvas.<br>
+                    2. <b>Rumus:</b> Hasil = (Skala yang Ditunjuk / Skala Maks) × Batas Ukur
+                </div>
+                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="canvas-wrapper" style="flex: 2; min-width: 300px;">
+                        <canvas id="cvs-multi" height="250" style="cursor: grab;"></canvas>
+                    </div>
+                    <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 15px;">
+                        <div style="background: #111; padding: 15px; border-radius: 6px; border: 1px solid #333;">
+                            <label style="color:var(--text-muted); display:block; margin-bottom:10px;">Pilih Batas Ukur (Selector):</label>
+                            <select id="multi-limit" style="width:100%; padding:10px; background:#222; color:#fff; border:1px solid var(--neon-cyan); outline:none; font-size:1.1rem; border-radius:4px;" onchange="updateMultiData()">
+                                <option value="10">10 Volt</option>
+                                <option value="50" selected>50 Volt</option>
+                                <option value="250">250 Volt</option>
+                            </select>
+                        </div>
+                        
+                        <div class="data-display" style="flex:1;">
+                            <div class="data-row"><span>Batas Ukur:</span> <span class="data-val" id="multi-bu-text">50 V</span></div>
+                            <div class="data-row"><span>Skala Max:</span> <span class="data-val">50</span></div>
+                            <div class="data-row"><span>Jarum Menunjuk:</span> <span class="data-val" id="multi-pointer">0</span></div>
+                            <hr style="border-color: #333; margin: 5px 0;">
+                            <div class="data-row"><span>Tegangan (x₀):</span> <span class="data-val data-highlight" id="multi-result">0.0 V</span></div>
+                            <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                                <span>Pelaporan (x₀ ± Δx):</span> <span id="multi-report">0.0 ± 0.5 V</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODUL 4: SUHU & WAKTU -->
+        <main id="mod-suhu" class="module">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- STOPWATCH -->
+                <div class="panel" style="flex: 1; min-width: 300px;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">⏱️ Stopwatch Digital</h2>
+                        <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                            Jenis: <b>Digital</b> | NST: 0.01 s<br>Δx = 1 × NST = 0.01 s
+                        </span>
+                    </div>
+                    <div class="digital-clock" id="stopwatch-display">00:00.00</div>
+                    <div class="btn-group">
+                        <button class="btn-action" onclick="swStart()" style="background: var(--neon-green); color:#000;">Start</button>
+                        <button class="btn-action" onclick="swStop()" style="background: var(--neon-red); color:#fff;">Stop</button>
+                        <button class="btn-action" onclick="swReset()">Reset</button>
+                    </div>
+                    <div class="data-display" style="margin-top: 20px;">
+                        <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                            <span>Pelaporan Fisika (t ± Δt):</span> <span id="sw-report">0.00 ± 0.01 s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TERMOMETER -->
+                <div class="panel" style="flex: 1; min-width: 300px;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">🌡️ Termometer Interaktif</h2>
+                        <span style="color: var(--text-muted); font-size: 0.85rem; text-align: right;">
+                            Jenis: <b>Analog</b> | NST: 1 °C<br>Δx = ½ × NST = 0.5 °C
+                        </span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 10px;">
+                        Geser langsung air raksa (cairan merah) di dalam tabung untuk mengatur suhu!
+                    </div>
+                    <div style="display: flex; gap: 20px; align-items: center; justify-content: center; height: 200px;">
+                        <div class="canvas-wrapper" style="width: 100px; height: 100%; border-radius: 8px; border-width: 1px;">
+                             <canvas id="cvs-thermo" height="200"></canvas>
+                        </div>
+                    </div>
+                    <div class="data-display">
+                        <div class="data-row"><span>Suhu Terukur (x₀):</span> <span class="data-val data-highlight" id="thermo-val" style="font-size:1.5rem;">25.0 °C</span></div>
+                        <div class="data-row" style="font-size: 0.9rem; color: var(--text-muted);">
+                            <span>Pelaporan (x₀ ± Δx):</span> <span id="thermo-report">25.0 ± 0.5 °C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODUL 5: UJIAN PRAKTIKUM -->
+        <main id="mod-ujian" class="module">
+            <div class="panel exam-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">🎯 Ujian Praktikum: Evaluasi Analisis Data</h2>
+                </div>
+                <div class="info-box" style="border-color: var(--neon-yellow);">
+                    <strong>Aturan Penulisan (Sangat Penting):</strong><br>
+                    1. Pastikan Anda membaca gambar soal di bawah ini dengan teliti.<br>
+                    2. Hitung Ketidakpastian (Δx) sesuai jenis alat ukur (Analog = ½ NST, Digital = 1 NST).<br>
+                    3. <b>Aturan Angka Penting:</b> Jumlah angka desimal di belakang koma pada nilai x₀ harus <b>SAMA PERSIS</b> dengan jumlah angka desimal pada ketidakpastian (Δx).
+                </div>
+
+                <div style="background: #000; padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 10px;" id="exam-question">Soal: Bacalah Alat Ukur Berikut!</h3>
+                    <div class="canvas-wrapper" style="max-width: 600px; margin: 0 auto; cursor: default;">
+                        <canvas id="cvs-exam" height="200" style="cursor: default;"></canvas>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: left;">
+                        <p style="color: var(--text-muted);">Masukkan jawaban Anda dalam format <b>x₀ ± Δx</b> (Gunakan titik untuk desimal):</p>
+                        <div class="exam-input-group">
+                            <input type="text" id="exam-val" placeholder="Nilai (x₀)">
+                            <span style="font-size:1.5rem; color:var(--text-muted);">±</span>
+                            <input type="text" id="exam-uncert" placeholder="Δx">
+                            <span style="font-size:1.2rem; color:var(--neon-cyan);" id="exam-unit">cm</span>
+                            <button class="btn-submit" onclick="checkExam()">Serahkan Jawaban</button>
+                        </div>
+                    </div>
+                    
+                    <div id="exam-feedback" class="feedback-box"></div>
+                    <button class="btn-action" style="margin-top: 15px; display: none; border-color: var(--neon-yellow); color: var(--neon-yellow);" id="btn-next-exam" onclick="generateExam()">Soal Selanjutnya</button>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 1. NAVIGATION, TAB & UTILITY LOGIC
+        // ==========================================
+        function switchTab(modId) {
+            document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`mod-${modId}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            // Render ulang kanvas untuk perbaikan ukuran saat tab dimunculkan (Responsive)
+            if(modId === 'panjang') { drawJangka(); drawMikro(); }
+            if(modId === 'massa') { drawOhaus(); }
+            if(modId === 'listrik') { drawMulti(); }
+            if(modId === 'suhu') { drawThermo(); }
+            if(modId === 'ujian') {
+                if(!examState.active) generateExam();
+                drawExamCanvas();
+            }
+        }
+
+        // Helper event touch/mouse coordinate
+        function getPointerPos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function initCanvasSize(cvs) {
+            if(cvs.parentElement) {
+                cvs.width = cvs.parentElement.clientWidth;
+            }
+        }
+
+        // ==========================================
+        // 2. MODUL PANJANG: JANGKA SORONG INTERAKTIF
+        // ==========================================
+        const cvsJangka = document.getElementById('cvs-jangka');
+        const ctxJ = cvsJangka.getContext('2d');
+        const zJangka = document.getElementById('cvs-jangka-zoom');
+        const ctxZJ = zJangka.getContext('2d');
+        
+        let stateJangka = { val: 2.35, exactVal: 2.35, isDragging: false }; // dalam cm
+        let lastMouseX_J = 0;
+        const pxPerMm_J = 15; // Skala render (pixel per mm)
+
+        function drawJangkaSpecific(ctx, valCm, isZoom = false) {
+            let w = ctx.canvas.width, h = ctx.canvas.height;
+            if (w <= 0 || h <= 0) return;
+            ctx.clearRect(0, 0, w, h);
+
+            // Grid Background
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            for(let i=0; i<w; i+=20) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); }
+
+            let slideX_rel = (valCm * 10 * pxPerMm_J);
+            
+            // Kamera Dinamis (Mengikuti bukaan rahang)
+            let offsetX = w/2 - (slideX_rel / 2);
+            if (!isZoom && offsetX > 150) offsetX = 150;
+            if (isZoom) offsetX = w/2 - slideX_rel - 20;
+            
+            let baseY = h/2 - 10;
+            let beamLength = 170 * pxPerMm_J; // Panjang total rel utama
+            let beamEnd = offsetX + beamLength;
+
+            // 1. TANGKAI KEDALAMAN (Depth Probe)
+            if (!isZoom) {
+                ctx.fillStyle = '#d4d4d4'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+                ctx.fillRect(beamEnd, baseY - 2, slideX_rel + 20, 4);
+                ctx.strokeRect(beamEnd, baseY - 2, slideX_rel + 20, 4);
+            }
+
+            // 2. RAHANG TETAP & BINGKAI UTAMA (Fixed Body - Light Grey)
+            ctx.fillStyle = '#e5e5e5'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+            
+            if (!isZoom) {
+                ctx.beginPath();
+                // Bodi Rel
+                ctx.moveTo(offsetX - 40, baseY - 16);
+                ctx.lineTo(beamEnd, baseY - 16);
+                ctx.lineTo(beamEnd, baseY + 16);
+                ctx.lineTo(offsetX, baseY + 16);
+                // Rahang Luar Tetap (Bawah)
+                ctx.lineTo(offsetX, baseY + 90);
+                ctx.lineTo(offsetX - 10, baseY + 90);
+                ctx.lineTo(offsetX - 30, baseY + 35);
+                ctx.lineTo(offsetX - 40, baseY + 16);
+                // Rahang Dalam Tetap (Atas)
+                ctx.lineTo(offsetX - 40, baseY - 16);
+                ctx.lineTo(offsetX - 30, baseY - 16);
+                ctx.lineTo(offsetX - 15, baseY - 55);
+                ctx.lineTo(offsetX, baseY - 55);
+                ctx.lineTo(offsetX, baseY - 16);
+                ctx.fill(); ctx.stroke();
+
+                // Garis ukur rahang (Hitam/Metal gelap)
+                ctx.fillStyle = '#555';
+                ctx.fillRect(offsetX - 2, baseY + 16, 2, 74); // Bawah
+                ctx.fillRect(offsetX - 2, baseY - 55, 2, 39); // Atas
+
+                // Alur Rel Tengah (Groove)
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(offsetX + 10, baseY - 8, beamLength - 20, 16);
+                ctx.strokeRect(offsetX + 10, baseY - 8, beamLength - 20, 16);
+            } else {
+                ctx.fillRect(0, baseY - 20, w, 40); // Background skala utama saat zoom
+            }
+
+            let meetY = isZoom ? baseY + 20 : baseY + 8; // Garis pertemuan sempurna skala
+
+            // Garis Skala Utama (SU)
+            ctx.strokeStyle = '#000';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.font = isZoom ? 'bold 20px Arial' : 'bold 13px Arial';
+            
+            for (let i = 0; i <= 160; i++) {
+                let x = offsetX + i * pxPerMm_J;
+                if (x > beamEnd - 10) continue; // Batas render garis
+                let tH = (i % 10 === 0) ? 14 : ((i % 5 === 0) ? 9 : 6);
+                if (isZoom) tH *= 1.5;
+                
+                // Digambar ke ATAS dari garis pertemuan (meetY)
+                ctx.beginPath(); ctx.moveTo(x, meetY); ctx.lineTo(x, meetY - tH); ctx.stroke();
+                
+                if (i % 10 === 0) {
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(i / 10, x, meetY - tH - 2);
+                }
+            }
+
+            // 3. BENDA UKUR (Balok presisi menyesuaikan celah rahang)
+            if (!isZoom && valCm > 0) {
+                ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                // Mengisi ruang rahang bawah (dari X=offsetX hingga lebar slideX_rel)
+                if(typeof ctx.roundRect === 'function') {
+                    ctx.roundRect(offsetX, baseY + 30, slideX_rel, 40, 6);
+                } else {
+                    ctx.rect(offsetX, baseY + 30, slideX_rel, 40); // Fallback browser lawas
+                }
+                ctx.fill(); ctx.stroke();
+            }
+
+            // 4. RAHANG GESER & SKALA NONIUS (Sliding Block - Darker Grey)
+            let slideAbs = offsetX + slideX_rel;
+            ctx.fillStyle = '#d4d4d4'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+            
+            if (!isZoom) {
+                ctx.beginPath();
+                // Rahang Dalam Geser (Atas)
+                ctx.moveTo(slideAbs, baseY - 16);
+                ctx.lineTo(slideAbs, baseY - 55);
+                ctx.lineTo(slideAbs + 15, baseY - 55);
+                ctx.lineTo(slideAbs + 30, baseY - 16);
+                // Bodi Blok Geser Atas
+                ctx.lineTo(slideAbs + 110, baseY - 16);
+                ctx.lineTo(slideAbs + 110, baseY + 16);
+                // Tuas Pegangan Jari (Thumb Grip)
+                ctx.lineTo(slideAbs + 110, baseY + 28);
+                ctx.lineTo(slideAbs + 85, baseY + 28);
+                ctx.lineTo(slideAbs + 75, baseY + 16);
+                // Rahang Luar Geser (Bawah)
+                ctx.lineTo(slideAbs + 30, baseY + 16);
+                ctx.lineTo(slideAbs + 30, baseY + 35);
+                ctx.lineTo(slideAbs + 10, baseY + 90);
+                ctx.lineTo(slideAbs, baseY + 90);
+                ctx.lineTo(slideAbs, baseY + 16);
+                ctx.fill(); ctx.stroke();
+
+                // Garis ukur rahang geser
+                ctx.fillStyle = '#555';
+                ctx.fillRect(slideAbs, baseY + 16, 2, 74); // Bawah
+                ctx.fillRect(slideAbs, baseY - 55, 2, 39); // Atas
+
+                // Baut Pengunci (Top Locking Screw)
+                ctx.fillStyle = '#a3a3a3';
+                ctx.fillRect(slideAbs + 20, baseY - 24, 8, 8); ctx.strokeRect(slideAbs + 20, baseY - 24, 8, 8);
+                ctx.fillRect(slideAbs + 12, baseY - 30, 24, 6); ctx.strokeRect(slideAbs + 12, baseY - 30, 24, 6);
+                
+                // Tekstur Bergerigi pada Tuas Pegangan
+                for(let k=0; k<4; k++) {
+                    ctx.beginPath(); ctx.moveTo(slideAbs+90+k*4, baseY+16); ctx.lineTo(slideAbs+90+k*4, baseY+28); ctx.stroke();
+                }
+            } else {
+                ctx.fillRect(slideAbs - 20, meetY, w, 50);
+            }
+
+            // Jendela Skala Nonius (Putih/Terang)
+            if (!isZoom) {
+                ctx.fillStyle = '#f9f9f9';
+                ctx.fillRect(slideAbs, meetY, 105, 16);
+                ctx.strokeRect(slideAbs, meetY, 105, 16);
+            }
+
+            // Garis Skala Nonius (SN)
+            let alignIdx = Math.round((valCm * 100) % 10);
+            ctx.textBaseline = 'top';
+            ctx.font = isZoom ? 'bold 18px Arial' : 'bold 12px Arial';
+            
+            for (let i = 0; i <= 10; i++) {
+                let x = slideAbs + i * (0.9 * pxPerMm_J);
+                let tH = (i === 0 || i === 5 || i === 10) ? 14 : 8;
+                if (isZoom) tH *= 1.5;
+
+                // Garis yang berhimpit menyala Merah untuk Kontras Tinggi
+                if (i === alignIdx) {
+                    ctx.strokeStyle = '#dc2626'; 
+                    ctx.lineWidth = isZoom ? 3 : 2;
+                } else {
+                    ctx.strokeStyle = '#000'; 
+                    ctx.lineWidth = 1;
+                }
+
+                // Digambar ke BAWAH dari garis pertemuan (meetY)
+                ctx.beginPath(); ctx.moveTo(x, meetY); ctx.lineTo(x, meetY + tH); ctx.stroke();
+                
+                if (i === 0 || i === 5 || i === 10) {
+                    ctx.fillStyle = (i === alignIdx) ? '#dc2626' : '#000';
+                    ctx.fillText(i, x, meetY + tH + 2);
+                }
+            }
+        }
+
+        function updateJangkaData() {
+            let su = Math.floor(stateJangka.val * 10) / 10;
+            let sn = (Math.round((stateJangka.val * 100) % 10) * 0.01);
+            let res = su + sn;
+            
+            document.getElementById('js-su').innerText = su.toFixed(1) + " cm";
+            document.getElementById('js-sn').innerText = sn.toFixed(3) + " cm";
+            document.getElementById('js-result').innerText = res.toFixed(3) + " cm";
+            document.getElementById('js-report').innerText = `${res.toFixed(3)} ± 0.005 cm`;
+        }
+
+        function drawJangka() {
+            initCanvasSize(cvsJangka);
+            drawJangkaSpecific(ctxJ, stateJangka.val, false);
+            drawJangkaSpecific(ctxZJ, stateJangka.val, true);
+            updateJangkaData();
+        }
+
+        function handleJangkaStart(e) {
+            stateJangka.isDragging = true;
+            cvsJangka.style.cursor = 'grabbing';
+            const pos = getPointerPos(cvsJangka, e);
+            lastMouseX_J = pos.x; 
+        }
+
+        function handleJangkaMove(e) {
+            if(!stateJangka.isDragging) return;
+            e.preventDefault(); 
+            
+            const pos = getPointerPos(cvsJangka, e);
+            // Menggunakan sistem Delta-X agar kamera panning terasa sangat responsif
+            let dx = pos.x - lastMouseX_J;
+            lastMouseX_J = pos.x;
+            
+            stateJangka.exactVal += dx / (10 * pxPerMm_J);
+            
+            if(stateJangka.exactVal < 0) stateJangka.exactVal = 0; 
+            if(stateJangka.exactVal > 14) stateJangka.exactVal = 14;
+            
+            // Snap (Bulatkan) ke ketelitian 0.01 cm
+            stateJangka.val = Math.round(stateJangka.exactVal * 100) / 100;
+            drawJangka();
+        }
+
+        function handleJangkaEnd() {
+            stateJangka.isDragging = false;
+            cvsJangka.style.cursor = 'grab';
+        }
+
+        cvsJangka.addEventListener('mousedown', handleJangkaStart);
+        window.addEventListener('mousemove', handleJangkaMove);
+        window.addEventListener('mouseup', handleJangkaEnd);
+        
+        cvsJangka.addEventListener('touchstart', handleJangkaStart, {passive: false});
+        window.addEventListener('touchmove', handleJangkaMove, {passive: false});
+        window.addEventListener('touchend', handleJangkaEnd);
+
+
+        // ==========================================
+        // 3. MODUL PANJANG: MIKROMETER SEKRUP INTERAKTIF
+        // ==========================================
+        const cvsMikro = document.getElementById('cvs-mikro');
+        const ctxM = cvsMikro.getContext('2d');
+        const zMikro = document.getElementById('cvs-mikro-zoom');
+        const ctxZM = zMikro.getContext('2d');
+        
+        // Pastikan variabel exactVal tidak kosong (mencegah alat menghilang saat awal klik)
+        let stateMikro = { val: 4.62, exactVal: 4.62, isDragging: false }; 
+        let lastMouseX_M = 0;
+        
+        // Rasio pergeseran aktual (Penting untuk kalkulasi drag)
+        let currentMikroScale = 1; 
+
+        function drawMikroSpecific(ctx, valMm, isZoom = false) {
+            let w = ctx.canvas.width, h = ctx.canvas.height;
+            if (w <= 0 || h <= 0) return;
+            ctx.clearRect(0, 0, w, h);
+
+            // ---------------------------------------------------------
+            // KONFIGURASI VIRTUAL BOUNDING BOX
+            // (Memastikan 100% gambar fit ke layar hp/pc tanpa terpotong)
+            // ---------------------------------------------------------
+            const vW = 1150; // Total lebar ruang gambar virtual
+            const vH = 450;  // Total tinggi ruang gambar virtual
+            const pxPerMm = 18; 
+            const baseY = 130;
+            const sleeve0_X = 540; // Titik Nol statis di ruang virtual
+            
+            const maxGap = 25 * pxPerMm; // Maksimal buka 25mm
+            const anvilX = sleeve0_X - maxGap - 40; 
+            const thimbleX_rel = valMm * pxPerMm;
+            const thimbleAbs = sleeve0_X + thimbleX_rel;
+
+            ctx.save();
+
+            if (isZoom) {
+                // Kamera Zoom: Fokuskan tepat pada titik pertemuan Skala Utama & Putar
+                let zoomScale = 3.5; // Rasio Zoom diperbesar agar sangat jelas
+                let targetX = thimbleAbs;
+                let targetY = baseY;
+                ctx.translate(w/2, h/2);
+                ctx.scale(zoomScale, zoomScale);
+                ctx.translate(-targetX, -targetY);
+                // Background khusus panel zoom
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(targetX - w, targetY - h, w*2, h*2);
+            } else {
+                // Kamera Normal: Hitung proporsi otomatis agar muat ke layar
+                currentMikroScale = Math.min(w / vW, h / vH);
+                if(currentMikroScale > 1.2) currentMikroScale = 1.2; // Batas zoom max di layar besar
+                
+                // Geser ke KIRI (Menggunakan margin kiri 20px - 10% sisa ruang)
+                let tx = Math.max(20, (w - vW * currentMikroScale) * 0.1); 
+                let ty = (h - vH * currentMikroScale) / 2;
+                
+                ctx.translate(tx, ty);
+                ctx.scale(currentMikroScale, currentMikroScale);
+            }
+
+            if (!isZoom) {
+                // 1. FRAME BENTUK "C" (Teal / Biru Hijau Metalik)
+                let fCenterX = (sleeve0_X + anvilX) / 2;
+                let fInnerR = (sleeve0_X - anvilX) / 2 + 10;
+                let fOuterR = fInnerR + 45;
+                let fTopY = baseY + 22;
+
+                let frameGrd = ctx.createLinearGradient(0, baseY, 0, baseY + fOuterR * 2);
+                frameGrd.addColorStop(0, '#538c9e'); // Warna pantulan atas
+                frameGrd.addColorStop(1, '#2c5364'); // Warna gelap bawah
+                
+                ctx.fillStyle = frameGrd;
+                ctx.strokeStyle = '#1d3540';
+                ctx.lineWidth = 3;
+                
+                ctx.beginPath();
+                ctx.moveTo(anvilX - 30, baseY - 15);
+                ctx.lineTo(anvilX, baseY - 15);
+                ctx.lineTo(anvilX, fTopY);
+                ctx.arc(fCenterX, fTopY, fInnerR, Math.PI, 0, true); 
+                ctx.lineTo(sleeve0_X, fTopY);
+                ctx.lineTo(sleeve0_X, baseY - 22);
+                ctx.lineTo(sleeve0_X + 25, baseY - 22);
+                ctx.lineTo(sleeve0_X + 25, fTopY);
+                ctx.arc(fCenterX, fTopY, fOuterR, 0, Math.PI, false); 
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+
+                // 2. BANTALAN ISOLATOR PANAS (Hitam)
+                ctx.fillStyle = '#181a1b';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(fCenterX, fTopY, fInnerR + 6, Math.PI * 0.88, Math.PI * 0.12, true);
+                ctx.arc(fCenterX, fTopY, fOuterR - 6, Math.PI * 0.12, Math.PI * 0.88, false);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                
+                // Baut Sekrup pada Bantalan Hitam
+                let screwR = fInnerR + 20;
+                ctx.fillStyle = '#0a0a0a';
+                ctx.beginPath(); ctx.arc(fCenterX + screwR * Math.cos(Math.PI * 0.75), fTopY + screwR * Math.sin(Math.PI * 0.75), 6, 0, 2*Math.PI); ctx.fill();
+                ctx.beginPath(); ctx.arc(fCenterX + screwR * Math.cos(Math.PI * 0.25), fTopY + screwR * Math.sin(Math.PI * 0.25), 6, 0, 2*Math.PI); ctx.fill();
+
+                // 3. TUAS PENGUNCI (Lock Lever)
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.arc(sleeve0_X - 10, baseY + 20, 8, 0, 2*Math.PI); ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(sleeve0_X - 10, baseY + 20);
+                ctx.lineTo(sleeve0_X - 25, baseY + 42);
+                ctx.lineTo(sleeve0_X - 8, baseY + 46);
+                ctx.fill();
+
+                // 4. POROS ANVIL DAN SPINDLE (Metalik Silver)
+                let metalGrd = ctx.createLinearGradient(0, baseY - 12, 0, baseY + 12);
+                metalGrd.addColorStop(0, '#e5e7eb'); metalGrd.addColorStop(0.4, '#ffffff'); metalGrd.addColorStop(1, '#9ca3af');
+
+                ctx.fillStyle = metalGrd; ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+                // Anvil (Poros Tetap Kiri)
+                ctx.fillRect(anvilX - 5, baseY - 8, 15, 16); ctx.strokeRect(anvilX - 5, baseY - 8, 15, 16);
+                // Spindle (Poros Geser Kanan)
+                let spindleTip = thimbleAbs - maxGap - 35;
+                ctx.fillRect(spindleTip, baseY - 8, maxGap + 40, 16); ctx.strokeRect(spindleTip, baseY - 8, maxGap + 40, 16);
+
+                // 5. BENDA UKUR (Blok Presisi Orange Menyesuaikan Ukuran)
+                if (valMm > 0) {
+                    let objW = spindleTip - (anvilX + 10);
+                    if (objW > 0) {
+                        ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        if(typeof ctx.roundRect === 'function') ctx.roundRect(anvilX + 10, baseY - 15, objW, 30, 4);
+                        else ctx.rect(anvilX + 10, baseY - 15, objW, 30);
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+            } else {
+                // Background gelap di bawah angka sleeve khusus panel zoom
+                ctx.fillStyle = '#111'; ctx.fillRect(sleeve0_X - 50, baseY - 35, 600, 70);
+            }
+
+            // 6. SILINDER SKALA UTAMA (Sleeve)
+            let sleeveGrd = ctx.createLinearGradient(0, baseY - 24, 0, baseY + 24);
+            sleeveGrd.addColorStop(0, '#d1d5db'); sleeveGrd.addColorStop(0.5, '#f3f4f6'); sleeveGrd.addColorStop(1, '#9ca3af');
+
+            ctx.fillStyle = sleeveGrd; ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+            ctx.fillRect(sleeve0_X - 15, baseY - 24, maxGap + 35, 48);
+            if(!isZoom) ctx.strokeRect(sleeve0_X - 15, baseY - 24, maxGap + 35, 48);
+
+            // ========================================================
+            // PENYEMPURNAAN KETERBACAAN SKALA UTAMA (SU)
+            // ========================================================
+            ctx.strokeStyle = '#000'; 
+            ctx.textAlign = 'center';
+            // Memperbesar Font Skala Utama
+            ctx.font = 'bold 18px Arial'; 
+            
+            // Garis Datum (Lurus Tengah)
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(sleeve0_X - 15, baseY); ctx.lineTo(sleeve0_X + maxGap + 15, baseY); ctx.stroke(); 
+            
+            for(let i=0; i<=25; i+=0.5) {
+                let x = sleeve0_X + i * pxPerMm;
+                if (x > thimbleAbs - 15) continue; // Tersembunyi di bawah thimble
+                
+                let isMajor = (i % 1 === 0);
+                let isNumbered = (i % 5 === 0);
+                
+                // Tinggi dan Ketebalan Garis Diperbesar
+                let tH = isMajor ? 14 : 9; 
+                let yDir = isMajor ? -1 : 1; // Major (1mm) ke atas, Minor (0.5mm) ke bawah
+                
+                ctx.lineWidth = isMajor ? 2.5 : 1.5;
+                ctx.beginPath(); ctx.moveTo(x, baseY); ctx.lineTo(x, baseY + (tH * yDir)); ctx.stroke();
+                
+                if(isNumbered) {
+                    ctx.fillStyle = '#000';
+                    ctx.textBaseline = 'bottom';
+                    // Spasi angkanya dinaikkan agar tidak menyentuh garis ukur
+                    ctx.fillText(i, x, baseY - tH - 6); 
+                }
+            }
+
+            // 7. SILINDER SKALA PUTAR (Thimble)
+            let thimbleGrd = ctx.createLinearGradient(0, baseY - 30, 0, baseY + 30);
+            thimbleGrd.addColorStop(0, '#c2c8cc'); thimbleGrd.addColorStop(0.3, '#f8f9fa'); thimbleGrd.addColorStop(1, '#8e959b');
+
+            ctx.fillStyle = thimbleGrd; ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(thimbleAbs, baseY - 30);
+            ctx.lineTo(thimbleAbs - 15, baseY - 24); // Potongan Miring (Bevel)
+            ctx.lineTo(thimbleAbs - 15, baseY + 24);
+            ctx.lineTo(thimbleAbs, baseY + 30);
+            ctx.lineTo(thimbleAbs + 130, baseY + 30);
+            ctx.lineTo(thimbleAbs + 130, baseY - 30);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            if (!isZoom) {
+                // Tekstur Kasar Pegangan (Thimble Knurling)
+                ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1.5; ctx.beginPath();
+                for (let k = thimbleAbs + 35; k < thimbleAbs + 125; k += 6) {
+                    ctx.moveTo(k, baseY - 30); ctx.lineTo(k + 12, baseY + 30);
+                    ctx.moveTo(k + 12, baseY - 30); ctx.lineTo(k, baseY + 30);
+                }
+                ctx.stroke(); ctx.restore();
+
+                // 8. RATCHET STOP (Pemutar Belakang)
+                let ratchetGrd = ctx.createLinearGradient(0, baseY - 20, 0, baseY + 20);
+                ratchetGrd.addColorStop(0, '#b0b5b9'); ratchetGrd.addColorStop(0.4, '#e9ecef'); ratchetGrd.addColorStop(1, '#6c757d');
+                
+                ctx.fillStyle = ratchetGrd;
+                let ratX = thimbleAbs + 130;
+                ctx.fillRect(ratX, baseY - 20, 35, 40); ctx.strokeRect(ratX, baseY - 20, 35, 40);
+                
+                // Tekstur Kasar Ratchet
+                ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1.5; ctx.beginPath();
+                for (let k = ratX + 3; k < ratX + 32; k += 5) {
+                    ctx.moveTo(k, baseY - 20); ctx.lineTo(k + 6, baseY + 20);
+                    ctx.moveTo(k + 6, baseY - 20); ctx.lineTo(k, baseY + 20);
+                }
+                ctx.stroke(); ctx.restore();
+            }
+
+            // ========================================================
+            // PENYEMPURNAAN KETERBACAAN SKALA PUTAR (SP)
+            // ========================================================
+            let exactSpValue = (valMm % 0.5) / 0.01; 
+            let closestSpValue = Math.round(exactSpValue);
+            if(closestSpValue === 50) closestSpValue = 0; 
+
+            let tickSpacingY = 8; // Kerapatan jarak garis virtual
+            ctx.textAlign = 'left'; 
+            ctx.textBaseline = 'middle';
+            // Memperbesar Font Skala Putar
+            ctx.font = 'bold 16px Arial'; 
+            
+            for(let i = Math.floor(exactSpValue) - 15; i <= Math.floor(exactSpValue) + 15; i++) {
+                let tickNum = i % 50; if(tickNum < 0) tickNum += 50;
+                
+                let y = baseY + (exactSpValue - i) * tickSpacingY;
+
+                // Jangan render jika melewati batas atas/bawah area miring thimble
+                if(y < baseY - 24 || y > baseY + 24) continue;
+
+                let isMatched = (tickNum === closestSpValue);
+                // Highlight garis yang Sejajar Penuh dengan warna Merah Tebal
+                ctx.strokeStyle = isMatched ? '#dc2626' : '#000';
+                ctx.lineWidth = isMatched ? 3 : 1.5; 
+
+                let isMajorTick = (tickNum % 5 === 0);
+                let tW = isMajorTick ? 24 : 12; // Garis panjang/pendek
+                
+                ctx.beginPath(); ctx.moveTo(thimbleAbs - 15, y); ctx.lineTo(thimbleAbs - 15 + tW, y); ctx.stroke();
+                
+                if(isMajorTick) {
+                    ctx.fillStyle = isMatched ? '#dc2626' : '#000';
+                    ctx.fillText(tickNum, thimbleAbs - 15 + tW + 6, y);
+                }
+            }
+
+            // Garis Laser Bantuan Merah Semi-Transparan pada Titik Temu Tengah
+            ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(sleeve0_X - 10, baseY); ctx.lineTo(thimbleAbs - 15, baseY); ctx.stroke();
+
+            ctx.restore(); // Akhiri sistem skala virtual
+        }
+
+        function updateMikroData() {
+            let su = Math.floor(stateMikro.val / 0.5) * 0.5;
+            let sp = Math.round((stateMikro.val - su) * 100) / 100;
+            let res = su + sp;
+            
+            document.getElementById('ms-su').innerText = su.toFixed(2) + " mm";
+            document.getElementById('ms-sp').innerText = sp.toFixed(2) + " mm";
+            document.getElementById('ms-result').innerText = res.toFixed(3) + " mm";
+            document.getElementById('ms-report').innerText = `${res.toFixed(3)} ± 0.005 mm`;
+        }
+
+        function drawMikro() {
+            initCanvasSize(cvsMikro);
+            drawMikroSpecific(ctxM, stateMikro.val, false);
+            drawMikroSpecific(ctxZM, stateMikro.val, true);
+            updateMikroData();
+        }
+
+        function handleMikroStart(e) {
+            stateMikro.isDragging = true;
+            cvsMikro.style.cursor = 'grabbing';
+            const pos = getPointerPos(cvsMikro, e);
+            lastMouseX_M = pos.x; 
+        }
+
+        function handleMikroMove(e) {
+            if(!stateMikro.isDragging) return;
+            e.preventDefault();
+            
+            const pos = getPointerPos(cvsMikro, e);
+            let dx = pos.x - lastMouseX_M;
+            lastMouseX_M = pos.x;
+            
+            // Konversi kecepatan seret mouse berdasarkan perbesaran kanvas aktual
+            // Sehingga kursor terasa "lengket 1:1" dengan putaran alat
+            const pxPerMm_virtual = 18;
+            let effectiveDx = dx / currentMikroScale;
+            
+            stateMikro.exactVal += effectiveDx / pxPerMm_virtual;
+            
+            if(stateMikro.exactVal < 0) stateMikro.exactVal = 0; 
+            if(stateMikro.exactVal > 25) stateMikro.exactVal = 25;
+            
+            // Simpan posisi dengan ketelitian 0.01 mm
+            stateMikro.val = Math.round(stateMikro.exactVal * 100) / 100;
+            drawMikro();
+        }
+
+        function handleMikroEnd() {
+            stateMikro.isDragging = false;
+            cvsMikro.style.cursor = 'grab';
+        }
+
+        cvsMikro.addEventListener('mousedown', handleMikroStart);
+        window.addEventListener('mousemove', handleMikroMove);
+        window.addEventListener('mouseup', handleMikroEnd);
+
+        cvsMikro.addEventListener('touchstart', handleMikroStart, {passive: false});
+        window.addEventListener('touchmove', handleMikroMove, {passive: false});
+        window.addEventListener('touchend', handleMikroEnd);
+
+
+        // ==========================================
+        // 4. MODUL MASSA: NERACA OHAUS KANVAS INTERAKTIF
+        // ==========================================
+        const cvsOhaus = document.getElementById('cvs-ohaus');
+        const ctxO = cvsOhaus.getContext('2d');
+        
+        let ohausArms = [
+            { id: 100, y: 70, max: 500, step: 100, val: 200, label: 'Lengan 1 (100g)' },
+            { id: 10, y: 150, max: 100, step: 10, val: 40, label: 'Lengan 2 (10g)' },
+            { id: 1, y: 230, max: 10, step: 0.1, val: 3.5, label: 'Lengan 3 (1g)' }
+        ];
+        
+        let draggingArm = null;
+
+        function drawOhaus() {
+            initCanvasSize(cvsOhaus);
+            let w = cvsOhaus.width;
+            let h = cvsOhaus.height;
+            if(w <= 0 || h <= 0) return;
+
+            ctxO.clearRect(0,0,w,h);
+            
+            let paddingX = 40;
+            let trackWidth = w - (paddingX * 2);
+
+            ohausArms.forEach(arm => {
+                // Background Track
+                ctxO.fillStyle = '#333';
+                ctxO.fillRect(paddingX, arm.y - 10, trackWidth, 20);
+                
+                // Track line
+                ctxO.strokeStyle = '#666'; ctxO.lineWidth = 2;
+                ctxO.beginPath(); ctxO.moveTo(paddingX, arm.y); ctxO.lineTo(paddingX + trackWidth, arm.y); ctxO.stroke();
+
+                // Ticks & Labels
+                ctxO.fillStyle = '#fff';
+                ctxO.textAlign = 'center';
+                ctxO.font = '12px Arial';
+                ctxO.fillText(arm.label, paddingX + 50, arm.y - 15);
+
+                let steps = arm.max / arm.step;
+                // Untuk 1g (100 step), render setiap satuan (10 tick besar)
+                let renderStep = (arm.id === 1) ? 10 : 1; 
+                
+                for(let i=0; i<=steps; i+=renderStep) {
+                    let tickX = paddingX + (i / steps) * trackWidth;
+                    ctxO.beginPath(); ctxO.moveTo(tickX, arm.y); ctxO.lineTo(tickX, arm.y + 10); ctxO.stroke();
+                    
+                    let tickVal = i * arm.step;
+                    // Format tick label
+                    ctxO.fillText(tickVal, tickX, arm.y + 25);
+                }
+
+                // Gambar Pemberat (Weight/Anting)
+                let weightX = paddingX + (arm.val / arm.max) * trackWidth;
+                
+                // Shadow
+                ctxO.fillStyle = 'rgba(0,0,0,0.5)';
+                ctxO.fillRect(weightX - 12, arm.y - 18, 24, 36);
+                
+                // Block
+                ctxO.fillStyle = draggingArm === arm ? 'var(--neon-yellow)' : 'var(--neon-cyan)';
+                ctxO.fillRect(weightX - 10, arm.y - 15, 20, 30);
+                
+                // Highlight line
+                ctxO.fillStyle = '#000';
+                ctxO.fillRect(weightX - 2, arm.y - 10, 4, 20);
+                
+                // Value text floating di atasnya
+                ctxO.fillStyle = draggingArm === arm ? 'var(--neon-yellow)' : '#fff';
+                ctxO.fillText(arm.val.toFixed(arm.id === 1 ? 1 : 0) + 'g', weightX, arm.y - 25);
+            });
+            
+            updateOhausData();
+        }
+
+        function updateOhausData() {
+            let total = 0;
+            let detStr = [];
+            ohausArms.forEach(arm => {
+                total += arm.val;
+                detStr.push(`${arm.val.toFixed(arm.id === 1 ? 1 : 0)}g`);
+            });
+            
+            document.getElementById('ohaus-detail').innerText = detStr.join(' + ');
+            document.getElementById('ohaus-total').innerText = total.toFixed(2) + " g";
+            document.getElementById('ohaus-report').innerText = `${total.toFixed(2)} ± 0.05 g`;
+        }
+
+        function handleOhausStart(e) {
+            e.preventDefault();
+            const pos = getPointerPos(cvsOhaus, e);
+            let w = cvsOhaus.width;
+            let paddingX = 40;
+            let trackWidth = w - (paddingX * 2);
+            
+            // Cek klik pada lengan mana
+            draggingArm = null;
+            ohausArms.forEach(arm => {
+                let weightX = paddingX + (arm.val / arm.max) * trackWidth;
+                // Hitbox luas
+                if(pos.x >= weightX - 30 && pos.x <= weightX + 30 && pos.y >= arm.y - 30 && pos.y <= arm.y + 30) {
+                    draggingArm = arm;
+                }
+            });
+            
+            if(draggingArm) {
+                cvsOhaus.style.cursor = 'grabbing';
+                handleOhausMove(e);
+            }
+        }
+
+        function handleOhausMove(e) {
+            if(!draggingArm) return;
+            e.preventDefault();
+            
+            const pos = getPointerPos(cvsOhaus, e);
+            let w = cvsOhaus.width;
+            let paddingX = 40;
+            let trackWidth = w - (paddingX * 2);
+            
+            let rawPct = (pos.x - paddingX) / trackWidth;
+            if(rawPct < 0) rawPct = 0; if(rawPct > 1) rawPct = 1;
+            
+            let rawVal = rawPct * draggingArm.max;
+            
+            // Snap to step (Berdasarkan ketelitian lengan)
+            draggingArm.val = Math.round(rawVal / draggingArm.step) * draggingArm.step;
+            
+            drawOhaus();
+        }
+
+        function handleOhausEnd() {
+            draggingArm = null;
+            cvsOhaus.style.cursor = 'pointer';
+            drawOhaus();
+        }
+
+        cvsOhaus.addEventListener('mousedown', handleOhausStart);
+        window.addEventListener('mousemove', handleOhausMove);
+        window.addEventListener('mouseup', handleOhausEnd);
+
+        cvsOhaus.addEventListener('touchstart', handleOhausStart, {passive: false});
+        window.addEventListener('touchmove', handleOhausMove, {passive: false});
+        window.addEventListener('touchend', handleOhausEnd);
+
+        // ==========================================
+        // 5. MODUL LISTRIK: MULTIMETER
+        // ==========================================
+        const cvsMulti = document.getElementById('cvs-multi');
+        const ctxMul = cvsMulti.getContext('2d');
+        
+        let stateMulti = { pointerVal: 20, isDragging: false, limit: 50, maxScale: 50 };
+
+        function drawMulti() {
+            initCanvasSize(cvsMulti);
+            let w = cvsMulti.width, h = cvsMulti.height;
+            if (w <= 0 || h <= 0) return; 
+            
+            ctxMul.clearRect(0,0,w,h);
+            
+            let cx = w/2, cy = h - 30;
+            let r = Math.max(1, Math.min(w/2 - 40, h - 80)); 
+
+            // Panel Background
+            ctxMul.fillStyle = '#111';
+            ctxMul.fillRect(20, 20, w-40, h-40);
+            
+            // Draw Arc Scale
+            ctxMul.strokeStyle = '#fff'; ctxMul.lineWidth = 4;
+            ctxMul.beginPath(); ctxMul.arc(cx, cy, r, Math.PI, 2*Math.PI); ctxMul.stroke();
+
+            // Ticks (0 to 50) dengan jarak nst_skala = 1
+            ctxMul.textAlign = 'center'; ctxMul.textBaseline = 'bottom'; ctxMul.font = 'bold 14px Arial';
+            ctxMul.fillStyle = '#fff';
+            
+            for(let i=0; i<=50; i+=1) {
+                let angle = Math.PI + (i/50) * Math.PI;
+                let isMajor = i % 10 === 0;
+                let isMedium = i % 5 === 0;
+                
+                let tickLen = isMajor ? 15 : (isMedium ? 10 : 5);
+                let x1 = cx + r * Math.cos(angle); let y1 = cy + r * Math.sin(angle);
+                let x2 = cx + (r - tickLen) * Math.cos(angle); let y2 = cy + (r - tickLen) * Math.sin(angle);
+                
+                ctxMul.strokeStyle = isMajor ? 'var(--neon-cyan)' : '#888';
+                ctxMul.lineWidth = isMajor ? 3 : (isMedium ? 2 : 1);
+                ctxMul.beginPath(); ctxMul.moveTo(x1, y1); ctxMul.lineTo(x2, y2); ctxMul.stroke();
+
+                if(isMajor) {
+                    let tx = cx + (r - 28) * Math.cos(angle);
+                    let ty = cy + (r - 28) * Math.sin(angle);
+                    ctxMul.fillText(i, tx, ty);
+                }
+            }
+
+            // Central Hub
+            ctxMul.fillStyle = '#222';
+            ctxMul.beginPath(); ctxMul.arc(cx, cy, 30, Math.PI, 2*Math.PI); ctxMul.fill();
+            ctxMul.strokeStyle = '#555'; ctxMul.lineWidth=2; ctxMul.stroke();
+
+            // Interactive Needle
+            let nAngle = Math.PI + (stateMulti.pointerVal / 50) * Math.PI;
+            
+            ctxMul.strokeStyle = stateMulti.isDragging ? 'var(--neon-yellow)' : 'var(--neon-red)'; 
+            ctxMul.lineWidth = 4;
+            ctxMul.lineCap = 'round';
+            ctxMul.beginPath(); ctxMul.moveTo(cx, cy); 
+            ctxMul.lineTo(cx + (r + 15) * Math.cos(nAngle), cy + (r + 15) * Math.sin(nAngle)); ctxMul.stroke();
+            
+            ctxMul.fillStyle = '#000'; ctxMul.beginPath(); ctxMul.arc(cx, cy, 10, 0, 2*Math.PI); ctxMul.fill();
+            ctxMul.strokeStyle = '#fff'; ctxMul.lineWidth=2; ctxMul.stroke();
+            
+            updateMultiDisplay();
+        }
+
+        function updateMultiData() {
+            stateMulti.limit = parseFloat(document.getElementById('multi-limit').value);
+            drawMulti();
+        }
+
+        function updateMultiDisplay() {
+            let bu = stateMulti.limit;
+            let sm = stateMulti.maxScale;
+            // Ketelitian Voltmeter dinamis sesuai batas ukur
+            let nst_voltage = (bu / sm) * 1; 
+            let deltaX = nst_voltage / 2;
+            let res = (stateMulti.pointerVal / sm) * bu;
+            
+            // Format desimal dinamis (selalu 1 angka desimal di sini agar konsisten rapi, 
+            // 0.1V, 0.5V, atau 2.5V semuanya butuh 1 desimal)
+            let dec = 1;
+            
+            document.getElementById('multi-bu-text').innerText = bu + " V";
+            document.getElementById('multi-pointer').innerText = stateMulti.pointerVal.toFixed(1);
+            document.getElementById('multi-result').innerText = res.toFixed(dec) + " V";
+            document.getElementById('multi-report').innerText = `${res.toFixed(dec)} ± ${deltaX.toFixed(dec)} V`;
+        }
+
+        function handleMultiStart(e) {
+            e.preventDefault();
+            stateMulti.isDragging = true;
+            cvsMulti.style.cursor = 'grabbing';
+            handleMultiMove(e);
+        }
+
+        function handleMultiMove(e) {
+            if(!stateMulti.isDragging) return;
+            e.preventDefault();
+            
+            let w = cvsMulti.width, h = cvsMulti.height;
+            let cx = w/2, cy = h - 30;
+            
+            const pos = getPointerPos(cvsMulti, e);
+            let dx = pos.x - cx;
+            let dy = pos.y - cy;
+            
+            let angle = Math.atan2(dy, dx);
+            
+            // Konversi sudut dari [-PI, PI] ke rentang [0, 2*PI]
+            if (angle < 0) {
+                angle += 2 * Math.PI;
+            }
+            
+            // Cegah jarum bablas berputar ke arah bawah pusat (horizon)
+            if (angle < Math.PI) {
+                if (angle > Math.PI / 2) {
+                    angle = Math.PI; // Snap mentok ke sisi kiri (0 Volt)
+                } else {
+                    angle = 2 * Math.PI; // Snap mentok ke sisi kanan (Maks Volt)
+                }
+            }
+
+            // Rentang sudut sekarang pasti dari Math.PI (kiri) sampai 2*Math.PI (kanan)
+            let pct = (angle - Math.PI) / Math.PI; 
+            
+            if (pct < 0) pct = 0;
+            if (pct > 1) pct = 1;
+
+            // Snap pointer val ke resolusi 0.5 untuk realisme
+            let rawVal = pct * 50;
+            stateMulti.pointerVal = Math.round(rawVal * 2) / 2;
+            
+            drawMulti();
+        }
+
+        function handleMultiEnd() {
+            stateMulti.isDragging = false;
+            cvsMulti.style.cursor = 'grab';
+            drawMulti();
+        }
+
+        cvsMulti.addEventListener('mousedown', handleMultiStart);
+        window.addEventListener('mousemove', handleMultiMove);
+        window.addEventListener('mouseup', handleMultiEnd);
+
+        cvsMulti.addEventListener('touchstart', handleMultiStart, {passive: false});
+        window.addEventListener('touchmove', handleMultiMove, {passive: false});
+        window.addEventListener('touchend', handleMultiEnd);
+
+        // ==========================================
+        // 6. MODUL SUHU (TERMOMETER) & WAKTU (STOPWATCH)
+        // ==========================================
+        const cvsThermo = document.getElementById('cvs-thermo');
+        const ctxT = cvsThermo.getContext('2d');
+        
+        let stateThermo = { val: 25, isDragging: false };
+
+        function drawThermo() {
+            initCanvasSize(cvsThermo);
+            let w = cvsThermo.width;
+            let h = cvsThermo.height;
+            if(w <= 0 || h <= 0) return;
+
+            ctxT.clearRect(0,0,w,h);
+            
+            let cx = w/2;
+            let topPad = 20;
+            let bottomPad = 40;
+            let trackHeight = h - topPad - bottomPad;
+            
+            let valToY = (v) => {
+                let pct = (v + 10) / 120; 
+                return h - bottomPad - (pct * trackHeight);
+            };
+
+            // Background Tabung Kaca
+            ctxT.fillStyle = '#222';
+            ctxT.beginPath();
+            ctxT.roundRect(cx - 15, topPad - 10, 30, trackHeight + 10, 15);
+            ctxT.fill();
+            
+            // Bulb bawah
+            ctxT.beginPath();
+            ctxT.arc(cx, h - bottomPad + 15, 25, 0, 2*Math.PI);
+            ctxT.fill();
+
+            // Liquid Raksa Merah
+            let liquidY = valToY(stateThermo.val);
+            let grd = ctxT.createLinearGradient(0, liquidY, 0, h);
+            grd.addColorStop(0, "#f43f5e");
+            grd.addColorStop(1, "#991b1b");
+            
+            ctxT.fillStyle = grd;
+            ctxT.beginPath();
+            ctxT.roundRect(cx - 8, liquidY, 16, h - bottomPad - liquidY, 8);
+            ctxT.fill();
+            
+            ctxT.beginPath();
+            ctxT.arc(cx, h - bottomPad + 15, 20, 0, 2*Math.PI);
+            ctxT.fill();
+            
+            ctxT.fillStyle = 'rgba(255,255,255,0.2)';
+            ctxT.fillRect(cx - 10, topPad, 4, trackHeight + 20);
+
+            // Ticks skala per 1 Derajat (Sesuai Ketelitian 1°C)
+            ctxT.fillStyle = '#fff'; ctxT.textAlign = 'left'; ctxT.font = '10px Arial';
+            
+            for(let i = -10; i <= 110; i+=1) {
+                let ty = valToY(i);
+                let isMajor = i % 10 === 0;
+                let isMedium = i % 5 === 0;
+                let tickLen = isMajor ? 10 : (isMedium ? 7 : 4);
+                
+                ctxT.strokeStyle = '#aaa'; 
+                ctxT.lineWidth = isMajor ? 2 : 1;
+                ctxT.beginPath(); ctxT.moveTo(cx + 15, ty); ctxT.lineTo(cx + 15 + tickLen, ty); ctxT.stroke();
+                
+                if(isMajor || i === -10 || i === 110) {
+                    ctxT.fillText(i + '°', cx + 30, ty + 4);
+                }
+            }
+            
+            if(stateThermo.isDragging) {
+                ctxT.strokeStyle = 'var(--neon-yellow)'; ctxT.lineWidth = 2;
+                ctxT.beginPath(); ctxT.moveTo(cx-20, liquidY); ctxT.lineTo(cx+20, liquidY); ctxT.stroke();
+            }
+            
+            // Format 1 Angka Desimal (sejalan dengan Δx = 0.5 °C)
+            document.getElementById('thermo-val').innerText = stateThermo.val.toFixed(1) + " °C";
+            document.getElementById('thermo-report').innerText = `${stateThermo.val.toFixed(1)} ± 0.5 °C`;
+        }
+
+        function handleThermoStart(e) {
+            e.preventDefault();
+            stateThermo.isDragging = true;
+            cvsThermo.style.cursor = 'grabbing';
+            handleThermoMove(e);
+        }
+
+        function handleThermoMove(e) {
+            if(!stateThermo.isDragging) return;
+            e.preventDefault();
+            
+            let h = cvsThermo.height;
+            let topPad = 20; let bottomPad = 40;
+            let trackHeight = h - topPad - bottomPad;
+            const pos = getPointerPos(cvsThermo, e);
+            
+            let pct = (h - bottomPad - pos.y) / trackHeight;
+            if(pct < 0) pct = 0; if(pct > 1) pct = 1;
+            
+            let rawVal = (pct * 120) - 10;
+            
+            // Snap to 0.5 °C interaktif
+            stateThermo.val = Math.round(rawVal * 2) / 2;
+            drawThermo();
+        }
+
+        function handleThermoEnd() {
+            stateThermo.isDragging = false;
+            cvsThermo.style.cursor = 'pointer';
+            drawThermo();
+        }
+
+        cvsThermo.addEventListener('mousedown', handleThermoStart);
+        window.addEventListener('mousemove', handleThermoMove);
+        window.addEventListener('mouseup', handleThermoEnd);
+        cvsThermo.addEventListener('touchstart', handleThermoStart, {passive: false});
+        window.addEventListener('touchmove', handleThermoMove, {passive: false});
+        window.addEventListener('touchend', handleThermoEnd);
+
+        // STOPWATCH
+        let swTimer = null;
+        let swTime = 0; 
+        
+        function formatTime(ms) {
+            let mins = Math.floor(ms / 60000);
+            let secs = Math.floor((ms % 60000) / 1000);
+            let millis = Math.floor((ms % 1000) / 10);
+            return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}.${millis.toString().padStart(2,'0')}`;
+        }
+        
+        function swUpdate() {
+            swTime += 10; 
+            document.getElementById('stopwatch-display').innerText = formatTime(swTime);
+            let secTotal = swTime / 1000;
+            // Ketidakpastian Digital = 1 x NST (0.01 s)
+            document.getElementById('sw-report').innerText = `${secTotal.toFixed(2)} ± 0.01 s`;
+        }
+        
+        function swStart() { if(!swTimer) swTimer = setInterval(swUpdate, 10); }
+        function swStop() { clearInterval(swTimer); swTimer = null; }
+        function swReset() { swStop(); swTime = 0; document.getElementById('stopwatch-display').innerText = "00:00.00"; document.getElementById('sw-report').innerText = "0.00 ± 0.01 s"; }
+
+        // ==========================================
+        // 7. MODUL UJIAN PRAKTIKUM
+        // ==========================================
+        const cvsExam = document.getElementById('cvs-exam');
+        const ctxE = cvsExam.getContext('2d');
+        let examState = { active: false, tool: 'jangka', val: 0, uncert: 0 };
+
+        function generateExam() {
+            examState.active = true;
+            document.getElementById('exam-feedback').className = 'feedback-box';
+            document.getElementById('exam-feedback').style.display = 'none';
+            document.getElementById('exam-val').value = '';
+            document.getElementById('exam-uncert').value = '';
+            document.getElementById('btn-next-exam').style.display = 'none';
+
+            let isJangka = Math.random() > 0.5;
+            initCanvasSize(cvsExam);
+
+            if(isJangka) {
+                examState.tool = 'jangka';
+                document.getElementById('exam-question').innerText = "Soal: Bacalah Jangka Sorong Berikut!";
+                document.getElementById('exam-unit').innerText = "cm";
+                // Nilai random statis (snap to 0.01 cm resolution, uncert 0.005)
+                examState.val = Math.round((Math.random() * 4.5 + 0.5) * 100) / 100;
+                examState.uncert = 0.005; 
+                drawJangkaSpecific(ctxE, examState.val, true); 
+            } else {
+                examState.tool = 'mikro';
+                document.getElementById('exam-question').innerText = "Soal: Bacalah Mikrometer Sekrup Berikut!";
+                document.getElementById('exam-unit').innerText = "mm";
+                // Snap to 0.01 mm resolution, uncert 0.005
+                examState.val = Math.round((Math.random() * 9.5 + 0.5) * 100) / 100;
+                examState.uncert = 0.005;
+                drawMikroSpecific(ctxE, examState.val, true);
+            }
+        }
+
+        function drawExamCanvas() {
+            if(!examState.active) return;
+            initCanvasSize(cvsExam);
+            if(examState.tool === 'jangka') drawJangkaSpecific(ctxE, examState.val, true);
+            else drawMikroSpecific(ctxE, examState.val, true);
+        }
+
+        function checkExam() {
+            let inputVal = document.getElementById('exam-val').value.trim();
+            let inputUnc = document.getElementById('exam-uncert').value.trim();
+            let feedback = document.getElementById('exam-feedback');
+
+            if(!inputVal || !inputUnc) {
+                feedback.className = 'feedback-box wrong';
+                feedback.innerText = '❌ Harap isi kedua kotak (Nilai x₀ dan Ketidakpastian Δx).';
+                return;
+            }
+
+            let decVal = inputVal.includes('.') ? inputVal.split('.')[1].length : 0;
+            let decUnc = inputUnc.includes('.') ? inputUnc.split('.')[1].length : 0;
+
+            if (decVal !== decUnc) {
+                feedback.className = 'feedback-box wrong';
+                feedback.innerHTML = `❌ <b>Salah Format!</b> Aturan Angka Penting: Jumlah desimal pada nilai x₀ (${decVal}) harus SAMA PERSIS dengan desimal pada ketidakpastian Δx (${decUnc}).`;
+                return;
+            }
+
+            let numVal = parseFloat(inputVal);
+            let numUnc = parseFloat(inputUnc);
+
+            let isValCorrect = Math.abs(numVal - examState.val) < 0.001;
+            let isUncCorrect = Math.abs(numUnc - examState.uncert) < 0.0001;
+
+            if(isValCorrect && isUncCorrect) {
+                feedback.className = 'feedback-box correct';
+                feedback.innerHTML = `✅ <b>TEPAT SEKALI!</b> Hasil pengukuran dan Aturan Angka Penting/Desimal sudah sempurna.`;
+                document.getElementById('btn-next-exam').style.display = 'inline-block';
+            } else if (!isValCorrect) {
+                feedback.className = 'feedback-box wrong';
+                feedback.innerHTML = `❌ <b>Nilai Pengukuran Salah.</b> Coba baca lagi skala utamanya, kemudian tambahkan skala nonius/putar. (Hint sebenarnya: ${examState.val.toFixed(decVal)})`;
+            } else if (!isUncCorrect) {
+                feedback.className = 'feedback-box wrong';
+                feedback.innerHTML = `❌ <b>Ketidakpastian Salah.</b> Ingat jenis alat ini Analog: $\\Delta x = \\frac{1}{2} \\times \\text{NST}$.`;
+            }
+        }
+
+        // ==========================================
+        // INIT APPLICATION
+        // ==========================================
+        window.onload = () => {
+            drawJangka();
+            drawMikro();
+            drawOhaus();
+            updateMultiData();
+            drawThermo();
+            
+            // Tangani Resize Window agar Canvas tetap tajam dan responsif
+            window.addEventListener('resize', () => {
+                if(document.getElementById('mod-panjang').classList.contains('active')){ drawJangka(); drawMikro(); }
+                if(document.getElementById('mod-massa').classList.contains('active')){ drawOhaus(); }
+                if(document.getElementById('mod-listrik').classList.contains('active')){ drawMulti(); }
+                if(document.getElementById('mod-suhu').classList.contains('active')){ drawThermo(); }
+                if(document.getElementById('mod-ujian').classList.contains('active')){ drawExamCanvas(); }
+            });
+        };
+
+    </script>
+</body>
+</html>
