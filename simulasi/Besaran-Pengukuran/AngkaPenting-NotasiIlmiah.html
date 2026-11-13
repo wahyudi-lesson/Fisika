@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Science Analyzer: Angka Penting & Ketidakpastian</title>
+    
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: CYBER-CALCULATION / MINIMALIST LAB TECH
+           ======================================================== */
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-input: #2a2a2a;
+            --vivid-green: #00ff66;   /* Angka Penting (Significant) */
+            --muted-grey: #6b7280;    /* Bukan AP (Insignificant) */
+            --bright-yellow: #facc15; /* Ketidakpastian */
+            --cyber-blue: #00d8ff;    /* Aksen UI / Notasi Ilmiah */
+            --danger-red: #ff3366;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --font-sans: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            padding: 20px;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 216, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(180deg, #1a1a1a 0%, var(--bg-dark) 100%);
+            border: 1px solid #333; border-top: 3px solid var(--cyber-blue);
+            border-radius: 8px; padding: 25px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            color: var(--cyber-blue); font-family: var(--font-mono); font-size: 2.2rem;
+            letter-spacing: 2px; text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 216, 255, 0.4); margin-bottom: 5px;
+        }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+
+        /* PANELS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid #333;
+            border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .panel-title {
+            font-size: 1.2rem; color: #fff; margin-bottom: 15px; padding-bottom: 10px;
+            border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.05); border-left: 3px solid var(--cyber-blue);
+            padding: 12px 15px; font-size: 0.9rem; color: var(--text-muted);
+            margin-bottom: 15px; border-radius: 0 4px 4px 0; overflow-x: auto;
+        }
+        .info-box strong { color: var(--text-main); }
+
+        /* INPUTS & DISPLAYS */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted); }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%; background: var(--bg-input); color: var(--text-main);
+            border: 1px solid #444; padding: 12px; border-radius: 4px;
+            font-family: var(--font-mono); font-size: 1.1rem; outline: none; transition: all 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--cyber-blue); box-shadow: 0 0 10px rgba(0,216,255,0.2); }
+        
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+
+        /* SIG FIG HIGHLIGHTER */
+        .ap-display {
+            background: #000; border: 1px solid #444; padding: 20px; border-radius: 6px;
+            text-align: center; font-family: var(--font-mono); font-size: 2.5rem;
+            letter-spacing: 5px; min-height: 90px; display: flex; align-items: center;
+            justify-content: center; overflow-x: auto;
+        }
+        .ap-count {
+            display: inline-block; background: rgba(0, 255, 102, 0.1); color: var(--vivid-green);
+            border: 1px solid var(--vivid-green); padding: 5px 15px; border-radius: 20px;
+            font-size: 1rem; font-weight: bold; margin-top: 15px;
+        }
+
+        /* NOTASI ILMIAH */
+        .scinot-display {
+            background: #000; border: 1px dashed var(--cyber-blue); padding: 15px; border-radius: 6px;
+            text-align: center; font-size: 1.5rem; color: var(--cyber-blue);
+            text-shadow: 0 0 8px rgba(0,216,255,0.4); margin-top: 15px; min-height: 80px;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            overflow-wrap: break-word; word-break: break-all;
+        }
+
+        /* PERAMBATAN RALAT & KONVERSI */
+        .error-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .error-row input { flex: 1; text-align: center; }
+        .error-sym { font-size: 1.5rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .uncert { color: var(--bright-yellow) !important; border-color: rgba(250, 204, 21, 0.5) !important; }
+        
+        .step-box {
+            background: #000; padding: 15px; border-radius: 6px; border: 1px solid #333;
+            font-size: 0.95rem; color: var(--text-muted); margin-top: 15px; overflow-x: auto;
+        }
+        .step-result {
+            font-size: 1.2rem; color: #fff; text-align: center; margin-top: 15px;
+            padding-top: 15px; border-top: 1px dashed #444; background: rgba(250, 204, 21, 0.05);
+            border-radius: 4px;
+        }
+
+        /* ARCHERY CANVAS */
+        .canvas-wrapper {
+            width: 100%; background: #0a0a0a; border: 1px solid #333; border-radius: 6px;
+            overflow: hidden; display: flex; justify-content: center; align-items: center; padding: 10px;
+        }
+        canvas { max-width: 100%; background: #111; border-radius: 50%; box-shadow: 0 0 20px #000; }
+        
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .btn {
+            flex: 1; background: #222; color: #fff; border: 1px solid #555;
+            padding: 10px; border-radius: 4px; cursor: pointer; transition: 0.3s;
+            font-size: 0.9rem; font-weight: bold; min-width: 120px;
+        }
+        .btn:hover { background: #333; border-color: var(--cyber-blue); }
+        .btn.active { background: var(--cyber-blue); color: #000; border-color: var(--cyber-blue); }
+
+        /* DATA DEBUGGER */
+        .debugger-panel { border-color: var(--vivid-green); background: linear-gradient(45deg, #111, #0a1a0a); }
+        .bug-code { background: #000; padding: 15px; font-family: var(--font-mono); color: var(--danger-red); border-left: 4px solid var(--danger-red); margin-bottom: 15px; font-size: 1.1rem; }
+        .btn-submit { background: var(--vivid-green); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; transition: 0.3s; }
+        .btn-submit:hover { box-shadow: 0 0 15px rgba(0,255,102,0.4); }
+        #debug-feedback { margin-top: 15px; font-weight: bold; text-align: center; }
+
+        /* TABLE INFO */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; background: #000; }
+        th, td { border: 1px solid #334; padding: 10px; text-align: left; }
+        th { background: rgba(255,255,255,0.05); color: var(--cyber-blue); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Science Analyzer</h1>
+            <p>Panduan Asyik Belajar Angka Penting, Notasi Ilmiah, & Ketidakpastian Pengukuran</p>
+        </header>
+
+        <!-- BARIS 1: AP DETECTOR & SCIENTIFIC NOTATION -->
+        <div class="grid-2">
+            <!-- MODUL 1A: AP DETECTOR -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--vivid-green);">👁️ Detektor Angka Penting (AP)</h2>
+                <div class="info-box">
+                    <strong>Cara Gampang Ingat Aturan AP:</strong><br>
+                    <span style="color: var(--muted-grey);">Abu-abu = Bukan AP</span> | <span style="color: var(--vivid-green);">Hijau = AP</span><br>
+                    - Semua angka selain nol pasti AP.<br>
+                    - Nol yang <i>diapit</i> angka lain pasti AP.<br>
+                    - Nol di <i>depan/kiri</i> angka lain <b>BUKAN AP</b> (Cuma penunjuk desimal).<br>
+                    - Nol di <i>belakang/kanan</i> SETELAH koma <b>PASTI AP</b> (Tanda ketelitian alat).
+                </div>
+                <div class="input-group">
+                    <label>Ketik Hasil Pengukuran (Gunakan titik untuk desimal):</label>
+                    <input type="text" id="ap-input" value="0.00450" placeholder="Contoh: 0.00450" oninput="processAPDetector()">
+                </div>
+                <div class="ap-display" id="ap-visual">
+                    <!-- JS Injected -->
+                </div>
+                <div style="text-align: center;">
+                    <div class="ap-count" id="ap-count-text">Jumlah: 3 Angka Penting</div>
+                </div>
+            </div>
+
+            <!-- MODUL 1B: NOTASI ILMIAH -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyber-blue);">🚀 Konverter Notasi Ilmiah</h2>
+                <div class="info-box" style="border-color: var(--cyber-blue);">
+                    <strong>Memudahkan Tulis Angka Ekstrem ($a \times 10^n$):</strong><br>
+                    Alat ini otomatis menjaga jumlah Angka Penting tetap konsisten. Menggunakan <b>pemrosesan String murni</b> sehingga aman untuk angka super besar/kecil (tidak akan rusak oleh batasan floating point limit).
+                </div>
+                
+                <div class="input-group">
+                    <label>Pilih Mode Konversi:</label>
+                    <select id="conv-mode" onchange="switchConvMode()">
+                        <option value="d2s">Desimal ➔ Notasi Ilmiah</option>
+                        <option value="s2d">Notasi Ilmiah ➔ Desimal</option>
+                    </select>
+                </div>
+
+                <!-- Mode: Decimal to Sci-Not -->
+                <div id="mode-d2s">
+                    <div class="input-group">
+                        <label>Masukkan Angka Desimal (Dukung > 30 digit):</label>
+                        <input type="text" id="conv-dec-input" value="0.00450" placeholder="Coba angka raksasa: 15000000000000" oninput="runConverter()">
+                    </div>
+                </div>
+
+                <!-- Mode: Sci-Not to Decimal -->
+                <div id="mode-s2d" style="display:none; gap:10px; align-items:center;">
+                    <div style="flex:2;">
+                        <label style="font-size: 0.9rem; color: var(--text-muted); display:block; margin-bottom:5px;">Angka Depan (a):</label>
+                        <input type="text" id="conv-sci-a" value="4.50" oninput="runConverter()">
+                    </div>
+                    <div style="font-size:1.5rem; margin-top:15px; font-family: var(--font-mono);">× 10</div>
+                    <div style="flex:1;">
+                        <label style="font-size: 0.9rem; color: var(--text-muted); display:block; margin-bottom:5px;">Pangkat (n):</label>
+                        <input type="number" id="conv-sci-n" value="-3" oninput="runConverter()">
+                    </div>
+                </div>
+
+                <div class="scinot-display" id="conv-output" style="margin-top: 15px;">
+                    <!-- JS Injected HTML -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 1.5: ATURAN PEMBULATAN -->
+        <div class="grid-2">
+            <div class="panel">
+                <h2 class="panel-title" style="color: #d946ef;">✂️ Simulasi Aturan Pembulatan</h2>
+                <div class="info-box" style="border-color: #d946ef;">
+                    <strong>Aturan Pembulatan Fisika (Banker's Rounding):</strong><br>
+                    1. Angka <b>lebih dari 5</b> dibulatkan ke <b>atas</b>.<br>
+                    2. Angka <b>kurang dari 5</b> dibulatkan ke <b>bawah</b> (dibuang).<br>
+                    3. Jika angka yang dibuang <b>tepat 5</b>: 
+                    <ul style="margin-left:20px; margin-top: 5px;">
+                        <li>Bulatkan ke <b>ATAS</b> jika angka di depannya <b>GANJIL</b>.</li>
+                        <li>Biarkan <b>TETAP</b> jika angka di depannya <b>GENAP</b>.</li>
+                    </ul>
+                </div>
+                <div class="input-group">
+                    <label>Ketik Angka Hasil Pengukuran (Desimal):</label>
+                    <input type="number" id="round-input" value="12.345" step="any" oninput="processRounding()">
+                </div>
+                <div class="input-group">
+                    <label>Ingin dibulatkan menyisakan berapa angka di belakang koma?</label>
+                    <div class="flex-row">
+                        <input type="range" id="round-slider" min="0" max="5" value="2" style="flex: 1;" oninput="processRounding()">
+                        <span id="round-slider-val" style="color: #d946ef; font-weight: bold; font-size: 1.2rem; font-family: var(--font-mono); width: 30px; text-align: center;">2</span>
+                    </div>
+                </div>
+                <div class="step-box" id="round-steps" style="min-height: 120px; font-size: 1.05rem; border-color: #d946ef;">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+
+            <!-- MODUL 1.5B: LATIHAN PEMBULATAN -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: #d946ef;">🎮 Kuis Tebak Pembulatan</h2>
+                <div class="info-box" style="border-color: #d946ef;">
+                    Banyak siswa terkecoh saat membulatkan angka yang diakhiri <b>tepat dengan angka 5</b>. Mari uji pemahamanmu!
+                </div>
+                <div style="background: #000; padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+                    <div style="font-size: 1.1rem; margin-bottom: 15px; color: var(--text-muted);">Bulatkan angka berikut menjadi <b>1 desimal</b> saja:</div>
+                    <div id="round-quiz-q" style="font-size: 3rem; text-align: center; color: var(--cyber-blue); font-family: var(--font-mono); letter-spacing: 3px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(0, 216, 255, 0.3);">
+                        2.45
+                    </div>
+                    <div class="flex-row" id="round-quiz-btns" style="justify-content: center; gap: 20px;">
+                        <!-- JS Injected Buttons -->
+                    </div>
+                    <div id="round-quiz-feedback" style="margin-top: 20px; font-weight: bold; text-align: center; min-height: 45px;"></div>
+                    <button class="btn-submit" id="round-quiz-next" style="display:none; background: #d946ef; color: #fff; margin-top: 15px;" onclick="nextRoundQuiz()">Soal Selanjutnya</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 2: PERAMBATAN RALAT & KONVERSI RALAT RELATIF -->
+        <div class="grid-2">
+            <!-- MODUL 2A: KETIDAKPASTIAN (ERROR PROPAGATION) -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--bright-yellow);">⚙️ Kalkulator Ketidakpastian (Perambatan)</h2>
+                <div class="info-box" style="border-color: var(--bright-yellow);">
+                    <strong>Aturan Penulisan Praktikum (Telah Disempurnakan):</strong><br>
+                    1. Hitung nilai perhitungan ($z$) dan ketidakpastiannya ($\Delta z$).<br>
+                    2. Bulatkan ketidakpastian ($\Delta z$) menjadi <b>1 Angka Penting</b>.<br>
+                    3. <b>Sangat Penting:</b> Sesuaikan $z$ agar posisi digit terakhirnya (desimal atau puluhan) <b>sama persis</b> dengan letak kepresisian $\Delta z$.
+                </div>
+                
+                <div class="input-group">
+                    <label>Operasi Matematika:</label>
+                    <select id="err-op" onchange="calcError()">
+                        <option value="add">Penjumlahan (z = x + y)</option>
+                        <option value="sub">Pengurangan (z = x - y)</option>
+                        <option value="mul">Perkalian (z = x · y)</option>
+                        <option value="div">Pembagian (z = x / y)</option>
+                    </select>
+                </div>
+
+                <div class="error-row">
+                    <span class="error-sym">x = </span>
+                    <input type="number" id="err-x" value="12.345" step="any" oninput="calcError()">
+                    <span class="error-sym">±</span>
+                    <input type="number" id="err-dx" class="uncert" value="0.08" step="any" oninput="calcError()">
+                </div>
+                
+                <div class="error-row" id="row-y">
+                    <span class="error-sym">y = </span>
+                    <input type="number" id="err-y" value="2.1" step="any" oninput="calcError()">
+                    <span class="error-sym">±</span>
+                    <input type="number" id="err-dy" class="uncert" value="0.2" step="any" oninput="calcError()">
+                </div>
+
+                <div class="step-box" id="err-steps">
+                    <!-- Injected via JS & MathJax -->
+                </div>
+            </div>
+
+            <!-- MODUL 2B: KALKULATOR RALAT RELATIF -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--bright-yellow);">⚖️ Ketidakpastian Relatif & Persentase</h2>
+                <div class="info-box" style="border-color: var(--bright-yellow);">
+                    <strong>Pembeda Konsep yang Wajib Dipahami:</strong><br>
+                    • <b>Ketidakpastian Mutlak ($\Delta x$):</b> Memiliki <i>satuan yang sama</i> dengan hasil ukur (misal: cm, gram, volt).<br>
+                    • <b>Ketidakpastian Relatif ($r = \frac{\Delta x}{|x|}$):</b> Nilai perbandingan tak berdimensi berupa <b>desimal / fraksi murni</b> tanpa tanda persen.<br>
+                    • <b>Persentase Ketidakpastian Relatif ($\%KR = r \times 100\%$):</b> Dinyatakan dalam satuan <b>persen ($\%$)</b>. Nilai inilah yang dijadikan acuan aturan praktikum untuk menentukan hak jumlah <b>Angka Penting</b> yang boleh dilaporkan.
+                </div>
+
+                <div class="input-group">
+                    <label>Pilih Mode Konversi:</label>
+                    <select id="rel-mode" onchange="updateRelCalc()">
+                        <option value="toBoth">Mutlak (Δx) ➔ Ketidakpastian Relatif (Desimal & %)</option>
+                        <option value="fromDec">Ketidakpastian Relatif Desimal (r) ➔ Mutlak (Δx)</option>
+                        <option value="fromPct">Persentase Ketidakpastian Relatif (%KR) ➔ Mutlak (Δx)</option>
+                    </select>
+                </div>
+
+                <div class="error-row">
+                    <span class="error-sym">x = </span>
+                    <input type="number" id="rel-x" value="50.0" step="any" oninput="updateRelCalc()">
+                </div>
+                <div class="error-row" id="row-dx">
+                    <span class="error-sym">Δx = </span>
+                    <input type="number" id="rel-dx" class="uncert" value="0.5" step="any" oninput="updateRelCalc()">
+                </div>
+                <div class="error-row" id="row-kr-dec" style="display:none;">
+                    <span class="error-sym">r = </span>
+                    <input type="number" id="rel-kr-dec" class="uncert" value="0.01" step="any" placeholder="Contoh: 0.01" oninput="updateRelCalc()">
+                </div>
+                <div class="error-row" id="row-kr-pct" style="display:none;">
+                    <span class="error-sym">%KR = </span>
+                    <input type="number" id="rel-kr-pct" class="uncert" value="1.0" step="any" oninput="updateRelCalc()">
+                    <span class="error-sym">%</span>
+                </div>
+
+                <div class="step-box" id="rel-result">
+                    <!-- Injected via JS & MathJax -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 3: AKURASI & DEBUGGER -->
+        <div class="grid-2">
+            <!-- MODUL 3: AKURASI VS PRESISI -->
+            <div class="panel">
+                <h2 class="panel-title">🎯 Akurasi vs Presisi (Analogi Papan Panah)</h2>
+                <div class="info-box" style="border-color: var(--text-main);">
+                    <b>Akurasi (Ketepatan)</b>: Seberapa dekat tembakanmu dengan titik tengah (Terkait Kesalahan Sistematis).<br>
+                    <b>Presisi (Ketelitian)</b>: Seberapa mengumpul jarak antar tembakanmu (Terkait Kesalahan Acak).
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="accCanvas" width="300" height="300"></canvas>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn active" id="btn-mode1" onclick="setArcheryMode(1)">Presisi & Akurat</button>
+                    <button class="btn" id="btn-mode2" onclick="setArcheryMode(2)">Sistematis (Meleset Bareng)</button>
+                    <button class="btn" id="btn-mode3" onclick="setArcheryMode(3)">Acak (Tersebar Luas)</button>
+                    <button class="btn" id="btn-mode4" onclick="setArcheryMode(4)">Buruk Keduanya</button>
+                </div>
+                <button class="btn" style="width: 100%; margin-top: 10px; border-color: var(--cyber-blue); color: var(--cyber-blue);" onclick="drawArchery()">Ulangi Tembakan</button>
+            </div>
+
+            <!-- MODUL 4: DATA DEBUGGER -->
+            <div class="panel debugger-panel">
+                <h2 class="panel-title" style="color: var(--vivid-green);">🛠️ Cek Laporan Praktikum (Aturan Perkalian)</h2>
+                <div class="info-box" style="border-color: var(--vivid-green);">
+                    <strong>Aturan Operasi Perkalian/Pembagian AP:</strong><br>
+                    Jumlah Angka Penting pada hasil akhir <b>wajib mengikuti jumlah Angka Penting yang paling sedikit</b> dari angka-angka yang dikalikan.
+                </div>
+
+                <p style="margin-bottom: 10px; color: var(--text-muted);"><strong>Kasus Cek Laporan:</strong> Temanmu menuliskan perhitungan Luas di bawah ini. Gurumu mencoret hasil akhirnya karena penulisan Angka Pentingnya salah.</p>
+                
+                <div class="bug-code" id="debug-question">
+                    Panjang (p) = 12.5 cm (3 AP)<br>
+                    Lebar (l) = 4.0 cm (2 AP)<br>
+                    Luas (L) = p × l = 12.5 × 4.0 = <span style="text-decoration: line-through;">50 cm²</span>
+                </div>
+
+                <div class="input-group">
+                    <label>Berdasarkan aturan, karena komponen terkecilnya 2 AP, hasil akhirnya juga wajib ditulis dalam 2 AP! Padahal angka "50" secara normal cuma punya 1 AP. Bagaimana cara menulis 50 agar diakui punya 2 AP menggunakan Notasi Ilmiah?</label>
+                    <input type="text" id="debug-answer" placeholder="Tuliskan jawabanmu (Contoh format: 5.0e1 atau 5.0 x 10^1)">
+                </div>
+                <button class="btn-submit" onclick="checkDebug()">Cek Jawabanku</button>
+                <div id="debug-feedback"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // FUNGSI RENDER MATHJAX DINAMIS 
+        // ==========================================
+        let mathJaxTimeout;
+        function renderMath() {
+            if(window.MathJax) {
+                clearTimeout(mathJaxTimeout);
+                mathJaxTimeout = setTimeout(() => {
+                    MathJax.typesetPromise().catch((err) => console.log('MathJax error: ', err.message));
+                }, 50);
+            }
+        }
+
+        // ==========================================
+        // LIBRARI DETEKSI ANGKA PENTING (AP)
+        // ==========================================
+        function analyzeSigFigs(str) {
+            str = str.trim().replace(',', '.');
+            if (isNaN(str) || str === '.' || str === '-' || str === '-.' || str === '') {
+                return { count: 0, html: '<span style="color:var(--danger-red); font-size:1.2rem;">Format Tidak Valid</span>', rawMantissa: '' };
+            }
+
+            let hasDecimal = str.includes('.');
+            let html = '';
+            let count = 0;
+            let started = false;
+            
+            let lastNonZeroIdx = -1;
+            if(!hasDecimal) {
+                for(let i = str.length-1; i >= 0; i--) {
+                    if(str[i] !== '0' && str[i] !== '-' && str[i] !== '+') {
+                        lastNonZeroIdx = i; break;
+                    }
+                }
+            }
+
+            let rawMantissa = '';
+            for(let i = 0; i < str.length; i++) {
+                let char = str[i];
+                if(char === '-' || char === '+' || char === '.') {
+                    html += `<span style="color: white;">${char}</span>`;
+                    if(char !== '+' && char !== '-') rawMantissa += char;
+                    continue;
+                }
+                
+                rawMantissa += char;
+                if(char !== '0') started = true;
+                
+                let isSig = false;
+                if(started) {
+                    if(hasDecimal) {
+                        isSig = true;
+                    } else {
+                        if(i <= lastNonZeroIdx) isSig = true; 
+                    }
+                }
+                
+                if(isSig) {
+                    html += `<span style="color: var(--vivid-green); font-weight:bold; text-shadow: 0 0 8px rgba(0,255,102,0.4);">${char}</span>`;
+                    count++;
+                } else {
+                    html += `<span style="color: var(--muted-grey);">${char}</span>`;
+                }
+            }
+
+            return { count: count, html: html, rawMantissa: rawMantissa };
+        }
+
+        // ==========================================
+        // PERBAIKAN 1: KONVERSI NOTASI ILMIAH (STRING MANIPULATION)
+        // Mencegah error presisi pada angka sangat besar / kecil
+        // ==========================================
+        
+        // Fungsi pembantu: Merubah desimal menjadi Notasi Ilmiah murni lewat manipulasi string
+        function convertToScientificString(str) {
+            let isNeg = str.startsWith('-');
+            let cleanStr = str.replace('-', '').trim();
+            if(!cleanStr || isNaN(cleanStr)) return null;
+
+            let parts = cleanStr.split('.');
+            let intPart = parts[0].replace(/^0+/, ''); // Hapus 0 di depan
+            let decPart = parts.length > 1 ? parts[1] : '';
+
+            // Cek jika nilainya 0 murni
+            let isZero = (intPart === '' && /^0*$/.test(decPart));
+            if (isZero) return { a: '0', n: 0, count: 0 };
+
+            let n = 0;
+            let mantissaStr = '';
+            
+            if (intPart.length > 0) {
+                // Kasus angka > 1 (contoh: 150000)
+                n = intPart.length - 1;
+                let digits = intPart + decPart;
+                mantissaStr = digits[0] + (digits.length > 1 ? '.' + digits.substring(1) : '');
+            } else {
+                // Kasus angka < 1 (contoh: 0.0045)
+                let decZeros = 0;
+                while(decPart[decZeros] === '0') decZeros++;
+                n = -(decZeros + 1);
+                let digits = decPart.substring(decZeros);
+                mantissaStr = digits[0] + (digits.length > 1 ? '.' + digits.substring(1) : '');
+            }
+
+            // Mempertahankan Angka Penting persis dengan aslinya
+            let apCount = analyzeSigFigs(str).count;
+            if(apCount > 1) {
+                let currentDecimals = mantissaStr.includes('.') ? mantissaStr.split('.')[1].length : 0;
+                if(!mantissaStr.includes('.')) mantissaStr += '.';
+                
+                if(currentDecimals < apCount - 1) {
+                    mantissaStr += '0'.repeat((apCount - 1) - currentDecimals);
+                } else if (currentDecimals > apCount - 1) {
+                    // Potong sisa string jika kepanjangan (berdasar AP awal)
+                    mantissaStr = mantissaStr.substring(0, mantissaStr.indexOf('.') + 1 + (apCount - 1));
+                }
+            } else {
+                if(mantissaStr.includes('.')) mantissaStr = mantissaStr.split('.')[0];
+            }
+
+            return { a: (isNeg ? '-' : '') + mantissaStr, n: n, count: apCount };
+        }
+
+        // Fungsi pembantu: Merubah notasi ilmiah (a * 10^n) ke desimal murni tanpa batas Float
+        function expandScientificString(aStr, n) {
+            let isNeg = aStr.startsWith('-');
+            let aClean = aStr.replace('-', '');
+            let parts = aClean.split('.');
+            let intPart = parts[0];
+            let decPart = parts.length > 1 ? parts[1] : '';
+            let mantissa = intPart + decPart;
+
+            let result = '';
+            if (n >= 0) {
+                // Geser koma ke kanan
+                if (n >= decPart.length) {
+                    result = mantissa + '0'.repeat(n - decPart.length);
+                } else {
+                    result = mantissa.substring(0, intPart.length + n) + '.' + mantissa.substring(intPart.length + n);
+                }
+            } else {
+                // Geser koma ke kiri
+                let moveLeft = Math.abs(n);
+                if (moveLeft >= intPart.length) {
+                    result = '0.' + '0'.repeat(moveLeft - intPart.length) + mantissa;
+                } else {
+                    result = mantissa.substring(0, intPart.length - moveLeft) + '.' + mantissa.substring(intPart.length - moveLeft);
+                }
+            }
+            return (isNeg ? '-' : '') + result;
+        }
+
+        function processAPDetector() {
+            let str = document.getElementById('ap-input').value;
+            let result = analyzeSigFigs(str);
+            document.getElementById('ap-visual').innerHTML = result.html;
+            document.getElementById('ap-count-text').innerText = `Jumlah: ${result.count} Angka Penting`;
+        }
+
+        function switchConvMode() {
+            let mode = document.getElementById('conv-mode').value;
+            if(mode === 'd2s') {
+                document.getElementById('mode-d2s').style.display = 'block';
+                document.getElementById('mode-s2d').style.display = 'none';
+            } else {
+                document.getElementById('mode-d2s').style.display = 'none';
+                document.getElementById('mode-s2d').style.display = 'flex';
+            }
+            runConverter();
+        }
+
+        function runConverter() {
+            let mode = document.getElementById('conv-mode').value;
+            let outputBox = document.getElementById('conv-output');
+            
+            if(mode === 'd2s') {
+                // DESIMAL -> SCI NOT (Telah menggunakan String Builder)
+                let str = document.getElementById('conv-dec-input').value;
+                let data = convertToScientificString(str);
+                
+                if (!data || data.count === 0) {
+                    outputBox.innerHTML = '<span style="font-family: var(--font-mono); font-size: 2.2rem;">0 &times; 10<sup>0</sup></span>';
+                } else {
+                    outputBox.innerHTML = `
+                        <span style="font-family: var(--font-mono); font-size: 2.2rem; display:inline-block; max-width:100%; overflow-x:auto;">${data.a} &times; 10<sup>${data.n}</sup></span>
+                        <div style="font-size: 0.9rem; margin-top:10px; color:var(--text-muted); font-family: var(--font-sans);">
+                            Hasil ditulis dengan mantap sejumlah <b>${data.count} AP</b>. Angka depan (<i>a</i>) berada di rentang 1 &le; <i>a</i> &lt; 10.
+                        </div>`;
+                }
+            } else {
+                // SCI NOT -> DESIMAL (Telah menggunakan String Builder bebas limit)
+                let aStr = document.getElementById('conv-sci-a').value;
+                let nStr = parseInt(document.getElementById('conv-sci-n').value) || 0;
+                
+                let apData = analyzeSigFigs(aStr);
+                if (apData.count === 0 || isNaN(nStr)) {
+                    outputBox.innerHTML = '<span style="font-family: var(--font-mono); font-size: 2.2rem;">0</span>';
+                } else {
+                    let standardStr = expandScientificString(aStr, nStr);
+                    let apHtml = analyzeSigFigs(standardStr).html;
+                    
+                    let explanation = nStr > 0 && nStr >= apData.count ? 
+                        `<br><span style="font-size:0.85rem; color:var(--danger-red); font-family: var(--font-sans);">*Perhatian: Secara penulisan angka desimal biasa, nol di paling belakang itu bukan AP. Tapi karena asalnya dari ${apData.count} AP, sifatnya tetap dianggap ${apData.count} AP. Inilah alasan Notasi Ilmiah lebih aman dipakai!</span>` 
+                        : `<br><span style="font-size:0.85rem; color:var(--vivid-green); font-family: var(--font-sans);">Sukses dijabarkan. Eksekusi ini aman dari limit Floating Point berkat pemrosesan String.</span>`;
+
+                    outputBox.innerHTML = `<div style="font-family: var(--font-mono); font-size: 2rem; display:inline-block; max-width:100%; overflow-x:auto;">${apHtml}</div> ${explanation}`;
+                }
+            }
+            // renderMath() DIHAPUS dari sini agar proses konversi di input berjalan 100% instan (tanpa delay LaTeX)
+        }
+
+        // ==========================================
+        // PERBAIKAN 2: ATURAN PELAPORAN KETIDAKPASTIAN (RALAT)
+        // Menyelaraskan digit ketelitian z dengan Delta z
+        // ==========================================
+        function calcError() {
+            let op = document.getElementById('err-op').value;
+            let x = parseFloat(document.getElementById('err-x').value) || 0;
+            let dx = Math.abs(parseFloat(document.getElementById('err-dx').value)) || 0;
+            
+            let rowY = document.getElementById('row-y');
+            let y = parseFloat(document.getElementById('err-y').value) || 0;
+            let dy = Math.abs(parseFloat(document.getElementById('err-dy').value)) || 0;
+
+            let stepBox = document.getElementById('err-steps');
+            let steps = '';
+            let z = 0, dz = 0;
+
+            if (op === 'add' || op === 'sub') {
+                z = (op === 'add') ? (x + y) : (x - y);
+                dz = dx + dy; 
+                
+                let opSym = op === 'add' ? '+' : '-';
+                steps += `Langkah 1: Hitung Nilai Perhitungan ($z$)<br>`;
+                steps += `$$z = ${x} ${opSym} ${y} = ${z}$$`;
+                steps += `Langkah 2: Ketidakpastian Mutlak Dijumlahkan ($\\Delta z = \\Delta x + \\Delta y$)<br>`;
+                steps += `$$\\Delta z = ${dx} + ${dy} = ${dz}$$`;
+                
+            } else if (op === 'mul' || op === 'div') {
+                z = (op === 'mul') ? (x * y) : (x / y);
+                
+                let relX = x !== 0 ? (dx / Math.abs(x)) : 0;
+                let relY = y !== 0 ? (dy / Math.abs(y)) : 0;
+                let relZ = relX + relY;
+                let pctZ = relZ * 100;
+                dz = Math.abs(z) * relZ;
+
+                let opSym = op === 'mul' ? '\\times' : '\\div';
+                steps += `Langkah 1: Hitung Nilai Perhitungan ($z$)<br>`;
+                steps += `$$z = ${x} ${opSym} ${y} = ${z.toPrecision(5)}$$`;
+                steps += `Langkah 2: Penjumlahan <b>Ketidakpastian Relatif (Fraksional / Desimal)</b><br>`;
+                steps += `$$r_x = \\frac{\\Delta x}{|x|} = \\frac{${dx}}{${Math.abs(x)}} = ${relX.toFixed(4)}$$`;
+                steps += `$$r_y = \\frac{\\Delta y}{|y|} = \\frac{${dy}}{${Math.abs(y)}} = ${relY.toFixed(4)}$$`;
+                steps += `$$r_z = \\frac{\\Delta z}{|z|} = r_x + r_y = ${relX.toFixed(4)} + ${relY.toFixed(4)} = ${relZ.toFixed(4)}$$`;
+                steps += `<div style="font-size:0.9rem; color:var(--cyber-blue); margin: 6px 0;">Persentase Ketidakpastian Relatif: $\\%KR_z = r_z \\times 100\\% = ${pctZ.toFixed(2)}\\%$</div>`;
+                steps += `Langkah 3: Hitung Ketidakpastian Mutlak Sementara ($\\Delta z$)<br>`;
+                steps += `$$\\Delta z = |z| \\times r_z = ${Math.abs(z).toPrecision(5)} \\times ${relZ.toFixed(4)} = ${dz.toPrecision(5)}$$`;
+            }
+
+            // --- PROSES ATURAN PEMBULATAN ANGKA PENTING FISIKA YANG BENAR ---
+            if (dz > 0) {
+                // 1. Cari orde/posisi dari angka penting pertama pada Delta z
+                let order = Math.floor(Math.log10(dz));
+                let step = Math.pow(10, order);
+                
+                // 2. Bulatkan Delta z menjadi tepat 1 Angka Penting
+                let dz_final = Math.round(dz / step) * step;
+                
+                // Jika hasil pembulatan menaikkan orde (misal 0.98 jadi 1.0)
+                if (dz_final >= 10 * step) {
+                    order += 1;
+                    step = Math.pow(10, order);
+                    dz_final = Math.round(dz / step) * step; // hitung ulang posisinya
+                }
+                
+                // 3. Bulatkan nilai z AGAR SELARAS dengan posisi ketelitian dz_final
+                let z_final = Math.round(z / step) * step;
+                
+                // 4. Format hasil ke bentuk string agar jumlah digit rapi
+                let z_str, dz_str;
+                if (order < 0) {
+                    // Ada desimal (contoh: order -2 berarti butuh 2 angka di belakang koma)
+                    let decimals = -order;
+                    z_str = z_final.toFixed(decimals);
+                    dz_str = dz_final.toFixed(decimals);
+                } else {
+                    // Order >= 0 artinya pembulatan di satuan, puluhan, ratusan dll (tidak ada desimal)
+                    z_str = Math.round(z_final).toString();
+                    dz_str = Math.round(dz_final).toString();
+                }
+                
+                steps += `Langkah 4: <b>Penerapan Aturan Penulisan Laporan</b><br>`;
+                steps += `<span style="font-size:0.9rem;">Ketidakpastian $\\Delta z$ wajib dibulatkan jadi <b>1 Angka Penting</b>. Kemudian, posisi batas pemotongan digit $z$ harus selaras dengan posisi kepresisian $\\Delta z$.</span><br>`;
+                steps += `$$\\Delta z \\approx ${dz_str}$$`;
+                steps += `$$z \\approx ${z_str}$$`;
+                
+                steps += `<div class="step-result" style="color:var(--vivid-green);">Laporan Akhir Praktikum:<br> $$z = ${z_str} \\pm ${dz_str}$$</div>`;
+            } else {
+                steps += `<div class="step-result" style="color:var(--vivid-green);">Laporan Sementara:<br> $$z = ${z}$$</div>`;
+            }
+
+            stepBox.innerHTML = steps;
+            renderMath();
+        }
+
+        // ==========================================
+        // 2B. MODUL: KONVERSI RALAT RELATIF
+        // ==========================================
+        function updateRelCalc() {
+            let mode = document.getElementById('rel-mode').value;
+            let x = parseFloat(document.getElementById('rel-x').value) || 0;
+            let resultBox = document.getElementById('rel-result');
+            let html = '';
+
+            let rowDx = document.getElementById('row-dx');
+            let rowDec = document.getElementById('row-kr-dec');
+            let rowPct = document.getElementById('row-kr-pct');
+
+            let dx = 0;
+            let r = 0;
+            let pct = 0;
+
+            if (mode === 'toBoth') {
+                rowDx.style.display = 'flex';
+                rowDec.style.display = 'none';
+                rowPct.style.display = 'none';
+                dx = Math.abs(parseFloat(document.getElementById('rel-dx').value) || 0);
+                r = (x !== 0) ? (dx / Math.abs(x)) : 0;
+                pct = r * 100;
+
+                html += `<b>1. Ketidakpastian Relatif (Fraksional / Desimal):</b><br>`;
+                html += `$$r = \\frac{\\Delta x}{|x|} = \\frac{${dx}}{${Math.abs(x)}} = ${r.toFixed(5)}$$`;
+                html += `<span style="font-size:0.85rem; color:var(--text-muted);">(Rasio murni tanpa satuan/dimensi)</span><br><br>`;
+                
+                html += `<b>2. Persentase Ketidakpastian Relatif (\\%):</b><br>`;
+                html += `$$\\%KR = r \\times 100\\% = \\left( \\frac{\\Delta x}{|x|} \\right) \\times 100\\% = ${pct.toFixed(3)}\\%$$`;
+
+            } else if (mode === 'fromDec') {
+                rowDx.style.display = 'none';
+                rowDec.style.display = 'flex';
+                rowPct.style.display = 'none';
+                r = Math.abs(parseFloat(document.getElementById('rel-kr-dec').value) || 0);
+                dx = r * Math.abs(x);
+                pct = r * 100;
+
+                html += `<b>1. Menghitung Ketidakpastian Mutlak ($\\Delta x$):</b><br>`;
+                html += `$$\\Delta x = |x| \\times r = ${Math.abs(x)} \\times ${r} = ${dx.toFixed(5)}$$`;
+                html += `<b>2. Persentase Ketidakpastian Relatif Terkait:</b><br>`;
+                html += `$$\\%KR = r \\times 100\\% = ${pct.toFixed(3)}\\%$$`;
+
+            } else if (mode === 'fromPct') {
+                rowDx.style.display = 'none';
+                rowDec.style.display = 'none';
+                rowPct.style.display = 'flex';
+                pct = Math.abs(parseFloat(document.getElementById('rel-kr-pct').value) || 0);
+                r = pct / 100;
+                dx = r * Math.abs(x);
+
+                html += `<b>1. Menghitung Ketidakpastian Relatif (Bentuk Desimal / Fraksi $r$):</b><br>`;
+                html += `$$r = \\frac{\\%KR}{100\\%} = \\frac{${pct}\\%}{100\\%} = ${r.toFixed(5)}$$`;
+                html += `<b>2. Menghitung Ketidakpastian Mutlak ($\\Delta x$):</b><br>`;
+                html += `$$\\Delta x = |x| \\times \\frac{\\%KR}{100\\%} = ${Math.abs(x)} \\times ${r.toFixed(5)} = ${dx.toFixed(5)}$$`;
+            }
+
+            // Hak Angka Penting berdasarkan %KR
+            let ap = 1;
+            let note = '';
+            if (pct > 0) {
+                if (pct <= 0.1) {
+                    ap = 4;
+                    note = 'Ketelitian sangat tinggi (sekitar 0,1%): Berhak melaporkan 4 Angka Penting';
+                } else if (pct <= 1) {
+                    ap = 3;
+                    note = 'Ketelitian sedang/tinggi (sekitar 1%): Berhak melaporkan 3 Angka Penting';
+                } else if (pct <= 10) {
+                    ap = 2;
+                    note = 'Ketelitian cukup (sekitar 10%): Berhak melaporkan 2 Angka Penting';
+                } else {
+                    ap = 1;
+                    note = 'Ketelitian rendah (> 10%): Hanya berhak melaporkan 1 Angka Penting';
+                }
+            }
+
+            html += `<div style="color:var(--vivid-green); margin-top:15px; text-align:center; padding: 12px; background: rgba(0,255,102,0.1); border: 1px solid var(--vivid-green); border-radius: 4px;">`;
+            html += `<b>Aturan Hak Penulisan Angka Penting:</b><br>`;
+            html += `Persentase Ketidakpastian Relatif (\\%KR) = <b>${pct.toFixed(2)}%</b> $\\rightarrow$ Berhak menggunakan <b>${ap} Angka Penting</b><br>`;
+            html += `<span style="font-size:0.85rem; color:var(--text-muted);">${note}</span>`;
+            html += `</div>`;
+
+            resultBox.innerHTML = html;
+            renderMath();
+        }
+
+        // ==========================================
+        // 3. MODUL: ACCURACY VS PRECISION (ARCHERY)
+        // ==========================================
+        const canvas = document.getElementById('accCanvas');
+        const ctx = canvas.getContext('2d');
+        let archMode = 1;
+
+        function randomGaussian(mean, stdDev) {
+            let u1 = Math.random(); let u2 = Math.random();
+            let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            return z0 * stdDev + mean;
+        }
+
+        function setArcheryMode(mode) {
+            archMode = mode;
+            for(let i=1; i<=4; i++) {
+                document.getElementById('btn-mode'+i).classList.remove('active');
+            }
+            document.getElementById('btn-mode'+mode).classList.add('active');
+            drawArchery();
+        }
+
+        function drawArchery() {
+            let w = canvas.width; let h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            let cx = w/2; let cy = h/2;
+
+            let colors = ['#fff', '#000', '#00d8ff', '#ff3366', '#facc15'];
+            let radii = [140, 110, 80, 50, 20];
+            for(let i=0; i<5; i++) {
+                ctx.beginPath(); ctx.arc(cx, cy, radii[i], 0, 2*Math.PI);
+                ctx.fillStyle = colors[i]; ctx.fill();
+                ctx.lineWidth = 1; ctx.strokeStyle = '#333'; ctx.stroke();
+            }
+
+            let config = {
+                1: { mx: cx, my: cy, std: 8 },         // High Acc, High Prec
+                2: { mx: cx+60, my: cy-50, std: 10 },  // Low Acc, High Prec (Systematic)
+                3: { mx: cx, my: cy, std: 45 },        // High Acc, Low Prec (Random)
+                4: { mx: cx-50, my: cy+60, std: 40 }   // Low Acc, Low Prec
+            };
+
+            let set = config[archMode];
+
+            for(let i=0; i<15; i++) {
+                let px = randomGaussian(set.mx, set.std);
+                let py = randomGaussian(set.my, set.std);
+                
+                ctx.beginPath(); ctx.arc(px, py, 6, 0, 2*Math.PI);
+                ctx.fillStyle = '#000000'; ctx.fill();
+                
+                ctx.beginPath(); ctx.arc(px, py, 4, 0, 2*Math.PI);
+                ctx.fillStyle = '#00ff66'; ctx.fill();
+                
+                ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.5, 0, 2*Math.PI);
+                ctx.fillStyle = '#ffffff'; ctx.fill();
+            }
+        }
+
+        // ==========================================
+        // 4. MODUL: DATA DEBUGGER
+        // ==========================================
+        function checkDebug() {
+            let ans = document.getElementById('debug-answer').value.toLowerCase().replace(/\s/g, '');
+            let feedback = document.getElementById('debug-feedback');
+            
+            let isCorrect = ans.includes('5.0') && (ans.includes('x10^1') || ans.includes('*10^1') || ans.includes('e1'));
+
+            if (isCorrect) {
+                feedback.style.color = 'var(--vivid-green)';
+                feedback.innerHTML = `✅ <b>TULISANMU BENAR!</b> Hebat, kamu paham bahwa "5.0 × 10¹" itu punya persis 2 Angka Penting, cocok untuk memperbaiki skor laporan temanmu.`;
+            } else {
+                feedback.style.color = 'var(--danger-red)';
+                feedback.innerHTML = `❌ <b>UPS, MASIH KURANG TEPAT.</b><br>Klu: Angka 50 biasa cuma punya 1 AP. Supaya jadi 2 AP nilainya nggak berubah, tulis dalam bentuk (a.b × 10^n). Coba lagi ya!`;
+            }
+        }
+
+        // ==========================================
+        // 5. MODUL: ATURAN PEMBULATAN
+        // ==========================================
+        function processRounding() {
+            let rawStr = document.getElementById('round-input').value.trim();
+            let decimals = parseInt(document.getElementById('round-slider').value);
+            document.getElementById('round-slider-val').innerText = decimals;
+            let stepBox = document.getElementById('round-steps');
+
+            if(rawStr === '' || isNaN(rawStr)) {
+                stepBox.innerHTML = '<span style="color:var(--danger-red);">Tolong masukkan angka desimal yang valid ya.</span>';
+                return;
+            }
+
+            let isNegative = rawStr.startsWith('-');
+            let valStr = isNegative ? rawStr.substring(1) : rawStr;
+
+            if(!valStr.includes('.')) {
+                stepBox.innerHTML = `Angka bulat <b>${rawStr}</b> nggak punya angka desimal buat dibulatkan.`;
+                return;
+            }
+
+            let parts = valStr.split('.');
+            let integerPart = parts[0] === '' ? '0' : parts[0];
+            let decimalPart = parts[1];
+
+            if(decimals >= decimalPart.length) {
+                let padded = parseFloat(rawStr).toFixed(decimals);
+                stepBox.innerHTML = `Jumlah di belakang koma yang diminta (${decimals}) sudah sama atau melebihi angka asli.<br>Hasilnya: <b>${padded}</b>`;
+                return;
+            }
+
+            let keptStr = integerPart + '.' + decimalPart.substring(0, decimals);
+            let targetDigitStr = decimals === 0 ? integerPart.slice(-1) : decimalPart[decimals - 1];
+            let targetDigit = parseInt(targetDigitStr) || 0; 
+            
+            let dropDigit = parseInt(decimalPart[decimals]);
+            let restDropDigits = decimalPart.substring(decimals + 1);
+            let hasMoreNonZero = restDropDigits.split('').some(d => d !== '0');
+
+            let ruleUsed = '';
+            let isRoundUp = false;
+
+            if (dropDigit > 5) {
+                isRoundUp = true;
+                ruleUsed = `Angka pertama yang dibuang (<b>${dropDigit}</b>) lebih dari 5, jadi angka di depannya dibulatkan ke <b>ATAS</b> (+1).`;
+            } else if (dropDigit < 5) {
+                isRoundUp = false;
+                ruleUsed = `Angka pertama yang dibuang (<b>${dropDigit}</b>) kurang dari 5, jadi angkanya langsung di<b>BUANG</b> (TETAP).`;
+            } else {
+                if (hasMoreNonZero) {
+                     isRoundUp = true;
+                     ruleUsed = `Angka yang dibuang adalah <b>5</b> tapi di belakangnya masih ada angka yang bukan nol. Jadi dibulatkan ke <b>ATAS</b> (+1).`;
+                } else {
+                    if (targetDigit % 2 !== 0) {
+                        isRoundUp = true;
+                        ruleUsed = `Angka yang dibuang tepat <b>5</b>. Cek angka di depannya (<b>${targetDigit}</b>) bernilai <b>GANJIL</b> &rarr; Maka dibulatkan ke <b>ATAS</b> (+1).`;
+                    } else {
+                        isRoundUp = false;
+                        ruleUsed = `Angka yang dibuang tepat <b>5</b>. Cek angka di depannya (<b>${targetDigit}</b>) bernilai <b>GENAP</b> &rarr; Maka dibiarkan <b>TETAP</b> (Dibuang saja).`;
+                    }
+                }
+            }
+
+            let baseVal = parseFloat(keptStr);
+            let finalVal = baseVal;
+            if (isRoundUp) {
+                let addFactor = decimals === 0 ? 1 : Math.pow(10, -decimals);
+                finalVal = Math.round((baseVal + addFactor) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+            }
+            
+            if (isNegative) finalVal = -finalVal;
+            let finalStr = finalVal.toFixed(decimals);
+
+            let vizOrig = integerPart + '.';
+            if (decimals > 0) vizOrig += decimalPart.substring(0, decimals - 1);
+            if (decimals === 0) vizOrig = integerPart.slice(0, -1);
+            
+            let signViz = isNegative ? '-' : '';
+            let vizTarget = `<span style="color: #00d8ff; font-weight:bold; border-bottom: 2px solid #00d8ff;">${targetDigitStr}</span>`;
+            let vizDrop = `<span style="color: #ff3366; font-weight:bold; border-left: 1px dashed #666; padding-left: 2px;">${dropDigit}</span>`;
+            let vizRest = `<span style="color: #6b7280;">${restDropDigits}</span>`;
+
+            let html = `
+                <div style="text-align:center; font-family:var(--font-mono); font-size:1.8rem; margin-bottom:10px; background:#111; padding:10px; border-radius:4px; letter-spacing:2px; overflow-wrap:break-word;">
+                    ${signViz}${vizOrig}${vizTarget}${decimals === 0 && decimalPart.length > 0 ? '.' : ''}${vizDrop}${vizRest}
+                </div>
+                <div style="margin-bottom: 15px; color: var(--text-main); font-size: 0.95rem;">${ruleUsed}</div>
+                <div class="step-result" style="color:#d946ef; border-color:rgba(217, 70, 239, 0.3); font-size: 1.3rem;">
+                    Hasil Akhir = <b>${finalStr}</b>
+                </div>
+            `;
+            stepBox.innerHTML = html;
+            // renderMath() DIHAPUS agar performa slider (drag range) di modul pembulatan sangat responsif
+        }
+
+        let roundQuizData = [
+            { q: 2.45, a: 2.4, wa: 2.5, rule: "Angka sebelum 5 bernilai GENAP (4). Aturannya langsung dibuang saja tanpa dinaikkan." },
+            { q: 2.35, a: 2.4, wa: 2.3, rule: "Angka sebelum 5 bernilai GANJIL (3). Aturannya harus dibulatkan ke atas." },
+            { q: 1.25, a: 1.2, wa: 1.3, rule: "Angka sebelum 5 bernilai GENAP (2). Aturannya langsung dibuang saja." },
+            { q: 1.75, a: 1.8, wa: 1.7, rule: "Angka sebelum 5 bernilai GANJIL (7). Aturannya harus dibulatkan ke atas." },
+            { q: 2.451, a: 2.5, wa: 2.4, rule: "Angka yang dibuang memang 5, TAPI di belakangnya masih ada angka '1'. Maka aturannya selalu dibulatkan ke atas." },
+            { q: 6.85, a: 6.8, wa: 6.9, rule: "Angka sebelum 5 bernilai GENAP (8). Langsung potong saja!" }
+        ];
+        let curQIdx = 0;
+
+        function loadRoundQuiz() {
+            let data = roundQuizData[curQIdx];
+            document.getElementById('round-quiz-q').innerText = data.q;
+            
+            let btns = [data.a, data.wa].sort(() => Math.random() - 0.5);
+            let btnContainer = document.getElementById('round-quiz-btns');
+            btnContainer.innerHTML = `
+                <button class="btn" onclick="checkRoundQuiz(${btns[0]})" style="font-size: 1.5rem; padding: 10px 30px;">${btns[0]}</button>
+                <button class="btn" onclick="checkRoundQuiz(${btns[1]})" style="font-size: 1.5rem; padding: 10px 30px;">${btns[1]}</button>
+            `;
+            document.getElementById('round-quiz-feedback').innerHTML = '';
+            document.getElementById('round-quiz-next').style.display = 'none';
+        }
+
+        function checkRoundQuiz(ans) {
+            let data = roundQuizData[curQIdx];
+            let fb = document.getElementById('round-quiz-feedback');
+            if(ans === data.a) {
+                fb.innerHTML = `<span style="color:var(--vivid-green);">✅ Benar Banget!</span> <br><span style="font-size:0.9rem; color:var(--text-muted); font-weight:normal;">Alasan: ${data.rule}</span>`;
+                document.getElementById('round-quiz-next').style.display = 'inline-block';
+            } else {
+                fb.innerHTML = `<span style="color:var(--danger-red);">❌ Coba ingat lagi.</span><br><span style="font-size:0.9rem; color:var(--text-muted); font-weight:normal;">Ingat aturan angka ganjil/genap persis sebelum angka 5!</span>`;
+                document.getElementById('round-quiz-next').style.display = 'none';
+            }
+        }
+        
+        function nextRoundQuiz() {
+            curQIdx = (curQIdx + 1) % roundQuizData.length;
+            loadRoundQuiz();
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.onload = () => {
+            processAPDetector(); 
+            runConverter();      
+            processRounding();   
+            loadRoundQuiz();     
+            calcError();         
+            updateRelCalc();     
+            drawArchery();       
+        };
+    </script>
+</body>
+</html>
