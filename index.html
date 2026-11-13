@@ -2,7 +2,7 @@
 <html lang="id" class="">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta id="viewport-meta" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e40af">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -55,7 +55,7 @@
             </div>
 
             <!-- Menu Desktop -->
-            <nav class="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300">
                 <button onclick="navigate('home')" class="px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-sky-400 transition">Beranda</button>
                 
                 <div class="relative group">
@@ -99,16 +99,25 @@
                 </button>
             </nav>
 
-            <!-- Kontrol Tema, Layar Penuh, Install PWA & Akun -->
+            <!-- Kontrol Tema, Mode Layar (Desktop/HP), Layar Penuh, Install PWA & Akun -->
             <div class="flex items-center gap-1.5 sm:gap-2">
+                <!-- Tombol Ubah Mode Desktop / Mode HP (Global) -->
+                <button onclick="toggleViewportMode()" id="btn-nav-viewport" title="Ubah ke Mode HP / Desktop" class="h-9 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-sky-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5 text-xs font-semibold transition">
+                    <i id="nav-viewport-icon" class="fa-solid fa-mobile-screen-button"></i>
+                    <span id="nav-viewport-label" class="hidden sm:inline">Mode HP</span>
+                </button>
+
+                <!-- Tombol Tema Gelap / Terang -->
                 <button onclick="toggleTheme()" id="btn-theme-toggle" title="Ubah Tema Gelap / Terang" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
 
+                <!-- Tombol Layar Penuh -->
                 <button onclick="requestAppFullscreen()" id="btn-fullscreen" title="Mode Layar Penuh" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
                     <i id="fullscreen-icon" class="fa-solid fa-expand"></i>
                 </button>
 
+                <!-- Tombol Install PWA -->
                 <button id="btn-install-pwa" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Install App</span>
                 </button>
@@ -119,7 +128,7 @@
     </header>
 
     <!-- KONTEN UTAMA -->
-    <main class="max-w-7xl mx-auto px-4 pt-5">
+    <main id="main-container" class="max-w-7xl mx-auto px-4 pt-5 transition-all duration-300">
 
         <!-- BANNER STATUS SISWA, LENCANA & PROGRES -->
         <div id="student-banner" class="mb-5"></div>
@@ -200,18 +209,23 @@
                     </div>
 
                     <div class="flex items-center flex-wrap gap-2">
+                        <!-- Tombol Split-Screen Simulator Pendamping -->
                         <button id="btn-toggle-split" onclick="toggleSplitScreen()" class="hidden text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-lg transition">
                             <i class="fa-solid fa-table-columns mr-1"></i> <span>Buka Simulator Pendamping</span>
                         </button>
 
+                        <!-- Tombol Pintasan Tutor AI -->
                         <a id="btn-floating-ai" href="#" target="_blank" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-2 rounded-lg transition">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Tanya Tutor AI
                         </a>
 
-                        <a id="btn-open-external" href="#" target="_blank" title="Buka di Tab Baru" class="text-xs bg-white/15 hover:bg-white/25 px-2.5 py-2 rounded-lg transition">
-                            <i class="fa-solid fa-up-right-from-square"></i>
-                        </a>
+                        <!-- Tombol Ubah ke Mode Desktop / Mode HP (Pengganti Pintasan Tab Baru) -->
+                        <button id="btn-content-viewport" onclick="toggleViewportMode()" title="Ubah Tampilan Mode Desktop / Mode HP" class="text-xs bg-sky-600 hover:bg-sky-700 text-white font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <i id="content-viewport-icon" class="fa-solid fa-mobile-screen-button"></i>
+                            <span id="content-viewport-label">Mode HP</span>
+                        </button>
 
+                        <!-- Tombol Tutup -->
                         <button onclick="backFromContent()" class="text-xs bg-rose-600 hover:bg-rose-700 px-3 py-2 rounded-lg font-semibold transition">
                             <i class="fa-solid fa-xmark mr-1"></i> Tutup
                         </button>
@@ -234,7 +248,7 @@
                         <iframe id="companion-sim-iframe" src="" class="w-full h-[45vh] lg:h-[72vh] border-0" loading="lazy"></iframe>
                     </div>
 
-                    <div id="content-body" class="w-full"></div>
+                    <div id="content-body" class="w-full transition-all duration-300"></div>
                 </div>
 
                 <div id="next-step-footer" class="p-3.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
@@ -250,7 +264,7 @@
     </main>
 
     <!-- BOTTOM NAVIGATION BAR (KHUSUS MOBILE) -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-darkcard border-t border-slate-200 dark:border-slate-700 flex justify-around items-center h-16 px-1 shadow-lg">
+    <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-darkcard border-t border-slate-200 dark:border-slate-700 flex justify-around items-center h-16 px-1 shadow-lg">
         <button onclick="navigate('home')" class="flex flex-col items-center justify-center text-blue-700 dark:text-sky-400 text-[11px] font-semibold w-full h-full">
             <i class="fa-solid fa-house text-base mb-0.5"></i>
             <span>Beranda</span>
@@ -355,8 +369,8 @@
                 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex gap-3 items-start">
                     <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center shrink-0">3</span>
                     <div>
-                        <strong class="block text-sm">Simpan Offline & Layar Penuh</strong>
-                        <span class="text-slate-500 dark:text-slate-400">Gunakan ikon <strong>Install App</strong> atau tombol <strong>Simpan Offline</strong> pada tiap bab untuk belajar tanpa kuota.</span>
+                        <strong class="block text-sm">Mode Desktop / HP & Layar Penuh</strong>
+                        <span class="text-slate-500 dark:text-slate-400">Gunakan tombol <strong>Mode Desktop / Mode HP</strong> untuk menyesuaikan tampilan sesuai kenyamanan perangkat Anda.</span>
                     </div>
                 </div>
             </div>
@@ -557,14 +571,17 @@
         ];
 
         // =========================================================================
-        // 2. STATE APLIKASI, TEMA GELAP/TERANG & PAKSA LAYAR PENUH
+        // 2. STATE APLIKASI, TEMA, MODE DESKTOP/HP & PAKSA LAYAR PENUH
         // =========================================================================
+        const isNativeMobileDevice = () => window.screen.width < 768;
+
         let state = {
             user: JSON.parse(localStorage.getItem('sipintar_user')) || null,
             progress: JSON.parse(localStorage.getItem('sipintar_progress')) || {},
             lastActivity: JSON.parse(localStorage.getItem('sipintar_last_activity')) || null,
             cachedTopics: JSON.parse(localStorage.getItem('sipintar_cached_topics')) || [],
             theme: localStorage.getItem('sipintar_theme') || 'light',
+            viewportMode: localStorage.getItem('sipintar_viewport_mode') || (isNativeMobileDevice() ? 'mobile' : 'desktop'),
             filterKelas: 'ALL',
             currentTopic: null,
             currentCategory: null,
@@ -572,6 +589,62 @@
             splitActive: false,
             fullscreenEnforced: true
         };
+
+        // --- Pengalih Mode Desktop & Mode HP ---
+        function applyViewportMode(mode) {
+            state.viewportMode = mode;
+            localStorage.setItem('sipintar_viewport_mode', mode);
+
+            const meta = document.getElementById('viewport-meta');
+            const mainEl = document.getElementById('main-container');
+            const contentBody = document.getElementById('content-body');
+            const bottomNav = document.getElementById('mobile-bottom-nav');
+
+            const navIcon = document.getElementById('nav-viewport-icon');
+            const navLabel = document.getElementById('nav-viewport-label');
+            const contentIcon = document.getElementById('content-viewport-icon');
+            const contentLabel = document.getElementById('content-viewport-label');
+
+            if (mode === 'mobile') {
+                // Terapkan viewport mobile standar
+                if (meta) {
+                    meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                }
+                // Jika dibuka di layar lebar (Desktop/Laptop), batasi wadah menyerupai layar HP
+                if (!isNativeMobileDevice()) {
+                    mainEl.className = 'max-w-[430px] mx-auto px-3 pt-4 transition-all duration-300';
+                    if (contentBody) {
+                        contentBody.className = 'w-full max-w-[412px] mx-auto border-x-4 border-slate-700 shadow-2xl transition-all duration-300';
+                    }
+                    bottomNav.classList.remove('md:hidden');
+                    bottomNav.classList.add('flex');
+                }
+                // Tombol menampilkan opsi untuk beralih ke Mode Desktop
+                if (navIcon) navIcon.className = 'fa-solid fa-desktop';
+                if (navLabel) navLabel.textContent = 'Mode Desktop';
+                if (contentIcon) contentIcon.className = 'fa-solid fa-desktop';
+                if (contentLabel) contentLabel.textContent = 'Mode Desktop';
+            } else {
+                // Terapkan viewport Desktop (1024px) agar HP pun menampilkan tata letak desktop utuh
+                if (meta) {
+                    meta.setAttribute('content', 'width=1024, initial-scale=0.38');
+                }
+                mainEl.className = 'max-w-7xl mx-auto px-4 pt-5 transition-all duration-300';
+                if (contentBody) {
+                    contentBody.className = 'w-full transition-all duration-300';
+                }
+                bottomNav.classList.add('md:hidden');
+                // Tombol menampilkan opsi untuk beralih ke Mode HP
+                if (navIcon) navIcon.className = 'fa-solid fa-mobile-screen-button';
+                if (navLabel) navLabel.textContent = 'Mode HP';
+                if (contentIcon) contentIcon.className = 'fa-solid fa-mobile-screen-button';
+                if (contentLabel) contentLabel.textContent = 'Mode HP';
+            }
+        }
+
+        function toggleViewportMode() {
+            applyViewportMode(state.viewportMode === 'desktop' ? 'mobile' : 'desktop');
+        }
 
         // --- Tema Gelap / Terang ---
         function applyTheme(themeName) {
@@ -1162,7 +1235,6 @@
 
             document.getElementById('content-badge').textContent = `${stageObj?.step || ''} • ${categoryName}`;
             document.getElementById('content-title').textContent = item.nama;
-            document.getElementById('btn-open-external').href = finalUrl;
             document.getElementById('btn-floating-ai').href = topic.aiUrl || 'https://gemini.google.com/';
 
             const splitBtn = document.getElementById('btn-toggle-split');
@@ -1191,9 +1263,10 @@
             }
 
             document.getElementById('content-body').innerHTML = `
-                <iframe src="${finalUrl}" class="w-full h-[72vh] border-0" allow="camera; microphone; fullscreen" loading="lazy"></iframe>
+                <iframe src="${finalUrl}" class="w-full h-[74vh] border-0" allow="camera; microphone; fullscreen" loading="lazy"></iframe>
             `;
 
+            applyViewportMode(state.viewportMode);
             updateNextStageButton(topic, categoryName, itemIndex);
             navigate('content');
         }
@@ -1271,7 +1344,6 @@
             state.currentCategory = null;
             document.getElementById('content-badge').textContent = 'Analitik Real-Time';
             document.getElementById('content-title').textContent = 'Dashboard & Papan Skor Si-PINTAR';
-            document.getElementById('btn-open-external').href = CONFIG.DASHBOARD_URL;
             document.getElementById('btn-toggle-split').classList.add('hidden');
             document.getElementById('companion-sim-pane').classList.add('hidden');
             document.getElementById('auto-identity-banner').classList.add('hidden');
@@ -1280,6 +1352,7 @@
             document.getElementById('content-body').innerHTML = `
                 <iframe src="${CONFIG.DASHBOARD_URL}" class="w-full h-[78vh] border-0" loading="lazy"></iframe>
             `;
+            applyViewportMode(state.viewportMode);
             navigate('content');
         }
 
@@ -1398,6 +1471,7 @@
 
         // Inisialisasi awal
         applyTheme(state.theme);
+        applyViewportMode(state.viewportMode);
         renderAuthUI();
         renderTopicsGrid();
         if (!localStorage.getItem('sipintar_onboarded')) {
