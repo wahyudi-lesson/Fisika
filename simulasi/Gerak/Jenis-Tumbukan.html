@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collision Matrix Lab: Jenis Tumbukan & Restitusi</title>
+    
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0a0e17;
+            --bg-panel: #111827;
+            --bg-card: #1f2937;
+            --cyan-neon: #00e5ff;
+            --magenta-neon: #ff00ff;
+            --emerald-green: #00ff66;
+            --amber-neon: #ffaa00;
+            --crimson-red: #ff3333;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --grid-line: rgba(0, 229, 255, 0.05);
+            --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER */
+        header {
+            text-align: center; padding: 30px 20px; background: var(--bg-panel);
+            border: 1px solid #1e293b; border-radius: 12px; border-top: 4px solid var(--emerald-green);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 255, 102, 0.05);
+        }
+        header h1 { color: var(--text-main); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.2); margin-bottom: 5px; }
+        header h1 span { color: var(--emerald-green); text-shadow: 0 0 15px rgba(0, 255, 102, 0.4); }
+        header p { color: var(--text-muted); font-size: 1.05rem; }
+
+        /* GRIDS & PANELS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid #1e293b; border-radius: 10px;
+            padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;
+        }
+        .panel-title { font-size: 1.25rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .info-box { background: rgba(255,255,255,0.03); border-left: 3px solid var(--cyan-neon); padding: 12px; font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--text-main); }
+
+        /* CANVAS CONTAINERS */
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #334155; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* BUTTONS */
+        .btn {
+            width: 100%; padding: 12px; background: #1e293b; color: var(--text-main); 
+            border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: #334155; }
+        .btn-action { border-color: var(--cyan-neon); color: var(--cyan-neon); background: rgba(0, 229, 255, 0.1); }
+        .btn-action:hover { background: rgba(0, 229, 255, 0.2); box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+        .btn-play { background: var(--emerald-green); color: #000; border-color: var(--emerald-green); }
+        .btn-play:hover { background: #00cc52; box-shadow: 0 0 15px rgba(0, 255, 102, 0.4); }
+
+        .preset-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-preset { flex: 1; padding: 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; border: 1px solid #334155; background: #0f172a; color: var(--text-muted); transition: 0.2s; }
+        .btn-preset:hover { background: #1e293b; }
+        .btn-preset.active { background: rgba(0, 255, 102, 0.15); border-color: var(--emerald-green); color: var(--emerald-green); box-shadow: 0 0 10px rgba(0, 255, 102, 0.3); }
+
+        /* SLIDERS & CONTROLS */
+        .slider-box { background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); font-family: var(--font-mono); }
+        .slider-val { font-weight: bold; color: var(--text-main); }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text-main); cursor: pointer; }
+        .s-cyan::-webkit-slider-thumb { background: var(--cyan-neon); box-shadow: 0 0 10px var(--cyan-neon); }
+        .s-magenta::-webkit-slider-thumb { background: var(--magenta-neon); box-shadow: 0 0 10px var(--magenta-neon); }
+        .s-emerald::-webkit-slider-thumb { background: var(--emerald-green); box-shadow: 0 0 10px var(--emerald-green); }
+
+        /* TELEMETRY & BAR CHARTS */
+        .telemetry-row { display: flex; justify-content: space-between; align-items: center; background: #000; border: 1px dashed #334155; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-family: var(--font-mono); }
+        .tel-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
+        .tel-val { font-size: 1.1rem; font-weight: bold; }
+        
+        .bar-container { width: 100%; background: #0f172a; height: 24px; border-radius: 4px; overflow: hidden; position: relative; border: 1px solid #334155; margin-top: 5px; }
+        .bar-fill { height: 100%; transition: width 0.3s ease; display: flex; align-items: center; padding-left: 10px; font-size: 0.75rem; font-weight: bold; color: #000; }
+        .bar-cyan { background: var(--cyan-neon); }
+        .bar-magenta { background: var(--magenta-neon); }
+        .bar-emerald { background: var(--emerald-green); }
+        .bar-crimson { background: var(--crimson-red); }
+
+        .c-cyan { color: var(--cyan-neon); }
+        .c-magenta { color: var(--magenta-neon); }
+        .c-emerald { color: var(--emerald-green); }
+        .c-amber { color: var(--amber-neon); }
+        .c-crimson { color: var(--crimson-red); }
+
+        /* MATH & INFO PANELS */
+        .math-box { background: #000; border: 1px dashed var(--text-muted); padding: 15px; border-radius: 8px; text-align: center; color: var(--text-main); margin-bottom: 15px; overflow-x: auto; font-size: 1.05rem; }
+        
+        .dynamic-card { background: linear-gradient(135deg, var(--bg-card), #111827); border: 1px solid #334155; padding: 15px; border-radius: 8px; }
+        .dynamic-card h3 { font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px; background: var(--bg-card); }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: left; }
+        th { background: #1e293b; color: var(--emerald-green); }
+
+        /* GAME OVERLAY */
+        .game-panel { border-color: var(--amber-neon); background: linear-gradient(180deg, var(--bg-panel), #1a1500); }
+        .game-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; border-radius: 8px; text-align: center; padding: 20px;}
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .math-buffer { position: absolute; visibility: hidden; pointer-events: none; top: -9999px; }
+
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Collision Matrix <span>Lab</span></h1>
+            <p>Eksplorasi Kekekalan Momentum, Perubahan Energi Kinetik & Koefisien Restitusi ($e$)</p>
+        </header>
+
+        <!-- APERSEPSI -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--amber-neon);">🏀 Apersepsi: Eksperimen Pembalan Benda</h2>
+            <div class="info-box" style="border-color: var(--amber-neon);">
+                Tiga buah benda berbeda dijatuhkan dari ketinggian $h$ yang sama ke lantai. Perhatikan perbedaan tinggi pantulan berdasarkan tingkat kelentingannya (Koefisien Restitusi / $e$).
+            </div>
+            
+            <div class="grid-2">
+                <div class="canvas-container" style="height: 250px;">
+                    <canvas id="apersepsiCanvas"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <button class="btn btn-action" style="border-color: var(--amber-neon); color: var(--amber-neon);" onclick="playApersepsi()">JATUHKAN KETIGA BOLA!</button>
+                    <div id="aper-popup" class="info-box" style="margin-top: 15px; border-color: var(--crimson-red); display: none;">
+                        <span class="c-amber" style="font-weight: bold; font-size: 1.1rem;">Apa yang terjadi pada Plastisin?</span><br>
+                        Nilai Koefisien Restitusi ($e$) menentukan kelentingan. Pada tumbukan tidak lenting ($e = 0$), Energi Kinetik terbuang maksimal menjadi <strong>energi deformasi bentuk (pipih) dan panas!</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- MODUL UTAMA: KONTROL -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-neon);">☄️ Simulator Tumbukan 1-Dimensi</h2>
+                
+                <div class="preset-group">
+                    <button class="btn-preset active" id="pre-1" onclick="setPreset(1)">Lenting Sempurna ($e=1$)</button>
+                    <button class="btn-preset" id="pre-05" onclick="setPreset(0.5)">Lenting Sebagian ($e=0.5$)</button>
+                    <button class="btn-preset" id="pre-0" onclick="setPreset(0)">Tidak Lenting ($e=0$)</button>
+                </div>
+
+                <div class="slider-box" style="border-color: rgba(0,255,102,0.3);">
+                    <div class="slider-label"><span>Koefisien Restitusi ($e$)</span> <span class="slider-val c-emerald" id="val-e">1.00</span></div>
+                    <input type="range" class="s-emerald" id="slider-e" min="0" max="1" step="0.05" value="1" oninput="updateControls()">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Massa 1 ($m_1$)</span> <span class="slider-val c-cyan" id="val-m1">2.0 kg</span></div>
+                            <input type="range" class="s-cyan" id="slider-m1" min="0.5" max="10" step="0.5" value="2" oninput="updateControls()">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Kec. Awal 1 ($v_1$)</span> <span class="slider-val c-cyan" id="val-v1">5.0 m/s</span></div>
+                            <input type="range" class="s-cyan" id="slider-v1" min="-20" max="20" step="1" value="5" oninput="updateControls()">
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Massa 2 ($m_2$)</span> <span class="slider-val c-magenta" id="val-m2">3.0 kg</span></div>
+                            <input type="range" class="s-magenta" id="slider-m2" min="0.5" max="10" step="0.5" value="3" oninput="updateControls()">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Kec. Awal 2 ($v_2$)</span> <span class="slider-val c-magenta" id="val-v2">-3.0 m/s</span></div>
+                            <input type="range" class="s-magenta" id="slider-v2" min="-20" max="20" step="1" value="-3" oninput="updateControls()">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-play" id="btn-sim" onclick="toggleSim()">Jalankan Tumbukan</button>
+                    <button class="btn" style="width: auto; padding: 12px 20px;" onclick="resetSim()">Reset</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="canvas-container" style="height: 180px;">
+                    <canvas id="simCanvas"></canvas>
+                </div>
+
+                <div class="telemetry-row" style="margin-bottom: 5px;">
+                    <span class="tel-label">Momentum Total ($\Sigma P$)</span>
+                    <span class="tel-val c-emerald" id="tel-p">0.00 kg·m/s</span>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Sebelum:</div>
+                    <div class="bar-container"><div class="bar-fill bar-emerald" id="bar-p-in" style="width: 50%;"></div></div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Sesudah (SEALALU KEKAL):</div>
+                    <div class="bar-container"><div class="bar-fill bar-emerald" id="bar-p-out" style="width: 50%;"></div></div>
+                </div>
+
+                <div class="telemetry-row" style="margin-bottom: 5px; margin-top: 15px;">
+                    <span class="tel-label">Energi Kinetik Total ($\Sigma E_k$)</span>
+                    <span class="tel-val c-amber" id="tel-ek">0.00 J</span>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Sebelum:</div>
+                    <div class="bar-container"><div class="bar-fill bar-amber" id="bar-ek-in" style="width: 100%; background: var(--amber-neon);"></div></div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Sesudah (Tergantung Nilai $e$):</div>
+                    <div class="bar-container"><div class="bar-fill bar-crimson" id="bar-ek-out" style="width: 100%;"></div></div>
+                </div>
+                
+                <div style="text-align: right; font-size: 0.85rem; margin-top: 5px; color: var(--crimson-red); font-weight: bold;">
+                    $\Delta E_k$ (Hilang): <span id="tel-loss">0.00 J</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--text-main);">📚 Analisis Matematis</h2>
+                
+                <div class="math-box">
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Kekekalan Momentum (Selalu Berlaku)</div>
+                    $m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'$
+                </div>
+                
+                <div class="math-box">
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Koefisien Restitusi</div>
+                    $e = -\frac{v_2' - v_1'}{v_2 - v_1}$
+                </div>
+
+                <div class="math-box" style="font-size: 0.95rem;">
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Kecepatan Akhir Pasca-Tumbukan</div>
+                    $$v_1' = \frac{(m_1 - e \cdot m_2)v_1 + m_2(1 + e)v_2}{m_1 + m_2}$$
+                    $$v_2' = \frac{m_1(1 + e)v_1 + (m_2 - e \cdot m_1)v_2}{m_1 + m_2}$$
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="dynamic-card" id="info-card">
+                    <h3 id="ic-title" class="c-emerald">Lenting Sempurna ($e = 1$)</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;" id="ic-desc">
+                        100% Energi Kinetik dipertahankan. Tidak ada energi yang terbuang menjadi panas atau bentuk lainnya.
+                    </p>
+                    <div style="font-size: 0.85rem;">
+                        <strong style="color: var(--text-main);">Dampak:</strong> <span id="ic-dampak">Benda memantul kembali secara utuh tanpa kerusakan fisik.</span><br><br>
+                        <strong style="color: var(--text-main);">Penerapan:</strong> <span id="ic-penerapan">Tumbukan antar partikel gas ideal, permainan bola biliar presisi tinggi.</span>
+                    </div>
+                </div>
+
+                <div class="panel game-panel" style="flex: 1;">
+                    <h2 class="panel-title" style="color: var(--amber-neon);">🚙 Mini-Game: Crash Test Safety</h2>
+                    <p style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px;">
+                        <strong>Misi:</strong> Mobil Anda ($m_1=1200\text{kg}$) menabrak rintangan diam ($m_2=2000\text{kg}$). Atur struktur kelentingan (nilai $e$) pada panel utama agar mobil <b>menyerap energi kinetik benturan semaksimal mungkin ($\Delta E_k \rightarrow$ tinggi)</b> sehingga gaya hantaman ke penumpang minimal!
+                    </p>
+
+                    <div class="canvas-container" style="height: 120px; margin-bottom: 15px;">
+                        <canvas id="gameCanvas"></canvas>
+                    </div>
+
+                    <button class="btn btn-action" style="border-color: var(--amber-neon); color: var(--amber-neon);" onclick="startCrashTest()">UJI TABRAK SEKARANG</button>
+                    
+                    <div class="game-overlay" id="game-overlay">
+                        <div class="game-msg" id="game-msg" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Hasil Uji Tabrak</div>
+                        <p id="game-desc" style="color: var(--text-main); margin-bottom: 20px; font-size: 1.1rem; max-width: 90%;"></p>
+                        <button class="btn btn-action" style="width: auto; padding: 10px 30px;" onclick="closeGame()">Tutup & Evaluasi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">📊 Matriks Karakteristik Tumbukan</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Lenting Sempurna</th>
+                            <th>Lenting Sebagian</th>
+                            <th>Tidak Lenting Sama Sekali</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: bold;">Nilai Restitusi ($e$)</td>
+                            <td class="c-emerald">$e = 1$</td>
+                            <td class="c-amber">$0 < e < 1$</td>
+                            <td class="c-crimson">$e = 0$</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Kekekalan Momentum</td>
+                            <td>Berlaku ($P_{\text{awal}} = P_{\text{akhir}}$)</td>
+                            <td>Berlaku ($P_{\text{awal}} = P_{\text{akhir}}$)</td>
+                            <td>Berlaku ($P_{\text{awal}} = P_{\text{akhir}}$)</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Kekekalan Energi Kinetik</td>
+                            <td class="c-emerald">Berlaku ($E_{k,\text{awal}} = E_{k,\text{akhir}}$)</td>
+                            <td class="c-amber">Tidak Berlaku ($E_{k,\text{akhir}} < E_{k,\text{awal}}$)</td>
+                            <td class="c-crimson">Hilang Maksimal ($\Delta E_k = \max$)</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Kondisi Pasca Benturan</td>
+                            <td>Membal sempurna, bentuk utuh</td>
+                            <td>Membal dengan $v_{\text{relatif}}$ berkurang</td>
+                            <td>Benda menyatu & bergerak bersama ($v_1' = v_2'$)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="math-buffer" class="math-buffer"></div>
+
+    <script>
+        function resizeCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            return canvas.getContext('2d');
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width=3, label="") {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const len = Math.hypot(dx, dy);
+            if (len < 1) return; 
+
+            ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = color; ctx.fill();
+
+            if (label !== "") {
+                ctx.fillStyle = color; ctx.font = 'bold 12px monospace';
+                let lx = toX + 15 * Math.cos(angle); let ly = toY + 15 * Math.sin(angle) + 5;
+                ctx.textAlign = 'center'; ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+            }
+        }
+
+        let isRenderingMath = false;
+        function updateMathLive() {
+            if (!window.MathJax || typeof MathJax.typesetPromise !== 'function') return;
+            if (isRenderingMath) return;
+            isRenderingMath = true;
+            MathJax.typesetPromise().then(() => { isRenderingMath = false; }).catch(() => { isRenderingMath = false; });
+        }
+
+        const ctxAper = resizeCanvas('apersepsiCanvas');
+        let aper = { playing: false, t: 0, balls: [] };
+
+        function initApersepsiBalls() {
+            const w = ctxAper.canvas.width; const h = ctxAper.canvas.height;
+            aper.balls = [
+                { id: 'Biliar', e: 0.95, color: '#00ff66', x: w/4, y: 30, vy: 0, r: 15, scaleY: 1 },
+                { id: 'Basket', e: 0.70, color: '#ffaa00', x: 2*w/4, y: 30, vy: 0, r: 15, scaleY: 1 },
+                { id: 'Tanah Liat', e: 0.00, color: '#ff3333', x: 3*w/4, y: 30, vy: 0, r: 15, scaleY: 1 }
+            ];
+            drawApersepsi(true);
+        }
+
+        function playApersepsi() {
+            if(aper.playing) return;
+            document.getElementById('aper-popup').style.display = 'none';
+            initApersepsiBalls();
+            aper.playing = true;
+            aper.t = 0;
+            requestAnimationFrame(loopApersepsi);
+        }
+
+        function loopApersepsi() {
+            if(!aper.playing) return;
+            const w = ctxAper.canvas.width; const h = ctxAper.canvas.height;
+            const floorY = h - 30;
+            const g = 0.5;
+
+            let allStopped = true;
+
+            ctxAper.clearRect(0, 0, w, h);
+            drawApersepsiGround(w, h, floorY);
+
+            aper.balls.forEach(b => {
+                b.vy += g;
+                b.y += b.vy;
+
+                if (b.y + b.r * b.scaleY >= floorY) {
+                    b.y = floorY - b.r * b.scaleY;
+                    b.vy = -b.vy * b.e;
+                    
+                    // Deformation logic for e=0
+                    if(b.e === 0 && Math.abs(b.vy) < 1) {
+                        b.scaleY = 0.5; // Squish
+                        b.vy = 0;
+                    }
+                }
+
+                // Check if still moving
+                if (Math.abs(b.vy) > 0.5 || b.y < floorY - b.r - 2) allStopped = false;
+
+                // Draw Ball
+                ctxAper.save();
+                ctxAper.translate(b.x, b.y);
+                ctxAper.scale(1, b.scaleY);
+                ctxAper.beginPath(); ctxAper.arc(0, 0, b.r, 0, Math.PI*2);
+                ctxAper.fillStyle = b.color; ctxAper.fill();
+                ctxAper.lineWidth = 2; ctxAper.strokeStyle = '#fff'; ctxAper.stroke();
+                ctxAper.restore();
+
+                // Draw Label
+                ctxAper.fillStyle = '#fff'; ctxAper.font = '10px sans-serif'; ctxAper.textAlign = 'center';
+                ctxAper.fillText(b.id, b.x, b.y - b.r - 10);
+                ctxAper.fillText(`e=${b.e.toFixed(2)}`, b.x, b.y - b.r - 22);
+            });
+
+            if (allStopped) {
+                aper.playing = false;
+                document.getElementById('aper-popup').style.display = 'block';
+            } else {
+                requestAnimationFrame(loopApersepsi);
+            }
+        }
+
+        function drawApersepsi(isStatic = false) {
+            const w = ctxAper.canvas.width; const h = ctxAper.canvas.height;
+            const floorY = h - 30;
+            ctxAper.clearRect(0, 0, w, h);
+            drawApersepsiGround(w, h, floorY);
+            
+            if(isStatic) {
+                aper.balls.forEach(b => {
+                    ctxAper.beginPath(); ctxAper.arc(b.x, b.y, b.r, 0, Math.PI*2);
+                    ctxAper.fillStyle = b.color; ctxAper.fill();
+                    ctxAper.lineWidth = 2; ctxAper.strokeStyle = '#fff'; ctxAper.stroke();
+                    ctxAper.fillStyle = '#fff'; ctxAper.font = '10px sans-serif'; ctxAper.textAlign = 'center';
+                    ctxAper.fillText(b.id, b.x, b.y - b.r - 10);
+                    ctxAper.fillText(`e=${b.e.toFixed(2)}`, b.x, b.y - b.r - 22);
+                });
+            }
+        }
+
+        function drawApersepsiGround(w, h, floorY) {
+            ctxAper.fillStyle = '#1e293b'; ctxAper.fillRect(0, floorY, w, h - floorY);
+            ctxAper.strokeStyle = '#334155'; ctxAper.beginPath(); ctxAper.moveTo(0, floorY); ctxAper.lineTo(w, floorY); ctxAper.stroke();
+        }
+
+        const ctxSim = resizeCanvas('simCanvas');
+        let sim = {
+            playing: false,
+            m1: 2, m2: 3, v1: 5, v2: -3, e: 1,
+            x1: 0, x2: 0, r1: 20, r2: 25,
+            v1_curr: 0, v2_curr: 0,
+            hasCollided: false,
+            p_in: 0, p_out: 0, ek_in: 0, ek_out: 0
+        };
+
+        function setPreset(val) {
+            document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+            if(val === 1) document.getElementById('pre-1').classList.add('active');
+            if(val === 0.5) document.getElementById('pre-05').classList.add('active');
+            if(val === 0) document.getElementById('pre-0').classList.add('active');
+            
+            document.getElementById('slider-e').value = val;
+            updateControls();
+        }
+
+        function updateControls() {
+            sim.playing = false;
+            sim.hasCollided = false;
+            
+            sim.m1 = parseFloat(document.getElementById('slider-m1').value);
+            sim.v1 = parseFloat(document.getElementById('slider-v1').value);
+            sim.m2 = parseFloat(document.getElementById('slider-m2').value);
+            sim.v2 = parseFloat(document.getElementById('slider-v2').value);
+            sim.e = parseFloat(document.getElementById('slider-e').value);
+
+            document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+            if (sim.e === 1) document.getElementById('pre-1').classList.add('active');
+            else if (sim.e === 0) document.getElementById('pre-0').classList.add('active');
+            else document.getElementById('pre-05').classList.add('active');
+
+            document.getElementById('val-m1').innerText = sim.m1.toFixed(1) + " kg";
+            document.getElementById('val-v1').innerText = sim.v1.toFixed(1) + " m/s";
+            document.getElementById('val-m2').innerText = sim.m2.toFixed(1) + " kg";
+            document.getElementById('val-v2').innerText = sim.v2.toFixed(1) + " m/s";
+            document.getElementById('val-e').innerText = sim.e.toFixed(2);
+
+            sim.v1_curr = sim.v1;
+            sim.v2_curr = sim.v2;
+
+            sim.r1 = 15 + sim.m1 * 2;
+            sim.r2 = 15 + sim.m2 * 2;
+            
+            const w = ctxSim.canvas.width;
+            sim.x1 = w * 0.2;
+            sim.x2 = w * 0.8;
+
+            calculateInitialPhysics();
+            updateDynamicInfoCard();
+            drawSimFrame();
+            
+            let btn = document.getElementById('btn-sim');
+            btn.innerText = "Jalankan Tumbukan";
+            btn.className = "btn btn-play";
+        }
+
+        function calculateInitialPhysics() {
+            sim.p_in = sim.m1 * sim.v1 + sim.m2 * sim.v2;
+            sim.ek_in = 0.5 * sim.m1 * sim.v1*sim.v1 + 0.5 * sim.m2 * sim.v2*sim.v2;
+            
+            let m1 = sim.m1; let m2 = sim.m2; let v1 = sim.v1; let v2 = sim.v2; let e = sim.e;
+            
+            let v1_prime = ((m1 - e*m2)*v1 + m2*(1+e)*v2) / (m1 + m2);
+            let v2_prime = (m1*(1+e)*v1 + (m2 - e*m1)*v2) / (m1 + m2);
+            
+            if (e === 0) {
+                let v_com = (m1*v1 + m2*v2) / (m1+m2);
+                v1_prime = v_com; v2_prime = v_com;
+            }
+
+            sim.p_out = m1 * v1_prime + m2 * v2_prime;
+            sim.ek_out = 0.5 * m1 * v1_prime*v1_prime + 0.5 * m2 * v2_prime*v2_prime;
+
+            updateTelemetryUI();
+        }
+
+        function updateTelemetryUI() {
+            document.getElementById('tel-p').innerText = sim.p_in.toFixed(2) + " kg·m/s";
+            document.getElementById('tel-ek').innerText = sim.ek_in.toFixed(2) + " J";
+            
+            let maxP = Math.max(Math.abs(sim.p_in), Math.abs(sim.m1*sim.v1) + Math.abs(sim.m2*sim.v2));
+            if(maxP === 0) maxP = 1;
+            
+            let pInPct = (Math.abs(sim.p_in) / maxP) * 100;
+            let pOutPct = (Math.abs(sim.p_out) / maxP) * 100;
+            
+            let barPIn = document.getElementById('bar-p-in');
+            barPIn.style.width = `${pInPct}%`; barPIn.innerText = sim.p_in.toFixed(1);
+            
+            let barPOut = document.getElementById('bar-p-out');
+            if(sim.hasCollided) {
+                barPOut.style.width = `${pOutPct}%`; barPOut.innerText = sim.p_out.toFixed(1);
+            } else {
+                barPOut.style.width = `0%`; barPOut.innerText = "";
+            }
+
+            let maxEk = sim.ek_in;
+            if(maxEk === 0) maxEk = 1;
+            let ekInPct = (sim.ek_in / maxEk) * 100;
+            let ekOutPct = (sim.ek_out / maxEk) * 100;
+
+            let barEkIn = document.getElementById('bar-ek-in');
+            barEkIn.style.width = `${ekInPct}%`; barEkIn.innerText = sim.ek_in.toFixed(1) + " J";
+
+            let barEkOut = document.getElementById('bar-ek-out');
+            if(sim.hasCollided) {
+                barEkOut.style.width = `${ekOutPct}%`; barEkOut.innerText = sim.ek_out.toFixed(1) + " J";
+            } else {
+                barEkOut.style.width = `0%`; barEkOut.innerText = "";
+            }
+
+            let loss = sim.ek_in - sim.ek_out;
+            document.getElementById('tel-loss').innerText = sim.hasCollided ? loss.toFixed(2) + " J" : "0.00 J";
+        }
+
+        function updateDynamicInfoCard() {
+            let title = document.getElementById('ic-title');
+            let desc = document.getElementById('ic-desc');
+            let dampak = document.getElementById('ic-dampak');
+            let penerapan = document.getElementById('ic-penerapan');
+            let card = document.getElementById('info-card');
+
+            if (sim.e === 1) {
+                title.innerText = "Lenting Sempurna (e = 1)"; title.className = "c-emerald"; card.style.borderColor = "var(--emerald-green)";
+                desc.innerText = "100% Energi Kinetik dipertahankan. Momentum kekal penuh.";
+                dampak.innerText = "Benda memantul kembali secara utuh tanpa kerusakan fisik.";
+                penerapan.innerText = "Tumbukan antar partikel gas ideal, permainan bola biliar presisi tinggi.";
+            } else if (sim.e === 0) {
+                title.innerText = "Tidak Lenting Sama Sekali (e = 0)"; title.className = "c-crimson"; card.style.borderColor = "var(--crimson-red)";
+                desc.innerText = "Benda menyatu setelah tumbukan. Kehilangan energi kinetik MAKSIMAL.";
+                dampak.innerText = "Deformasi fisik permanen, energi berubah menjadi panas dan remukan.";
+                penerapan.innerText = "Peluru menembus balok ayunan balistik, kecelakaan mobil ekstrim.";
+            } else {
+                title.innerText = `Lenting Sebagian (e = ${sim.e.toFixed(2)})`; title.className = "c-amber"; card.style.borderColor = "var(--amber-neon)";
+                desc.innerText = "Sebagian energi kinetik hilang, benda membal dengan kecepatan lebih rendah.";
+                dampak.innerText = "Sebagian energi terkonversi menjadi panas dan bunyi redam.";
+                penerapan.innerText = "Pantulan bola basket/tenis di lantai, benturan bumper kendaraan ringan.";
+            }
+        }
+
+        function toggleSim() {
+            if(sim.hasCollided && !sim.playing) {
+                resetSim();
+                return;
+            }
+            sim.playing = !sim.playing;
+            let btn = document.getElementById('btn-sim');
+            if (sim.playing) {
+                btn.innerText = "Pause";
+                btn.className = "btn btn-action";
+                requestAnimationFrame(loopSim);
+            } else {
+                btn.innerText = "Lanjutkan";
+                btn.className = "btn btn-play";
+            }
+        }
+
+        function resetSim() {
+            updateControls();
+        }
+
+        function loopSim() {
+            if(!sim.playing) return;
+            const w = ctxSim.canvas.width;
+            
+            let dt = 0.05; 
+            sim.x1 += sim.v1_curr * dt * 10;
+            sim.x2 += sim.v2_curr * dt * 10;
+
+            if (!sim.hasCollided && (sim.x1 + sim.r1 >= sim.x2 - sim.r2)) {
+                sim.hasCollided = true;
+                
+                let overlap = (sim.x1 + sim.r1) - (sim.x2 - sim.r2);
+                sim.x1 -= overlap / 2;
+                sim.x2 += overlap / 2;
+
+                let m1 = sim.m1; let m2 = sim.m2; let v1 = sim.v1_curr; let v2 = sim.v2_curr; let e = sim.e;
+                
+                let v1_prime = ((m1 - e*m2)*v1 + m2*(1+e)*v2) / (m1 + m2);
+                let v2_prime = (m1*(1+e)*v1 + (m2 - e*m1)*v2) / (m1 + m2);
+                
+                if (e === 0) {
+                    let v_com = (m1*v1 + m2*v2) / (m1+m2);
+                    sim.v1_curr = v_com;
+                    sim.v2_curr = v_com;
+                } else {
+                    sim.v1_curr = v1_prime;
+                    sim.v2_curr = v2_prime;
+                }
+
+                ctxSim.fillStyle = '#fff';
+                ctxSim.fillRect(0,0,w,ctxSim.canvas.height); 
+
+                updateTelemetryUI();
+            }
+
+            if(sim.x1 > w + 50 || sim.x1 < -50 || sim.x2 > w + 50 || sim.x2 < -50) {
+                sim.playing = false;
+                let btn = document.getElementById('btn-sim');
+                btn.innerText = "Selesai (Reset)";
+                btn.className = "btn";
+            }
+
+            drawSimFrame();
+
+            if (sim.playing) {
+                requestAnimationFrame(loopSim);
+            }
+        }
+
+        function drawSimFrame() {
+            const w = ctxSim.canvas.width; const h = ctxSim.canvas.height;
+            if(w===0) return;
+            ctxSim.clearRect(0, 0, w, h);
+
+            let cy = h/2 + 20;
+
+            ctxSim.fillStyle = '#1e293b'; ctxSim.fillRect(0, cy + Math.max(sim.r1, sim.r2), w, 10);
+            ctxSim.strokeStyle = '#334155'; ctxSim.beginPath(); ctxSim.moveTo(0, cy + Math.max(sim.r1, sim.r2)); ctxSim.lineTo(w, cy + Math.max(sim.r1, sim.r2)); ctxSim.stroke();
+
+            ctxSim.fillStyle = 'rgba(0, 229, 255, 0.2)';
+            ctxSim.beginPath(); ctxSim.arc(sim.x1, cy, sim.r1, 0, Math.PI*2); ctxSim.fill();
+            ctxSim.strokeStyle = '#00e5ff'; ctxSim.lineWidth = 2; ctxSim.stroke();
+            ctxSim.fillStyle = '#fff'; ctxSim.font = 'bold 14px sans-serif'; ctxSim.textAlign = 'center'; ctxSim.fillText("m1", sim.x1, cy+5);
+
+            ctxSim.fillStyle = 'rgba(255, 0, 255, 0.2)'; 
+            ctxSim.beginPath(); ctxSim.arc(sim.x2, cy, sim.r2, 0, Math.PI*2); ctxSim.fill();
+            ctxSim.strokeStyle = '#ff00ff'; ctxSim.lineWidth = 2; ctxSim.stroke(); 
+            ctxSim.fillStyle = '#fff'; ctxSim.fillText("m2", sim.x2, cy+5); 
+
+            let vScale = 3;
+            ctxSim.textAlign = 'center';
+            
+            if(Math.abs(sim.v1_curr) > 0.1) {
+                let yPos1 = cy - sim.r1 - 15;
+                drawArrow(ctxSim, sim.x1, yPos1, sim.x1 + sim.v1_curr*vScale, yPos1, '#00e5ff', 3, "");
+                ctxSim.fillStyle = '#00e5ff'; ctxSim.font = 'bold 12px monospace';
+                ctxSim.fillText(`v1=${sim.v1_curr.toFixed(1)}`, sim.x1, yPos1 - 10);
+            }
+            
+            if(Math.abs(sim.v2_curr) > 0.1) {
+                let yPos2 = cy - sim.r2 - 35; 
+                drawArrow(ctxSim, sim.x2, yPos2, sim.x2 + sim.v2_curr*vScale, yPos2, '#ff00ff', 3, "");
+                ctxSim.fillStyle = '#ff00ff'; ctxSim.font = 'bold 12px monospace';
+                ctxSim.fillText(`v2=${sim.v2_curr.toFixed(1)}`, sim.x2, yPos2 - 10);
+            }
+
+            if(sim.hasCollided && sim.e === 0) {
+                ctxSim.strokeStyle = '#fff'; ctxSim.lineWidth = 3; ctxSim.setLineDash([5,5]);
+                ctxSim.beginPath(); ctxSim.moveTo(sim.x1, cy); ctxSim.lineTo(sim.x2, cy); ctxSim.stroke();
+                ctxSim.setLineDash([]);
+            }
+        }
+
+        const ctxGame = resizeCanvas('gameCanvas');
+        let crashTest = {
+            playing: false,
+            x: 20, v: 0, initialV: 500, // Pixels per second
+            e: 1, 
+            state: 'moving', // moving, crumpling, bouncing
+            scaleX: 1,
+            compressTimer: 0,
+            particles: [],
+            cameraShake: 0,
+            lastTime: null,
+            timer: 0
+        };
+
+        function startCrashTest() {
+            if (crashTest.playing) return;
+            crashTest.playing = true;
+            crashTest.x = 20;
+            crashTest.v = 500; 
+            crashTest.initialV = 500;
+            crashTest.e = parseFloat(document.getElementById('slider-e').value);
+            crashTest.state = 'moving';
+            crashTest.scaleX = 1;
+            crashTest.compressTimer = 0;
+            crashTest.particles = [];
+            crashTest.cameraShake = 0;
+            crashTest.timer = 0;
+            crashTest.lastTime = null; // Will be set on first frame
+            document.getElementById('game-overlay').classList.remove('active');
+            requestAnimationFrame(loopCrashTest);
+        }
+
+        function createParticles(x, y, count, speed, color) {
+            for (let i = 0; i < count; i++) {
+                // Bias spread towards the left (Math.PI) and upwards
+                let angle = Math.PI + (Math.random() * 0.8 - 0.6); 
+                let vel = speed * (0.4 + Math.random() * 0.6);
+                crashTest.particles.push({
+                    x: x,
+                    y: y + (Math.random() - 0.5) * 30,
+                    vx: Math.cos(angle) * vel,
+                    vy: Math.sin(angle) * vel,
+                    life: 1.0 + Math.random() * 0.5,
+                    color: color,
+                    size: 1 + Math.random() * 2
+                });
+            }
+        }
+
+        function loopCrashTest(timestamp) {
+            if (!crashTest.playing) return;
+            
+            // Time-delta calculation for ultra-smooth rendering regardless of frame rate
+            if (!crashTest.lastTime) crashTest.lastTime = timestamp;
+            let dt = (timestamp - crashTest.lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; // Cap dt to prevent massive jumps on lag spikes
+            crashTest.lastTime = timestamp;
+
+            const w = ctxGame.canvas.width;
+            const wallX = w * 0.8;
+            const carWidth = 60;
+            let cy = ctxGame.canvas.height / 2 + 30; // Ground line
+
+            if (crashTest.state === 'moving') {
+                crashTest.x += crashTest.v * dt;
+                
+                if (crashTest.x + carWidth >= wallX) {
+                    crashTest.x = wallX - carWidth; // Snap front of car strictly to wall
+                    crashTest.state = 'crumpling';
+                    crashTest.cameraShake = 12; // Initial heavy impact shake
+                    crashTest.compressTimer = 0;
+                    
+                    // Spray particles on impact
+                    createParticles(wallX, cy - 10, 30, 200, '#ffaa00'); // Sparks
+                    createParticles(wallX, cy - 10, 20, 150, '#ffffff'); // Debris
+                    if (crashTest.e < 0.5) {
+                         createParticles(wallX - 10, cy - 10, 20, 150, '#ff3333'); // Chassis bits
+                         createParticles(wallX - 10, cy - 10, 15, 50, '#555555');  // Smoke
+                    }
+                }
+            } 
+            else if (crashTest.state === 'crumpling') {
+                // Compress Phase: smoothly squash the car geometry using a Sine wave mapping
+                crashTest.compressTimer += dt * 15; 
+                if (crashTest.compressTimer > Math.PI / 2) {
+                    crashTest.compressTimer = Math.PI / 2;
+                    crashTest.state = 'bouncing';
+                    crashTest.v = -crashTest.initialV * crashTest.e; // Assign bounce velocity based on Restitution (e)
+                }
+                
+                let compressProgress = Math.sin(crashTest.compressTimer); // 0.0 -> 1.0
+                crashTest.scaleX = 1.0 - (0.5 * compressProgress); // Max squash to 0.5x width
+                
+                // Decay camera shake smoothly
+                crashTest.cameraShake = (1.0 - compressProgress) * 12;
+            }
+            else if (crashTest.state === 'bouncing') {
+                // Expanding Phase: elastic rebound if e > 0
+                crashTest.compressTimer += dt * 15;
+                if (crashTest.compressTimer > Math.PI) {
+                    crashTest.compressTimer = Math.PI;
+                }
+                
+                // Recover geometry shape proportional to coefficient of restitution (e)
+                let expandAmount = (1 - Math.sin(crashTest.compressTimer)); // 0.0 -> 1.0
+                crashTest.scaleX = 0.5 + (0.5 * crashTest.e * expandAmount);
+
+                // Move backward
+                crashTest.x += crashTest.v * dt;
+                
+                // Ground friction to stop the sliding car
+                if (crashTest.v < 0) {
+                    crashTest.v += 400 * dt; 
+                    if (crashTest.v > 0) crashTest.v = 0;
+                }
+
+                // Show game results after a short visual delay post-impact
+                crashTest.timer += dt;
+                if (crashTest.timer > 1.2) {
+                    crashTest.playing = false;
+                    showGameResult();
+                    return;
+                }
+            }
+
+            // Update particle engine physical properties
+            for (let i = crashTest.particles.length - 1; i >= 0; i--) {
+                let p = crashTest.particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 800 * dt; // Gravity factor
+                p.life -= 1.0 * dt; // Fade out
+                
+                // Floor collision for particles
+                if (p.y > cy) {
+                    p.y = cy;
+                    p.vy *= -0.4;
+                    p.vx *= 0.6;
+                }
+
+                if (p.life <= 0) {
+                    crashTest.particles.splice(i, 1);
+                }
+            }
+
+            drawCrashTest();
+            if (crashTest.playing) requestAnimationFrame(loopCrashTest);
+        }
+
+        function drawCrashTest() {
+            const w = ctxGame.canvas.width;
+            const h = ctxGame.canvas.height;
+            if (w === 0) return;
+            ctxGame.clearRect(0, 0, w, h);
+
+            let cy = h / 2 + 30;
+            let wallX = w * 0.8;
+
+            ctxGame.save();
+            
+            // Apply Camera Shake Effect Matrix Translation
+            if (crashTest.cameraShake > 0.5) {
+                let dx = (Math.random() - 0.5) * crashTest.cameraShake;
+                let dy = (Math.random() - 0.5) * crashTest.cameraShake;
+                ctxGame.translate(dx, dy);
+            }
+
+            // Draw Ground and Line
+            ctxGame.fillStyle = '#1e293b'; ctxGame.fillRect(0, cy, w, 10);
+            ctxGame.strokeStyle = '#334155'; ctxGame.beginPath(); ctxGame.moveTo(0, cy); ctxGame.lineTo(w, cy); ctxGame.stroke();
+
+            // Draw Heavy Static Wall Block
+            ctxGame.fillStyle = '#475569';
+            ctxGame.fillRect(wallX, cy - 60, 40, 60);
+            ctxGame.strokeStyle = '#94a3b8'; ctxGame.lineWidth = 2;
+            ctxGame.strokeRect(wallX, cy - 60, 40, 60);
+
+            // Draw Danger Stripes on Wall
+            ctxGame.save();
+            ctxGame.beginPath();
+            ctxGame.rect(wallX, cy - 60, 10, 60);
+            ctxGame.clip();
+            ctxGame.fillStyle = '#ffaa00';
+            ctxGame.fillRect(wallX, cy - 60, 10, 60);
+            ctxGame.fillStyle = '#000000';
+            for(let i=0; i<8; i++) {
+                ctxGame.beginPath();
+                ctxGame.moveTo(wallX, cy - 60 + i*15);
+                ctxGame.lineTo(wallX + 10, cy - 60 + i*15 + 10);
+                ctxGame.lineTo(wallX + 10, cy - 60 + i*15 + 15);
+                ctxGame.lineTo(wallX, cy - 60 + i*15 + 5);
+                ctxGame.fill();
+            }
+            ctxGame.restore();
+
+
+            // Draw Detailed Car Vector Model
+            ctxGame.save();
+            
+            // To scale dynamically representing physical "crumpling", we anchor the transformation matrix
+            // exactly at the FRONT bumper of the car (x + 60), perform scaleX, and translate backwards.
+            ctxGame.translate(crashTest.x + 60, cy);
+            ctxGame.scale(crashTest.scaleX, 1);
+            ctxGame.translate(-60, 0);
+            
+            // Main Chassis
+            ctxGame.fillStyle = '#ff3333';
+            if(ctxGame.roundRect) {
+                ctxGame.beginPath(); ctxGame.roundRect(0, -20, 60, 15, 6); ctxGame.fill(); 
+            } else {
+                ctxGame.fillRect(0, -20, 60, 15);
+            }
+            
+            // Chassis Metallic Highlight
+            ctxGame.fillStyle = 'rgba(255,255,255,0.2)';
+            ctxGame.fillRect(5, -18, 50, 4);
+            
+            // Cabin & Window Structure
+            ctxGame.fillStyle = '#0f172a';
+            ctxGame.beginPath();
+            ctxGame.moveTo(15, -20);
+            ctxGame.lineTo(22, -35);
+            ctxGame.lineTo(40, -35);
+            ctxGame.lineTo(48, -20);
+            ctxGame.fill();
+            
+            // Front Windshield (Cyan Reflective Highlight)
+            ctxGame.fillStyle = '#00e5ff';
+            ctxGame.beginPath();
+            ctxGame.moveTo(41, -33);
+            ctxGame.lineTo(47, -22);
+            ctxGame.lineTo(44, -22);
+            ctxGame.lineTo(38, -33);
+            ctxGame.fill();
+            
+            // Headlight / Taillight Assembly
+            ctxGame.fillStyle = '#ffffff';
+            ctxGame.fillRect(56, -16, 4, 6); 
+            ctxGame.fillStyle = '#ffaa00';
+            ctxGame.fillRect(56, -16, 2, 6); 
+            
+            ctxGame.fillStyle = '#ff0000';
+            ctxGame.fillRect(0, -18, 3, 8); 
+
+            // Bumpers
+            ctxGame.fillStyle = '#222';
+            ctxGame.fillRect(58, -10, 4, 6);
+            ctxGame.fillRect(-2, -12, 4, 8);
+
+            // Wheel Tires
+            ctxGame.fillStyle = '#111';
+            ctxGame.beginPath(); ctxGame.arc(15, -5, 8, 0, Math.PI*2); ctxGame.fill();
+            ctxGame.beginPath(); ctxGame.arc(45, -5, 8, 0, Math.PI*2); ctxGame.fill();
+            
+            // Wheel Rims
+            ctxGame.fillStyle = '#cbd5e1';
+            ctxGame.beginPath(); ctxGame.arc(15, -5, 4, 0, Math.PI*2); ctxGame.fill();
+            ctxGame.beginPath(); ctxGame.arc(45, -5, 4, 0, Math.PI*2); ctxGame.fill();
+            
+            ctxGame.restore(); // End Car Drawing Context
+
+            // Render Debris Particles overlapping the environment
+            for (let p of crashTest.particles) {
+                ctxGame.globalAlpha = Math.max(0, p.life);
+                ctxGame.fillStyle = p.color;
+                ctxGame.beginPath();
+                ctxGame.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctxGame.fill();
+            }
+            ctxGame.globalAlpha = 1.0;
+
+            ctxGame.restore(); // End Camera Shake Context
+        }
+
+        function showGameResult() {
+            let m1 = 1200; 
+            let v1 = 20; 
+            let m2 = 10000; 
+            let v2 = 0;
+            let e = crashTest.e; 
+
+            let ek_in = 0.5 * m1 * v1*v1;
+            let v1_prime = ((m1 - e*m2)*v1 + m2*(1+e)*v2) / (m1 + m2);
+            let ek_out = 0.5 * m1 * v1_prime*v1_prime;
+            
+            let deltaEk = ek_in - ek_out; 
+            let ekPct = (deltaEk / ek_in) * 100;
+
+            let msg = document.getElementById('game-msg');
+            let desc = document.getElementById('game-desc');
+            let overlay = document.getElementById('game-overlay');
+
+            if (e <= 0.2) {
+                msg.innerText = "✅ DESAIN AMAN! (Lulus Uji)";
+                msg.style.color = "var(--emerald-green)";
+                desc.innerHTML = `Nilai Restitusi $e=${e.toFixed(2)}$. Mobil menyerap ${ekPct.toFixed(0)}% energi kinetik lewat zona remuk (Crumple Zone). Gaya benturan yang dialami pengemudi terminimalisir.`;
+            } else if (e < 0.8) {
+                msg.innerText = "⚠️ BAHAYA: Cedera Sedang";
+                msg.style.color = "var(--amber-neon)";
+                desc.innerHTML = `Nilai Restitusi $e=${e.toFixed(2)}$. Mobil membal sebagian. Hanya ${ekPct.toFixed(0)}% energi diserap mobil, sisanya dikembalikan ke pengemudi sebagai gaya dorong balik.`;
+            } else {
+                msg.innerText = "💥 FATAL: Sasis Terlalu Kaku!";
+                msg.style.color = "var(--crimson-red)";
+                desc.innerHTML = `Nilai Restitusi $e=${e.toFixed(2)}$. Mobil memantul layaknya bola biliar! Perubahan kecepatan ($v$ ke $-v$) menyebabkan pengemudi menerima daya hantam 2X LIPAT. Energi terserap hanya ${ekPct.toFixed(0)}%.`;
+            }
+
+            overlay.classList.add('active');
+            updateMathLive(); 
+        }
+
+        function closeGame() {
+            document.getElementById('game-overlay').classList.remove('active');
+            crashTest.playing = false;
+            crashTest.state = 'moving';
+            crashTest.x = 20;
+            crashTest.scaleX = 1;
+            crashTest.particles = [];
+            crashTest.cameraShake = 0;
+            drawCrashTest();
+        }
+
+        // INIT
+        window.onload = () => {
+            initApersepsiBalls();
+            updateControls();
+            drawCrashTest();
+            
+            window.addEventListener('resize', () => {
+                resizeCanvas('apersepsiCanvas');
+                resizeCanvas('simCanvas');
+                resizeCanvas('gameCanvas');
+                if(!aper.playing) drawApersepsi(true);
+                if(!sim.playing) drawSimFrame();
+                if(!crashTest.playing) drawCrashTest();
+            });
+        };
+
+    </script>
+</body>
+</html>
