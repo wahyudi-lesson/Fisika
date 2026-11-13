@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atmosphere Lab: Global Warming Simulator</title>
+    
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: COSMIC ATMOSPHERE DARK MODE
+           ======================================================== */
+        :root {
+            --bg-space: #02040a;
+            --bg-panel: rgba(10, 15, 30, 0.85);
+            --bg-card: rgba(15, 25, 45, 0.9);
+            --cyan-n2o2: #00ffff;      /* Nitrogen/Oksigen */
+            --orange-ir: #ff6600;      /* Infrared / Panas */
+            --blue-uv: #00e5ff;        /* UV / Cahaya Masuk */
+            --white-ui: #ffffff;
+            --alert-red: #ff3333;
+            --earth-green: #00b359;
+            --border-glow: rgba(0, 229, 255, 0.3);
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-space);
+            background-image: 
+                radial-gradient(circle at 50% 120%, rgba(0, 229, 255, 0.15) 0%, transparent 60%), 
+                radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 50px 50px, 80px 80px;
+            color: var(--white-ui);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER & DASHBOARD */
+        header {
+            text-align: center; padding: 25px 20px; background: var(--bg-panel);
+            border: 1px solid var(--border-glow); border-radius: 12px; border-top: 4px solid var(--blue-uv);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,229,255,0.05);
+            backdrop-filter: blur(10px);
+        }
+        header h1 { color: var(--blue-uv); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,229,255,0.5); margin-bottom: 5px; }
+        header p { color: #8a9bb4; font-size: 1.05rem; }
+
+        .header-dashboard {
+            display: flex; justify-content: center; align-items: center; gap: 40px; margin-top: 25px; flex-wrap: wrap;
+        }
+
+        /* DONUT CHART */
+        .chart-container { display: flex; align-items: center; gap: 20px; background: rgba(0,0,0,0.4); padding: 15px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
+        .donut-chart {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: conic-gradient(var(--cyan-n2o2) 0% 78%, #0088ff 78% 99%, var(--alert-red) 99% 100%);
+            position: relative; display: flex; justify-content: center; align-items: center;
+        }
+        .donut-chart::before {
+            content: ''; width: 60px; height: 60px; background: var(--bg-panel); border-radius: 50%; position: absolute;
+        }
+        .donut-legend { font-size: 0.85rem; text-align: left; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* PANELS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid rgba(0,229,255,0.15); border-radius: 10px;
+            padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative; backdrop-filter: blur(5px);
+        }
+        .panel-title { font-size: 1.3rem; color: var(--white-ui); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        
+        .info-box { background: rgba(0,229,255,0.05); border-left: 3px solid var(--blue-uv); padding: 12px; font-size: 0.9rem; color: #b0c4de; margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--white-ui); }
+
+        /* CANVAS CONTAINERS */
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #334; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        .canvas-label {
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 1px solid var(--border-glow);
+            padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; color: var(--blue-uv); font-family: var(--font-mono);
+        }
+        
+        .temp-display {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid var(--orange-ir);
+            padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0 0 10px rgba(255,102,0,0.3);
+        }
+        .temp-val { font-size: 1.8rem; font-family: var(--font-mono); font-weight: bold; color: var(--orange-ir); text-shadow: 0 0 8px rgba(255,102,0,0.6); }
+        .temp-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+
+        /* BUTTONS (SPECTRUM & MOLECULE) */
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+        .btn-mol, .btn-spec {
+            flex: 1; min-width: 90px; padding: 8px; background: #0f172a; color: var(--electric); 
+            border: 1px solid #334; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.3s; font-size: 0.8rem; text-align: center;
+        }
+        .btn-mol:hover, .btn-spec:hover { background: #1e293b; }
+        .btn-mol.active { background: rgba(0, 229, 255, 0.15); border-color: var(--cyan-n2o2); color: var(--cyan-n2o2); box-shadow: 0 0 10px rgba(0,229,255,0.3); }
+        
+        .btn-spec.uv { border-color: #8b5cf6; color: #a78bfa; }
+        .btn-spec.uv:hover { background: rgba(139, 92, 246, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+        .btn-spec.vis { border-color: #facc15; color: #fde047; }
+        .btn-spec.vis:hover { background: rgba(250, 204, 21, 0.2); box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+        .btn-spec.ir { border-color: #ef4444; color: #f87171; }
+        .btn-spec.ir:hover { background: rgba(239, 68, 68, 0.2); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .btn-spec.mw { border-color: #10b981; color: #6ee7b7; } /* Gelombang Mikro (Hijau/Emerald) */
+        .btn-spec.mw:hover { background: rgba(16, 185, 129, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+
+        /* CONTROLS & SLIDERS */
+        .slider-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 10px; }
+        .val-highlight { color: var(--blue-uv); font-family: var(--font-mono); font-weight: bold; }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #2a3b4c; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--blue-uv); cursor: pointer; box-shadow: 0 0 10px var(--blue-uv); }
+        
+        #slider-ghg::-webkit-slider-thumb { background: var(--orange-ir); box-shadow: 0 0 10px var(--orange-ir); }
+        #slider-albedo::-webkit-slider-thumb { background: var(--white-ui); box-shadow: 0 0 10px var(--white-ui); }
+
+        /* MATH PANEL (STEFAN BOLTZMANN) */
+        .math-panel { background: #000; border: 1px dashed var(--blue-uv); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 15px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
+        .math-buffer { position: absolute; visibility: hidden; pointer-events: none; top: -9999px; } /* Double Buffering */
+        
+        /* INFO TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; background: rgba(0,0,0,0.3); }
+        th, td { border: 1px solid rgba(255,255,255,0.1); padding: 8px; text-align: left; }
+        th { background: rgba(0,229,255,0.1); color: var(--blue-uv); }
+        td.neg { color: var(--orange-ir); }
+
+        /* MINI GAME */
+        .game-panel { border-color: var(--earth-green); background: linear-gradient(180deg, var(--bg-panel), #021a0d); position: relative; }
+        .game-stats { display: flex; gap: 15px; margin-bottom: 15px; }
+        .game-stat-box { flex: 1; background: #000; border: 1px solid #333; padding: 15px; border-radius: 8px; text-align: center; }
+        .game-stat-box .val { font-size: 1.5rem; font-family: var(--font-mono); font-weight: bold; margin-top: 5px; }
+        
+        .btn-game { padding: 12px; background: #0f291e; color: var(--white-ui); border: 1px solid var(--earth-green); border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 0.9rem; flex: 1; }
+        .btn-game:hover { background: #1a3b2b; box-shadow: 0 0 15px rgba(0,179,89,0.4); }
+        .btn-game:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; border-color: #555; }
+        
+        .game-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; opacity: 0; pointer-events: none; transition: 0.5s; text-align: center; padding: 20px;
+        }
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+        .game-msg { font-size: 1.8rem; font-weight: bold; margin-bottom: 10px; }
+
+        @media (max-width: 768px) {
+            .header-dashboard { flex-direction: column; gap: 15px; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HEADER & GLOBAL STATUS -->
+        <header>
+            <h1>Atmosphere Lab</h1>
+            <p>Simulasi Interaktif Keseimbangan Energi Bumi & Efek Rumah Kaca</p>
+            <div class="header-dashboard">
+                <div class="chart-container">
+                    <div class="donut-chart"></div>
+                    <div class="donut-legend">
+                        <div class="legend-item"><div class="dot" style="background:var(--cyan-n2o2);"></div> Nitrogen (78%)</div>
+                        <div class="legend-item"><div class="dot" style="background:#0088ff;"></div> Oksigen (21%)</div>
+                        <div class="legend-item"><div class="dot" style="background:var(--alert-red);"></div> GRK / Gas Jejak (<1%)</div>
+                    </div>
+                </div>
+                <div style="text-align: left; max-width: 400px; font-size: 0.9rem; color: #8a9bb4;">
+                    <strong>Fakta Atmosfer:</strong> Meski jumlahnya kurang dari 1%, Gas Rumah Kaca (GRK) seperti CO₂, Metana (CH₄), dan Uap Air (H₂O) adalah pengatur utama suhu permukaan Bumi. Tanpa mereka, Bumi akan menjadi bola es bersuhu -18°C.
+                </div>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- MODUL 1: APERSEPSI SPEKTRUM FISIKA KUANTUM -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--blue-uv);">🔬 Laboratorium Spektrum & Molekul</h2>
+                <div class="info-box" id="spectrum-desc" style="min-height: 70px;">
+                    Matahari memancarkan spektrum elektromagnetik (UV, Cahaya, IR). Mari kita uji secara kuantum interaksi setiap spektrum dengan komposisi gas di atmosfer!
+                </div>
+                
+                <div class="canvas-container" style="height: 180px;">
+                    <div class="canvas-label" style="border:none; background:transparent;">Ruang Uji Vakum</div>
+                    <canvas id="spectrumCanvas"></canvas>
+                </div>
+
+                <div style="margin-bottom: 5px;"><strong style="font-size: 0.85rem; color: #94a3b8;">1. Pilih Molekul Gas Atmosfer:</strong></div>
+                <div class="btn-group">
+                    <button class="btn-mol active" id="btn-mol-n2" onclick="setMolecule('N2')">N₂ / O₂</button>
+                    <button class="btn-mol" id="btn-mol-o3" onclick="setMolecule('O3')">O₃ (Ozon)</button>
+                    <button class="btn-mol" id="btn-mol-h2o" onclick="setMolecule('H2O')">H₂O (Uap Air)</button>
+                    <button class="btn-mol" id="btn-mol-co2" onclick="setMolecule('CO2')">CO₂ (K. Dioksida)</button>
+                    <button class="btn-mol" id="btn-mol-ch4" onclick="setMolecule('CH4')">CH₄ (Metana)</button>
+                </div>
+
+                <div style="margin-top: 5px; margin-bottom: 5px;"><strong style="font-size: 0.85rem; color: #94a3b8;">2. Tembakkan Spektrum Elektromagnetik:</strong></div>
+                <div class="btn-group">
+                    <button class="btn-spec uv" onclick="shootSpectrum('UV')">Sinar UV<br><span style="font-weight:normal; font-size:0.7rem;">&lt; 400 nm</span></button>
+                    <button class="btn-spec vis" onclick="shootSpectrum('VIS')">Cahaya Tampak<br><span style="font-weight:normal; font-size:0.7rem;">400 - 700 nm</span></button>
+                    <button class="btn-spec ir" onclick="shootSpectrum('IR')">Inframerah (IR)<br><span style="font-weight:normal; font-size:0.7rem;">&gt; 700 nm</span></button>
+                    <button class="btn-spec mw" onclick="shootSpectrum('MW')">Gel. Mikro<br><span style="font-weight:normal; font-size:0.7rem;">~ 1 cm</span></button>
+                </div>
+            </div>
+
+            <!-- MODUL 3: PANEL MATEMATIKA & FISIKA -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-n2o2);">📐 Hukum Stefan-Boltzmann</h2>
+                <div class="info-box">
+                    <strong>Keseimbangan Energi ($P_{masuk} = P_{keluar}$):</strong><br>
+                    Suhu Bumi ($T$) bergantung pada Intensitas Matahari ($I_{in}$), Albedo/Daya Pantul ($\alpha$), dan Emisivitas Atmosfer/Faktor Penahan Panas ($\epsilon$).
+                </div>
+                
+                <div class="math-panel" id="math-display">
+                    <!-- LaTeX Formula Injected Here -->
+                </div>
+                <!-- Hidden Buffer for smooth LaTeX rendering -->
+                <div id="math-buffer" class="math-buffer"></div>
+
+                <div class="info-box" style="border-color: var(--earth-green); background: rgba(0,179,89,0.05); margin-bottom: 0; margin-top:15px;">
+                    <strong>📍 Konteks Lokal Jawa Timur:</strong> Peningkatan suhu akibat GRK mengancam pesisir utara (Surabaya, Gresik) dengan rob, dan menurunkan produktivitas apel di dataran tinggi Batu-Malang.
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 2: LABORATORIUM UTAMA (ATMOSFER) -->
+        <div class="panel" style="border-color: var(--orange-ir);">
+            <h2 class="panel-title" style="color: var(--orange-ir);">🌍 Laboratorium Utama: Interaksi Atmosfer Global</h2>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- Kontrol Samping Kiri -->
+                <div style="flex: 1; min-width: 300px;">
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>Konsentrasi GRK (CO₂, CH₄, H₂O)</span>
+                            <span id="val-ghg" class="val-highlight" style="color: var(--orange-ir);">Normal (Alami)</span>
+                        </div>
+                        <input type="range" id="slider-ghg" min="0" max="100" value="30" oninput="updatePhysics()">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Meningkatkan jumlah molekul gas polar yang mengadang dan memantulkan panas inframerah.</p>
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>Albedo Bumi ($\alpha$)</span>
+                            <span id="val-albedo" class="val-highlight">0.30 (Hutan/Lautan)</span>
+                        </div>
+                        <input type="range" id="slider-albedo" min="10" max="80" value="30" oninput="updatePhysics()">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Daya pantul permukaan. Es (Putih) memantulkan cahaya langsung tanpa mengubahnya jadi panas.</p>
+                    </div>
+
+                    <table>
+                        <tr><th>Karakteristik Komposisi Atmosfer</th></tr>
+                        <tr><td><b>N₂ & O₂ (~99%)</b>: Tidak bereaksi terhadap inframerah. Bumi bisa mendingin bebas.</td></tr>
+                        <tr><td><b>Uap Air (H₂O)</b>: GRK alami paling banyak. Dipengaruhi oleh siklus iklim alami.</td></tr>
+                        <tr><td><b>Karbondioksida (CO₂)</b>: Pemicu utama <i>Global Warming</i> antropogenik (buatan manusia).</td></tr>
+                        <tr><td><b>Metana (CH₄)</b>: Dari agrikultur/ternak. Daya serap panas ~25x lipat CO₂.</td></tr>
+                    </table>
+                </div>
+
+                <!-- Canvas Samping Kanan -->
+                <div style="flex: 2; min-width: 400px; display: flex; flex-direction: column;">
+                    <div class="canvas-container" style="height: 350px; flex: 1; margin-bottom:0;">
+                        <div class="canvas-label" style="background:transparent; border:none; text-shadow: 0 0 5px #000;">Batas Luar Angkasa</div>
+                        <div class="temp-display">
+                            <div class="temp-label">Suhu Permukaan Bumi (T)</div>
+                            <div class="temp-val" id="earth-temp">15.0 °C</div>
+                        </div>
+                        <canvas id="atmosCanvas"></canvas>
+                        <div style="position:absolute; bottom:10px; left:10px; color:#000; font-weight:bold; font-size:0.9rem; text-shadow: 0 0 5px rgba(255,255,255,0.8);" id="surface-label">Permukaan Bumi (Menyerap Cahaya)</div>
+                    </div>
+                    <div style="display:flex; justify-content:center; gap: 15px; font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">
+                        <span><b style="color:var(--blue-uv)">↓ Biru:</b> Gelombang Pendek (UV/Cahaya)</span>
+                        <span><b style="color:var(--orange-ir)">↑ Oranye:</b> Gelombang Panjang (IR/Panas)</span>
+                        <span><b style="color:#ff3333">● Merah:</b> Molekul GRK Bekerja</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 4: MINI GAME -->
+        <div class="panel game-panel">
+            <h2 class="panel-title" style="color: var(--earth-green);">🎮 Net Zero Challenge: Selamatkan Bumi!</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px;">
+                <b>Tugas Anda:</b> Aktivitas industri otomatis meningkatkan emisi GRK setiap detik. Tahan laju pemanasan global agar <b>SUHU ANOMALI TIDAK LEBIH DARI +2.0°C</b> selama 30 detik menggunakan aksi mitigasi lingkungan!
+            </p>
+
+            <div class="game-stats">
+                <div class="game-stat-box">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Waktu Tersisa</div>
+                    <div class="val" id="gm-time" style="color: var(--cyan-n2o2);">30s</div>
+                </div>
+                <div class="game-stat-box">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Tingkat GRK Global</div>
+                    <div class="val" id="gm-ghg" style="color: var(--orange-ir);">50%</div>
+                </div>
+                <div class="game-stat-box">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Anomali Suhu Rata-rata</div>
+                    <div class="val" id="gm-temp" style="color: var(--alert-red);">+1.0 °C</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn-game" id="btn-tree" onclick="actionPlantTree()" disabled>🌲 Tanam Pohon / Mangrove (-5% GRK)</button>
+                <button class="btn-game" id="btn-solar" onclick="actionSolar()" style="border-color: var(--blue-uv);" disabled>☀️ Transisi Energi Surya (-10% GRK)</button>
+                <button class="btn-game" id="btn-start" onclick="startGame()" style="background: var(--blue-uv); color:#000;">▶️ Mulai Simulasi</button>
+            </div>
+
+            <!-- OVERLAY WIN/LOSE -->
+            <div class="game-overlay" id="game-overlay">
+                <div class="game-msg" id="game-msg-title"></div>
+                <p id="game-msg-desc" style="font-size: 1rem; margin-bottom: 20px; max-width:600px; line-height:1.5;"></p>
+                <button style="padding: 12px 25px; background: var(--earth-green); color:#000; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size:1.1rem;" onclick="resetGameUI()">Tutup Simulasi</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 0. MATHJAX DOUBLE BUFFERING UTILITY
+        // ==========================================
+        let isRenderingMath = false;
+        let pendingMathUpdate = false;
+
+        function renderMathLive() {
+            if (!window.MathJax || typeof MathJax.typesetPromise !== 'function') return;
+            
+            if (isRenderingMath) {
+                pendingMathUpdate = true;
+                return;
+            }
+            
+            isRenderingMath = true;
+            const buffer = document.getElementById('math-buffer');
+            
+            MathJax.typesetPromise([buffer]).then(() => {
+                document.getElementById('math-display').innerHTML = buffer.innerHTML;
+                isRenderingMath = false;
+                
+                if (pendingMathUpdate) {
+                    pendingMathUpdate = false;
+                    renderMathLive(); 
+                }
+            }).catch((err) => {
+                console.log('MathJax error: ', err.message);
+                isRenderingMath = false;
+            });
+        }
+
+        // ==========================================
+        // 1. MODUL 1: APERSEPSI SPEKTRUM (Fisika Kuantum)
+        // ==========================================
+        const specCanvas = document.getElementById('spectrumCanvas');
+        const ctxSpec = specCanvas.getContext('2d');
+        let specPhotons = [];
+        let currentMol = 'N2';
+        let targetMolecule = { x: 0, y: 0, vibrate: 0, excite: 0 };
+        let specAnimId;
+
+        function setMolecule(type) {
+            currentMol = type;
+            // Update UI Buttons
+            document.querySelectorAll('.btn-mol').forEach(b => b.classList.remove('active'));
+            if(type === 'N2') document.getElementById('btn-mol-n2').classList.add('active');
+            if(type === 'O3') document.getElementById('btn-mol-o3').classList.add('active');
+            if(type === 'H2O') document.getElementById('btn-mol-h2o').classList.add('active');
+            if(type === 'CO2') document.getElementById('btn-mol-co2').classList.add('active');
+            if(type === 'CH4') document.getElementById('btn-mol-ch4').classList.add('active');
+            
+            // Clear existing photons
+            specPhotons = []; 
+            targetMolecule.vibrate = 0;
+            targetMolecule.excite = 0;
+            
+            let desc = "";
+            if(type === 'N2') desc = "<b>N₂ / O₂ (Nitrogen & Oksigen):</b> Gas simetris diatomik (~99% atmosfer). Sangat stabil dan <b>transparan</b> terhadap IR dan UV.";
+            if(type === 'O3') desc = "<b>O₃ (Ozon):</b> Pelindung bumi. Transisi elektronik pada molekul O₃ memungkinkannya <b>menyerap Sinar UV</b> (berbahaya) sebelum sampai ke permukaan.";
+            if(type === 'H2O') desc = "<b>H₂O (Uap Air):</b> Gas Rumah Kaca alami terkuat. Strukturnya yang asimetris menyebabkannya mampu menyerap <b>Inframerah (IR)</b> dan <b>Gelombang Mikro (MW)</b>.";
+            if(type === 'CO2') desc = "<b>CO₂ (Karbon Dioksida):</b> GRK antropogenik utama. Saat menyerap <b>Inframerah</b>, ikatannya melengkung dan meradiasikan panas kembali ke bumi.";
+            if(type === 'CH4') desc = "<b>CH₄ (Metana):</b> Gas Rumah Kaca kuat. Struktur tetrahedranya sangat efisien dalam memerangkap <b>Inframerah</b> dari bumi.";
+            document.getElementById('spectrum-desc').innerHTML = desc;
+        }
+
+        function shootSpectrum(type) {
+            let W = specCanvas.width; let H = specCanvas.height;
+            // Add a photon stream
+            specPhotons.push({
+                x: 30, y: H/2 + (Math.random()-0.5)*20,
+                type: type, 
+                vx: type === 'MW' ? 2 : (type === 'IR' ? 3 : 5), // Laju visual
+                vy: 0, 
+                active: true
+            });
+        }
+
+        function drawMolecule(ctx, type, x, y, vibrate, excite) {
+            // Vibration/Rotation offset calculation
+            let ox = vibrate > 0 ? (Math.random()-0.5)*5 : 0;
+            let oy = vibrate > 0 ? (Math.random()-0.5)*5 : 0;
+            
+            // Rotation mapping for Microwave
+            let angle = 0;
+            if (excite === 'rotate' && vibrate > 0) {
+                angle = (20 - vibrate) * 0.5; // Mutar cepat
+            }
+
+            ctx.save();
+            ctx.translate(x + ox, y + oy);
+            ctx.rotate(angle);
+
+            if (type === 'N2') {
+                ctx.fillStyle = '#0ea5e9'; // Cyan-ish blue
+                ctx.beginPath(); ctx.arc(-14, 0, 18, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(14, 0, 18, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth=2; ctx.stroke();
+            } 
+            else if (type === 'O3') {
+                ctx.fillStyle = '#ef4444'; // O (Red) - Bentut bengkok (117 deg)
+                ctx.beginPath(); ctx.arc(0, -6, 16, 0, Math.PI*2); ctx.fill(); // Center
+                ctx.beginPath(); ctx.arc(-20, 8, 16, 0, Math.PI*2); ctx.fill(); // Left
+                ctx.beginPath(); ctx.arc(20, 8, 16, 0, Math.PI*2); ctx.fill(); // Right
+            }
+            else if (type === 'H2O') {
+                ctx.fillStyle = '#ef4444'; // O (Red)
+                ctx.beginPath(); ctx.arc(0, -5, 18, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#f8fafc'; // H (White) - Bentuk bengkok (104 deg)
+                ctx.beginPath(); ctx.arc(-16, 12, 10, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(16, 12, 10, 0, Math.PI*2); ctx.fill();
+            }
+            else if (type === 'CO2') {
+                ctx.fillStyle = '#ef4444'; // O (Red)
+                ctx.beginPath(); ctx.arc(-25, 0, 14, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(25, 0, 14, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#64748b'; // C (Gray)
+                ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
+            } 
+            else if (type === 'CH4') {
+                ctx.fillStyle = '#64748b'; // C (Gray)
+                ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#f8fafc'; // H (White)
+                ctx.beginPath(); ctx.arc(0, -26, 9, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, 26, 9, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-26, 0, 9, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(26, 0, 9, 0, Math.PI*2); ctx.fill();
+            }
+            
+            ctx.restore();
+
+            if(vibrate > 0) {
+                // Glow effect saat molekul aktif/tereksitasi
+                ctx.shadowColor = (excite === 'uv') ? '#a78bfa' : ((excite === 'mw') ? '#10b981' : '#ef4444');
+                ctx.shadowBlur = 25;
+                ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI*2);
+                
+                let glowColor = (excite === 'uv') ? 'rgba(139,92,246,0.3)' : ((excite === 'mw') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)');
+                ctx.fillStyle = glowColor; ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function renderSpectrumLab() {
+            if(specCanvas.width !== specCanvas.parentElement.clientWidth) {
+                specCanvas.width = specCanvas.parentElement.clientWidth;
+                specCanvas.height = 180;
+            }
+            let W = specCanvas.width; let H = specCanvas.height;
+            ctxSpec.clearRect(0,0,W,H);
+
+            targetMolecule.x = W / 2;
+            targetMolecule.y = H / 2;
+            if(targetMolecule.vibrate > 0) targetMolecule.vibrate--;
+
+            // Draw Emitter Gun (Kiri)
+            ctxSpec.fillStyle = '#1e293b';
+            ctxSpec.fillRect(-10, H/2 - 25, 40, 50);
+            ctxSpec.fillStyle = '#0ea5e9'; ctxSpec.fillRect(30, H/2 - 8, 5, 16);
+
+            // Draw Target Molecule (Tengah)
+            drawMolecule(ctxSpec, currentMol, targetMolecule.x, targetMolecule.y, targetMolecule.vibrate, targetMolecule.excite);
+
+            // Update & Draw Photons
+            for(let i=specPhotons.length-1; i>=0; i--) {
+                let p = specPhotons[i];
+                
+                // Karakteristik Amplitudo berdasarkan Spektrum
+                let waveOffset = 0;
+                if(p.type === 'UV') waveOffset = Math.sin(p.x * 0.5) * 4;        // Rapat & Kecil
+                else if(p.type === 'VIS') waveOffset = Math.sin(p.x * 0.2) * 6;  // Medium
+                else if(p.type === 'IR') waveOffset = Math.sin(p.x * 0.08) * 10; // Renggang & Besar
+                else if(p.type === 'MW') waveOffset = Math.sin(p.x * 0.03) * 15; // Sangat Renggang
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // LOGIKA FISIKA: COLLISION & PENYERAPAN
+                let dx = p.x - targetMolecule.x;
+                let dy = p.y - targetMolecule.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                if(dist < 35 && p.vx > 0) { // Menabrak dari kiri
+                    let absorbed = false;
+                    let exciteMode = '';
+
+                    // Aturan Interaksi Radiasi & Gas
+                    if (p.type === 'IR' && ['CO2', 'CH4', 'H2O'].includes(currentMol)) {
+                        absorbed = true; exciteMode = 'ir'; // Efek Rumah Kaca Vibrasional
+                    }
+                    if (p.type === 'UV' && currentMol === 'O3') {
+                        absorbed = true; exciteMode = 'uv'; // Perlindungan Ozon
+                    }
+                    if (p.type === 'MW' && currentMol === 'H2O') {
+                        absorbed = true; exciteMode = 'rotate'; // Efek Microwave Oven
+                    }
+
+                    if (absorbed) {
+                        targetMolecule.vibrate = 20;
+                        targetMolecule.excite = exciteMode;
+                        // Scatter: Foton diemisikan/dihamburkan ke arah acak
+                        let angle = Math.random() * Math.PI * 2;
+                        let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+                        p.vx = Math.cos(angle) * speed;
+                        p.vy = Math.sin(angle) * speed;
+                    }
+                    // Jika tidak diserap (miss), foton tembus terus (transparan).
+                }
+
+                // Draw Photon Dot
+                ctxSpec.beginPath();
+                ctxSpec.arc(p.x, p.y + waveOffset, 4, 0, Math.PI*2);
+                
+                if(p.type === 'UV') { ctxSpec.fillStyle = '#a78bfa'; ctxSpec.shadowColor = '#8b5cf6'; }
+                else if(p.type === 'VIS') { ctxSpec.fillStyle = '#fef08a'; ctxSpec.shadowColor = '#facc15'; }
+                else if(p.type === 'IR') { ctxSpec.fillStyle = '#fca5a5'; ctxSpec.shadowColor = '#ef4444'; }
+                else if(p.type === 'MW') { ctxSpec.fillStyle = '#6ee7b7'; ctxSpec.shadowColor = '#10b981'; } // Hijau
+                
+                ctxSpec.shadowBlur = 10; ctxSpec.fill(); ctxSpec.shadowBlur = 0;
+
+                // Draw Trail (Ekor Foton)
+                ctxSpec.beginPath();
+                ctxSpec.moveTo(p.x, p.y + waveOffset);
+                ctxSpec.lineTo(p.x - p.vx*4, p.y - p.vy*4 + waveOffset);
+                ctxSpec.strokeStyle = ctxSpec.fillStyle;
+                ctxSpec.lineWidth = 2;
+                ctxSpec.stroke();
+
+                if(p.x > W + 50 || p.x < -50 || p.y < -50 || p.y > H + 50) p.active = false;
+            }
+            
+            specPhotons = specPhotons.filter(p => p.active);
+            specAnimId = requestAnimationFrame(renderSpectrumLab);
+        }
+
+        // ==========================================
+        // 2. MODUL 2 & 3: MAIN ATMOSPHERE LAB & PHYSICS
+        // ==========================================
+        const atCanvas = document.getElementById('atmosCanvas');
+        const ctxAt = atCanvas.getContext('2d');
+        
+        let atmosPhotons = [];
+        let globMolecules = [];
+        let physicsState = {
+            albedo: 0.3, // 0.1 - 0.8
+            ghg: 0.3,    // 0.0 - 1.0
+            tempC: 15.0  // Calculated Temperature
+        };
+
+        class AtmPhoton {
+            constructor() {
+                this.x = Math.random() * atCanvas.width;
+                this.y = 0;
+                this.type = 'UV'; // merepresentasikan spectrum masuk
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = 3 + Math.random();
+                this.color = '#00e5ff'; 
+                this.active = true;
+            }
+            update(groundY) {
+                this.x += this.vx; this.y += this.vy;
+                
+                if(this.type === 'UV' && this.y >= groundY) {
+                    if(Math.random() < physicsState.albedo) {
+                        // Reflect (Albedo effect)
+                        this.vy = -this.vy;
+                    } else {
+                        // Terestrial Infrared emission
+                        this.type = 'IR';
+                        this.color = '#ff6600';
+                        this.vy = -1.5 - Math.random();
+                        this.vx = (Math.random() - 0.5) * 2;
+                    }
+                }
+                
+                if(this.type === 'IR' && this.vy < 0) {
+                    for(let m of globMolecules) {
+                        let dx = this.x - m.x; let dy = this.y - m.y;
+                        if(dx*dx + dy*dy < m.r*m.r * 4) { 
+                            this.vy = Math.abs(this.vy); // Greenhouse trapping
+                            this.vx += (Math.random() - 0.5);
+                            m.flash = 15; 
+                            break;
+                        }
+                    }
+                }
+
+                if(this.y < -10 || this.y > atCanvas.height + 10 || this.x < -10 || this.x > atCanvas.width + 10) {
+                    this.active = false;
+                }
+            }
+            draw(ctx) {
+                ctx.beginPath(); ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.vx*3, this.y - this.vy*3);
+                ctx.strokeStyle = this.color; ctx.lineWidth = 2; ctx.stroke();
+            }
+        }
+
+        class GlobMolecule {
+            constructor() {
+                this.x = Math.random() * atCanvas.width;
+                this.y = Math.random() * (atCanvas.height - 100) + 20; 
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.r = 4;
+                this.flash = 0;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0 || this.x > atCanvas.width) this.vx *= -1;
+                if(this.y < 10 || this.y > atCanvas.height - 80) this.vy *= -1;
+                if(this.flash > 0) this.flash--;
+            }
+            draw(ctx) {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+                ctx.fillStyle = this.flash > 0 ? '#ff3333' : '#64748b'; 
+                ctx.fill();
+            }
+        }
+
+        function updateGlobMoleculesCount() {
+            let targetCount = Math.floor(physicsState.ghg * 200);
+            while(globMolecules.length < targetCount) globMolecules.push(new GlobMolecule());
+            while(globMolecules.length > targetCount) globMolecules.pop();
+        }
+
+        function getAlbedoColor(a) {
+            let t = (a - 0.1) / 0.7;
+            if(t < 0) t = 0; if(t > 1) t = 1;
+            let r = Math.round(0 + t * (255 - 0));
+            let g = Math.round(179 + t * (255 - 179));
+            let b = Math.round(89 + t * (255 - 89));
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function updatePhysics() {
+            let sAlbedo = parseFloat(document.getElementById('slider-albedo').value) / 100;
+            let sGhg = parseFloat(document.getElementById('slider-ghg').value) / 100;
+
+            physicsState.albedo = sAlbedo;
+            physicsState.ghg = sGhg;
+            updateGlobMoleculesCount();
+
+            let albedoText = "Hutan/Lautan";
+            if(sAlbedo > 0.6) albedoText = "Es/Salju Terang";
+            else if(sAlbedo > 0.4) albedoText = "Gurun/Pasir";
+            document.getElementById('val-albedo').innerText = `${sAlbedo.toFixed(2)} (${albedoText})`;
+
+            let ghgText = "Normal (Alami)";
+            if(sGhg > 0.8) ghgText = "Kritis (Ekstrem)";
+            else if(sGhg > 0.5) ghgText = "Tinggi (Polusi)";
+            else if(sGhg < 0.1) ghgText = "Zaman Es (Terlalu Rendah)";
+            let ghgEl = document.getElementById('val-ghg');
+            ghgEl.innerText = ghgText;
+            ghgEl.style.color = sGhg > 0.5 ? 'var(--alert-red)' : 'var(--orange-ir)';
+
+            let I_in = 342; 
+            let sigma = 5.67e-8;
+            let epsilon = 1.0 - (physicsState.ghg * 0.7); 
+            if(epsilon < 0.3) epsilon = 0.3; 
+            
+            let T_kelvin = Math.pow((I_in * (1 - physicsState.albedo)) / (sigma * epsilon), 0.25);
+            let T_celcius = T_kelvin - 273.15;
+            physicsState.tempC = T_celcius;
+
+            let tempEl = document.getElementById('earth-temp');
+            tempEl.innerText = T_celcius.toFixed(1) + " °C";
+            if(T_celcius > 20) tempEl.style.color = 'var(--alert-red)';
+            else if(T_celcius < 5) tempEl.style.color = 'var(--blue-uv)';
+            else tempEl.style.color = 'var(--orange-ir)';
+
+            let latexStr = `
+                $$ I_{in} (1 - \\alpha) = \\epsilon \\sigma T^4 $$
+                $$ T = \\sqrt[4]{\\frac{I_{in} (1 - \\alpha)}{\\sigma \\epsilon}} $$
+                $$ T = \\sqrt[4]{\\frac{342 \\times (1 - ${sAlbedo.toFixed(2)})}{5.67\\times 10^{-8} \\times ${epsilon.toFixed(2)}}} $$
+                $$ T \\approx ${T_kelvin.toFixed(1)} \\text{ K} = \\mathbf{${T_celcius.toFixed(1)}^\\circ \\text{C}} $$
+            `;
+            document.getElementById('math-buffer').innerHTML = latexStr;
+            renderMathLive();
+        }
+
+        function renderAtmosphere() {
+            if(atCanvas.width !== atCanvas.parentElement.clientWidth) {
+                atCanvas.width = atCanvas.parentElement.clientWidth;
+                atCanvas.height = 350;
+                updateGlobMoleculesCount(); 
+            }
+            let W = atCanvas.width; let H = atCanvas.height;
+
+            ctxAt.clearRect(0, 0, W, H);
+
+            let groundY = H - 50;
+            ctxAt.fillStyle = getAlbedoColor(physicsState.albedo);
+            ctxAt.fillRect(0, groundY, W, 50);
+            document.getElementById('surface-label').style.color = physicsState.albedo > 0.5 ? '#000' : '#fff';
+
+            if(Math.random() < 0.3) atmosPhotons.push(new AtmPhoton());
+
+            globMolecules.forEach(m => { m.update(); m.draw(ctxAt); });
+            for (let i = atmosPhotons.length - 1; i >= 0; i--) {
+                atmosPhotons[i].update(groundY);
+                atmosPhotons[i].draw(ctxAt);
+                if (!atmosPhotons[i].active) atmosPhotons.splice(i, 1);
+            }
+
+            requestAnimationFrame(renderAtmosphere);
+        }
+
+        // ==========================================
+        // 3. MODUL 4: MINI GAME LOGIC
+        // ==========================================
+        let gameActive = false;
+        let gameTime = 30;
+        let gameGHG = 50; 
+        let gameTimerId = null;
+
+        function updateGameUI() {
+            document.getElementById('gm-time').innerText = gameTime + "s";
+            document.getElementById('gm-ghg').innerText = gameGHG + "%";
+            
+            let anomaly = 1.0 + ((gameGHG - 50) * (2.0 / 50));
+            let tempEl = document.getElementById('gm-temp');
+            tempEl.innerText = `+${anomaly.toFixed(1)} °C`;
+            
+            if(anomaly > 2.0) tempEl.style.color = 'var(--alert-red)';
+            else if(anomaly < 1.0) tempEl.style.color = 'var(--blue-uv)';
+            else tempEl.style.color = 'var(--orange-ir)';
+
+            if(anomaly >= 2.1) {
+                endGame(false, "GAME OVER: Suhu Bumi Kritis!", `Suhu naik hingga +${anomaly.toFixed(1)}°C. Es kutub mencair pesat, pesisir Jawa Timur tenggelam oleh naiknya muka air laut.`);
+            } else if (gameTime <= 0) {
+                endGame(true, "MISI BERHASIL: Net Zero Tercapai!", `Anda berhasil menjaga kenaikan suhu di angka +${anomaly.toFixed(1)}°C selama 30 tahun (detik). Ekosistem terselamatkan!`);
+            }
+        }
+
+        function startGame() {
+            gameActive = true;
+            gameTime = 30;
+            gameGHG = 50;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-tree').disabled = false;
+            document.getElementById('btn-solar').disabled = false;
+
+            gameTimerId = setInterval(() => {
+                gameTime--;
+                gameGHG += 3; 
+                if(gameGHG > 100) gameGHG = 100;
+                updateGameUI();
+            }, 1000);
+            updateGameUI();
+        }
+
+        function actionPlantTree() {
+            if(!gameActive) return;
+            gameGHG -= 5;
+            if(gameGHG < 0) gameGHG = 0;
+            updateGameUI();
+            let btn = document.getElementById('btn-tree'); btn.disabled = true;
+            setTimeout(() => { if(gameActive) btn.disabled = false; }, 1000);
+        }
+
+        function actionSolar() {
+            if(!gameActive) return;
+            gameGHG -= 10;
+            if(gameGHG < 0) gameGHG = 0;
+            updateGameUI();
+            let btn = document.getElementById('btn-solar'); btn.disabled = true;
+            setTimeout(() => { if(gameActive) btn.disabled = false; }, 3000);
+        }
+
+        function endGame(isWin, title, desc) {
+            gameActive = false;
+            clearInterval(gameTimerId);
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-tree').disabled = true;
+            document.getElementById('btn-solar').disabled = true;
+
+            let overlay = document.getElementById('game-overlay');
+            let t = document.getElementById('game-msg-title');
+            t.innerText = title;
+            t.style.color = isWin ? 'var(--earth-green)' : 'var(--alert-red)';
+            document.getElementById('game-msg-desc').innerText = desc;
+            overlay.classList.add('active');
+        }
+
+        function resetGameUI() {
+            document.getElementById('game-overlay').classList.remove('active');
+            gameTime = 30; gameGHG = 50;
+            updateGameUI();
+        }
+
+        // ==========================================
+        // INIT
+        // ==========================================
+        window.onload = () => {
+            setMolecule('N2');
+            renderSpectrumLab();
+            
+            updatePhysics(); 
+            renderAtmosphere();
+            
+            resetGameUI();
+        };
+
+    </script>
+</body>
+</html>
