@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Ballistic Vector: Dekonstruksi Gerak Parabola</title>
+    <style>
+        :root {
+            /* Palette */
+            --bg-dark: #0b132b;
+            --bg-panel: #1c2541;
+            --vec-x: #06b6d4; /* Electric Cyan */
+            --vec-y: #f59e0b; /* Amber Orange */
+            --vec-v: #10b981; /* Neon Emerald Green */
+            --vec-g: #ef4444; /* Crimson Red */
+            --ghost: #c084fc; /* Soft Lavender */
+            --text-main: #f8fafc;
+            --text-dim: #cbd5e1;
+            --border-glow: rgba(6, 182, 212, 0.4);
+            
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.5;
+            overflow-x: hidden;
+            font-size: 14px;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 15px; }
+
+        /* Typography */
+        h1 { font-size: 1.8rem; text-align: center; color: var(--vec-x); text-shadow: 0 0 10px var(--border-glow); text-transform: uppercase; letter-spacing: 2px;}
+        h2 { font-size: 1.2rem; margin-bottom: 15px; border-bottom: 2px solid #3a506b; padding-bottom: 5px; color: var(--vec-v); text-transform: uppercase;}
+        h3 { font-size: 1rem; margin-bottom: 10px; color: var(--text-dim); }
+        .subtitle { text-align: center; color: var(--text-dim); font-size: 0.95rem; margin-bottom: 25px; font-style: italic; }
+        
+        .math { font-family: var(--font-mono); font-style: italic; font-weight: bold; }
+        .math-v { font-style: italic; font-weight: bold; position: relative; display: inline-block; padding-top: 4px; margin: 0 2px;}
+        .math-v::after { content: "→"; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 0.9em; font-style: normal; font-weight: normal;}
+        
+        /* Highlight Colors */
+        .c-x { color: var(--vec-x); font-weight: bold; }
+        .c-y { color: var(--vec-y); font-weight: bold; }
+        .c-v { color: var(--vec-v); font-weight: bold; }
+        .c-g { color: var(--vec-g); font-weight: bold; }
+
+        /* Layout Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-2-dash { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        /* Layout Utama Lab: Responsif Desktop -> Tablet -> Mobile */
+        .grid-3-main { 
+            display: grid; 
+            grid-template-columns: 260px 1fr 260px; 
+            gap: 15px; 
+            align-items: start;
+            grid-template-areas: "controls canvas telemetry";
+        }
+        .lab-controls { grid-area: controls; }
+        .lab-canvas-wrapper { grid-area: canvas; display: flex; flex-direction: column; height: 100%; min-height: 450px; }
+        .lab-telemetry { grid-area: telemetry; }
+
+        @media (max-width: 1200px) {
+            .grid-3-main { 
+                grid-template-columns: 1fr 1fr; 
+                grid-template-areas: 
+                    "canvas canvas" 
+                    "controls telemetry"; 
+            }
+            .lab-canvas-wrapper { min-height: 400px; }
+        }
+
+        @media (max-width: 768px) {
+            .grid-3-main { 
+                grid-template-columns: 1fr; 
+                grid-template-areas: 
+                    "canvas" 
+                    "controls" 
+                    "telemetry"; 
+            }
+            .grid-2 { grid-template-columns: 1fr; }
+            .lab-canvas-wrapper { 
+                min-height: auto; 
+                aspect-ratio: 4/3; /* Memaksa proporsi optimal di HP */
+            }
+        }
+
+        /* Panels */
+        .panel {
+            background-color: var(--bg-panel);
+            border: 1px solid #3a506b;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .panel-glow { border-color: var(--vec-x); box-shadow: 0 0 10px var(--border-glow) inset; }
+
+        /* Controls */
+        .control-group { margin-bottom: 12px; }
+        .control-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-dim); }
+        .val-disp { font-family: var(--font-mono); color: var(--vec-x); font-weight: bold; }
+        
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; background: #0b132b; border-radius: 3px; border: 1px solid #3a506b; cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px; width: 18px; border-radius: 50%; background: var(--vec-x); cursor: pointer;
+            -webkit-appearance: none; margin-top: -7px; box-shadow: 0 0 8px var(--vec-x);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-block; width: 100%; padding: 10px; margin-bottom: 8px;
+            background: #2a3a5a; color: var(--text-main); border: 1px solid #5bc0be;
+            border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase;
+            text-align: center; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .btn:hover { background: #3a506b; box-shadow: 0 0 10px rgba(91, 192, 190, 0.5); }
+        .btn-launch { background: rgba(16, 185, 129, 0.2); border-color: var(--vec-v); color: var(--vec-v); }
+        .btn-launch:hover { background: var(--vec-v); color: var(--bg-dark); box-shadow: 0 0 15px var(--vec-v); }
+        .btn-reset { background: rgba(239, 68, 68, 0.2); border-color: var(--vec-g); color: var(--vec-g); }
+        .btn-reset:hover { background: var(--vec-g); color: var(--bg-dark); box-shadow: 0 0 15px var(--vec-g); }
+
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-dim);}
+        .checkbox-group input { cursor: pointer; accent-color: var(--vec-x); width: 16px; height: 16px;}
+
+        /* Canvas */
+        .canvas-container {
+            width: 100%; flex-grow: 1; background: #050a15; border: 1px solid #3a506b;
+            border-radius: 6px; overflow: hidden; position: relative;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        canvas { display: block; width: 100%; height: auto; touch-action: none; }
+        
+        /* Dashboard & Meters */
+        .metric-box { background: var(--bg-dark); border: 1px solid #3a506b; padding: 8px; border-radius: 4px; text-align: center; }
+        .metric-title { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+        .metric-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: bold; margin-top: 2px; }
+
+        /* Energy Bars */
+        .energy-container { width: 100%; height: 24px; background: var(--bg-dark); border: 1px solid #3a506b; border-radius: 12px; overflow: hidden; display: flex; margin-bottom: 8px;}
+        .energy-bar { height: 100%; transition: width 0.1s linear; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; color: #fff; text-shadow: 0 0 2px #000;}
+        .bar-ekx { background: var(--vec-x); }
+        .bar-eky { background: var(--vec-y); }
+        .bar-ep { background: var(--vec-g); }
+
+        .formula-box { background: #050a15; padding: 10px; border-radius: 6px; border: 1px dashed #3a506b; font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;}
+        
+        /* Game Feedback */
+        #game-feedback { margin-top: 10px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; display: none; font-size: 0.9rem;}
+        .fb-success { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--vec-v); color: var(--vec-v); }
+        .fb-fail { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--vec-g); color: var(--vec-g); }
+        
+        /* Uraian Materi Styles */
+        .theory-list { margin-left: 20px; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+        .theory-list li { margin-bottom: 4px; }
+        .theory-desc { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 10px; text-align: justify; line-height: 1.6;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulakor Ballistic Vector</h1>
+        <div class="subtitle">Dekonstruksi Gerak Parabola: Analisis Independensi GLB (Sumbu X) dan GLBB (Sumbu Y)</div>
+    </header>
+
+    <div class="grid-2" style="margin-bottom: 15px;">
+        <div class="panel">
+            <h2>Dekonstruksi Miskonsepsi</h2>
+            <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--vec-y); padding: 10px; margin-bottom: 10px;">
+                <div style="color: var(--vec-y); font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">Miskonsepsi 1: "Di titik tertinggi, kecepatan benda = 0"</div>
+                <p class="theory-desc" style="margin-bottom:0;"><strong>Fakta:</strong> Hanya komponen kecepatan vertikal (<span class="c-y"><span class="math-v">v</span><sub>y</sub></span>) yang bernilai nol saat benda berbalik arah. Komponen horizontal (<span class="c-x"><span class="math-v">v</span><sub>x</sub></span>) <strong>tetap konstan</strong> karena tidak ada percepatan di sumbu X. Benda tetap bergerak mendatar di puncak!</p>
+            </div>
+            <div style="background: rgba(6, 182, 212, 0.1); border-left: 3px solid var(--vec-x); padding: 10px;">
+                <div style="color: var(--vec-x); font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">Miskonsepsi 2: "Kecepatan horizontal mendatar memengaruhi waktu jatuh"</div>
+                <p class="theory-desc" style="margin-bottom:0;"><strong>Fakta (Prinsip Superposisi Galileo):</strong> Gerak pada sumbu X dan Y sepenuhnya independen. Gaya gravitasi hanya bekerja vertikal. Peluru yang ditembakkan kencang mendatar dan peluru yang dijatuhkan bebas dari ketinggian yang sama akan <strong>menyentuh tanah pada waktu yang bersamaan!</strong></p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Apersepsi: Eksperimen Jatuh Bebas vs Ditembakkan</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 10px;">Dua bola berada di ketinggian sama (20m). <span class="c-x">Bola A ditembakkan mendatar</span>, <span class="c-g">Bola B dijatuhkan bebas</span>. Amati garis horizontal yang menghubungkan mereka.</p>
+            <div class="canvas-container" style="background: #050a15;">
+                <canvas id="apperceptionCanvas" width="600" height="200" style="aspect-ratio: 3/1;"></canvas>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-launch" id="btn-drop" style="flex:2;">Lepaskan & Tembakkan Simultan</button>
+                <button class="btn btn-reset" id="btn-drop-reset" style="flex:1;">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW THEORETICAL MODULE -->
+    <div class="panel" style="margin-bottom: 15px;">
+        <h2>Database Teori: Kinematika Gerak Parabola</h2>
+        <div class="grid-2">
+            <div>
+                <h3 style="color: var(--text-main); font-weight: bold;">1. Definisi & Prinsip Superposisi</h3>
+                <p class="theory-desc">
+                    Gerak parabola (proyektil) adalah gerak lintasan melengkung (kurva) dari sebuah benda yang dilemparkan ke udara dan sepenuhnya dipengaruhi oleh gaya gravitasi Bumi (gesekan udara diabaikan). Kunci utama menganalisis gerak ini terletak pada <strong>Prinsip Superposisi Galileo</strong>: Gerak parabola sejatinya adalah gabungan dua gerak lurus (X dan Y) yang terjadi secara bersamaan namun <strong>tidak saling memengaruhi</strong>.
+                </p>
+                
+                <h3 style="color: var(--vec-x); font-weight: bold; margin-top: 15px;">2. Sumbu X: Gerak Lurus Beraturan (GLB)</h3>
+                <p class="theory-desc">
+                    Pada sumbu horizontal, proyektil tidak mengalami gaya apapun (<span class="math">a<sub>x</sub> = 0</span>). Akibat inersia, benda terus bergerak lurus mendatar dengan kecepatan yang <strong>selalu konstan</strong>.
+                </p>
+                <ul class="theory-list">
+                    <li><strong>Kecepatan Awal:</strong> <span class="math">v<sub>0x</sub> = v<sub>0</sub> &middot; cos(&theta;)</span></li>
+                    <li><strong>Kecepatan Sesaat (t):</strong> <span class="math">v<sub>x</sub> = v<sub>0x</sub></span> (Tidak berubah oleh waktu)</li>
+                    <li><strong>Persamaan Posisi:</strong> <span class="math">x = v<sub>x</sub> &middot; t</span></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color: var(--vec-y); font-weight: bold;">3. Sumbu Y: Gerak Lurus Berubah Beraturan (GLBB)</h3>
+                <p class="theory-desc">
+                    Pada sumbu vertikal, proyektil terus ditarik oleh gravitasi bumi ke bawah (<span class="math">a<sub>y</sub> = -g</span>). Benda akan melambat saat bergerak naik, berhenti sejenak di puncak vertikal, lalu berakselerasi saat jatuh.
+                </p>
+                <ul class="theory-list">
+                    <li><strong>Kecepatan Awal:</strong> <span class="math">v<sub>0y</sub> = v<sub>0</sub> &middot; sin(&theta;)</span></li>
+                    <li><strong>Kecepatan Sesaat (t):</strong> <span class="math">v<sub>y</sub> = v<sub>0y</sub> - g &middot; t</span></li>
+                    <li><strong>Persamaan Posisi:</strong> <span class="math">y = h<sub>0</sub> + (v<sub>0y</sub> &middot; t) - (&frac12; g &middot; t&sup2;)</span></li>
+                </ul>
+
+                <h3 style="color: var(--vec-v); font-weight: bold; margin-top: 15px;">4. Karakteristik & Penghubung Dimensi</h3>
+                <ul class="theory-list">
+                    <li><strong>Kecepatan Total Sesaat (Vektor Resultan):</strong> Diperoleh dari Teorema Pythagoras, <span class="math">v = &radic;(v<sub>x</sub>&sup2; + v<sub>y</sub>&sup2;)</span>.</li>
+                    <li><strong>Waktu (t):</strong> Merupakan satu-satunya variabel <em>skalar</em> yang menjembatani sumbu X dan Y. Posisi <span class="math">(x, y)</span> selalu menggunakan waktu singkron yang sama.</li>
+                    <li><strong>Titik Tertinggi (H<sub>max</sub>):</strong> Tercapai saat <span class="math">v<sub>y</sub> = 0</span>. Waktu untuk mencapai puncak adalah <span class="math">t = v<sub>0y</sub> / g</span>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- END NEW THEORETICAL MODULE -->
+
+    <div class="panel panel-glow" style="margin-bottom: 15px;">
+        <h2>Laboratorium Utama: Simulator Trajektori & Dekomposisi Vektor</h2>
+        <div class="grid-3-main">
+            
+            <!-- Left Panel: Controls -->
+            <div class="lab-controls">
+                <h3>Parameter Tembakan</h3>
+                <div class="control-group">
+                    <div class="control-label"><span>Kecepatan Awal (<i>v<sub>0</sub></i>)</span> <span class="val-disp" id="val-v0">30 m/s</span></div>
+                    <input type="range" id="sl-v0" min="5" max="60" step="1" value="30">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Sudut Elevasi (&theta;)</span> <span class="val-disp" id="val-theta">45&deg;</span></div>
+                    <input type="range" id="sl-theta" min="0" max="90" step="1" value="45">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Ketinggian Awal (<i>h<sub>0</sub></i>)</span> <span class="val-disp" id="val-h0">0 m</span></div>
+                    <input type="range" id="sl-h0" min="0" max="50" step="1" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Gravitasi (<i>g</i>)</span> <span class="val-disp" id="val-g">9.8 m/s&sup2;</span></div>
+                    <input type="range" id="sl-g" min="1.6" max="20" step="0.1" value="9.8">
+                    <div style="font-size: 0.65rem; color: var(--text-dim); text-align: right; margin-top: -3px;">Bulan 1.6 | Bumi 9.8 | Jupiter 24.7</div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-launch" id="btn-sim-launch">Luncurkan Proyektil</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn" id="btn-sim-pause" style="flex:1;">Pause/Play</button>
+                        <button class="btn btn-reset" id="btn-sim-reset" style="flex:1;">Reset</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px; border-top: 1px solid #3a506b; padding-top: 10px;">
+                    <h3>Overlay Visual</h3>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-vector" checked> Vektor (v<sub>x</sub>, v<sub>y</sub>, v)</label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-ghost" checked> Jejak Bayangan X & Y</label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-lines" checked> Garis H<sub>max</sub> & R<sub>max</sub></label>
+                </div>
+            </div>
+
+            <!-- Center Panel: Main Canvas -->
+            <div class="lab-canvas-wrapper" style="position: relative;">
+                <div class="canvas-container">
+                    <!-- HUD Status -->
+                    <div style="position: absolute; top: 10px; left: 10px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-main); pointer-events: none; background: rgba(11,19,43,0.8); padding: 5px 10px; border: 1px solid #3a506b; border-radius: 4px;">
+                        <div>STATUS: <span id="hud-status" style="color:var(--vec-v);">STANDBY</span></div>
+                        <div>TIME(t): <span id="hud-time" style="color:var(--vec-x);">0.00</span> s</div>
+                    </div>
+                    <canvas id="simCanvas" width="800" height="400" style="height: 100%;"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Panel: Telemetry & Math -->
+            <div class="lab-telemetry">
+                <h3>Telemetri Real-Time</h3>
+                <div class="grid-2-dash" style="margin-bottom: 10px;">
+                    <div class="metric-box">
+                        <div class="metric-title">Posisi X (GLB)</div>
+                        <div class="metric-val c-x" id="dash-x">0.00 m</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Posisi Y (GLBB)</div>
+                        <div class="metric-val c-y" id="dash-y">0.00 m</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Kec. X (v<sub>x</sub>)</div>
+                        <div class="metric-val c-x" id="dash-vx">0.00 m/s</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Kec. Y (v<sub>y</sub>)</div>
+                        <div class="metric-val c-y" id="dash-vy">0.00 m/s</div>
+                    </div>
+                </div>
+                <div class="metric-box" style="margin-bottom: 15px; border-color: var(--vec-v);">
+                    <div class="metric-title">Kec. Resultan Total (|v|)</div>
+                    <div class="metric-val c-v" id="dash-v">0.00 m/s</div>
+                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:2px;">&radic;(v<sub>x</sub>&sup2; + v<sub>y</sub>&sup2;)</div>
+                </div>
+
+                <h3>Dekomposisi Energi (Metafora)</h3>
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 2px; display:flex; justify-content:space-between;">
+                    <span class="c-x">Ek<sub>x</sub> (Konstan)</span>
+                    <span class="c-y">Ek<sub>y</sub> (Gerak)</span>
+                    <span class="c-g">Ep (Ketinggian)</span>
+                </div>
+                <div class="energy-container">
+                    <div class="energy-bar bar-ekx" id="bar-ekx" style="width:33.3%;">Ekx</div>
+                    <div class="energy-bar bar-eky" id="bar-eky" style="width:33.3%;">Eky</div>
+                    <div class="energy-bar bar-ep" id="bar-ep" style="width:33.3%;">Ep</div>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.2;">Panjang balok <span class="c-x">Ek<sub>x</sub></span> selalu tetap membuktikan sumbu X bersifat GLB. <span class="c-y">Ek<sub>y</sub></span> dan <span class="c-g">Ep</span> saling bertukar membentuk energi mekanik vertikal.</p>
+
+                <div style="margin-top: 15px; border-top: 1px solid #3a506b; padding-top: 10px;">
+                    <div style="font-size: 0.8rem; color: var(--text-main);">Target Analisis:</div>
+                    <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--ghost);">
+                        H<sub>max</sub> = <span id="dash-hmax">0.00</span> m<br>
+                        R<sub>max</sub> = <span id="dash-rmax">0.00</span> m
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="panel">
+            <h2>Substitusi Formulasi Dinamis</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 10px;">Persamaan kinematis terurai menjadi komponen sumbu X dan Y. Perhatikan angka yang bergerak real-time sesuai simulasi.</p>
+            
+            <div style="color: var(--vec-x); font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">Sumbu X (Gerak Lurus Beraturan - GLB)</div>
+            <div class="formula-box" style="border-color: var(--vec-x);">
+                v<sub>x</sub> = v<sub>0</sub> &middot; cos(&theta;)<br>
+                <span class="c-x">v<sub>x</sub> = <span id="f-v0">0</span> &middot; cos(<span id="f-theta">0</span>&deg;) = <span id="f-vx">0</span> m/s (Tetap)</span><br><br>
+                x(t) = v<sub>x</sub> &middot; t <br>
+                <span class="c-x">x(t) = <span id="f-vxt">0</span> &middot; <span class="live-t">0.00</span> = <span id="f-x">0.00</span> m</span>
+            </div>
+
+            <div style="color: var(--vec-y); font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; margin-top: 15px;">Sumbu Y (Gerak Lurus Berubah Beraturan - GLBB)</div>
+            <div class="formula-box" style="border-color: var(--vec-y);">
+                v<sub>0y</sub> = v<sub>0</sub> &middot; sin(&theta;)<br>
+                <span class="c-y">v<sub>0y</sub> = <span id="f-v0y">0</span> m/s</span><br><br>
+                v<sub>y</sub>(t) = v<sub>0y</sub> - g &middot; t<br>
+                <span class="c-y">v<sub>y</sub>(t) = <span id="f-v0yt2">0</span> - (<span id="f-g">9.8</span> &middot; <span class="live-t">0.00</span>) = <span id="f-vy">0.00</span> m/s</span><br><br>
+                y(t) = h<sub>0</sub> + v<sub>0y</sub>&middot;t - &frac12;g&middot;t&sup2;<br>
+                <span class="c-y">y(t) = <span id="f-h0">0</span> + (<span id="f-v0yt3">0</span> &middot; <span class="live-t">0.00</span>) - (0.5 &middot; <span id="f-g2">9.8</span> &middot; <span class="live-t2">0.00</span>&sup2;) = <span id="f-y">0.00</span> m</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Mini-Game: Artillery Precision Strike</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 10px;">Hitung dan atur kombinasi <span class="c-x">Kecepatan (v<sub>0</sub>)</span> dan <span class="c-y">Sudut (&theta;)</span> agar peluru melewati tepat di tengah Cincin Target!</p>
+            
+            <div style="background: #111827; border: 1px solid #374151; padding: 15px; border-radius: 6px; text-align: center;">
+                <div style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 10px;">TARGET KOORDINAT TERKUNCI PADA:</div>
+                <div style="font-family: var(--font-mono); font-size: 1.8rem; color: var(--ghost); font-weight: bold; text-shadow: 0 0 10px var(--ghost);">
+                    X = <span id="game-xt">40</span> m, Y = <span id="game-yt">20</span> m
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 10px;">Atur slider pada panel utama, lalu klik "Luncurkan Proyektil". Jari-jari target = 2 meter.</p>
+                <button class="btn" id="btn-new-target" style="margin-top: 10px; width: auto; padding: 8px 20px;">Acak Target Baru</button>
+                
+                <div id="game-feedback">...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- UTILITIES & DOM ELEMENTS ---
+    const rad = deg => deg * (Math.PI / 180);
+    const round = (val, dec = 2) => Number(val).toFixed(dec);
+
+    // Canvas Main
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Canvas Apperception
+    const aCanvas = document.getElementById('apperceptionCanvas');
+    const aCtx = aCanvas.getContext('2d');
+
+    // UI Elements
+    const els = {
+        slV0: document.getElementById('sl-v0'), valV0: document.getElementById('val-v0'),
+        slTheta: document.getElementById('sl-theta'), valTheta: document.getElementById('val-theta'),
+        slH0: document.getElementById('sl-h0'), valH0: document.getElementById('val-h0'),
+        slG: document.getElementById('sl-g'), valG: document.getElementById('val-g'),
+        
+        btnLaunch: document.getElementById('btn-sim-launch'),
+        btnPause: document.getElementById('btn-sim-pause'),
+        btnReset: document.getElementById('btn-sim-reset'),
+        
+        chkVec: document.getElementById('chk-vector'),
+        chkGhost: document.getElementById('chk-ghost'),
+        chkLines: document.getElementById('chk-lines'),
+        
+        hudStatus: document.getElementById('hud-status'),
+        hudTime: document.getElementById('hud-time'),
+        
+        dX: document.getElementById('dash-x'), dY: document.getElementById('dash-y'),
+        dVx: document.getElementById('dash-vx'), dVy: document.getElementById('dash-vy'),
+        dV: document.getElementById('dash-v'),
+        dHmax: document.getElementById('dash-hmax'), dRmax: document.getElementById('dash-rmax'),
+        
+        bEkx: document.getElementById('bar-ekx'), bEky: document.getElementById('bar-eky'), bEp: document.getElementById('bar-ep'),
+        
+        // Math formulas
+        fV0: document.getElementById('f-v0'), fTheta: document.getElementById('f-theta'), fVx: document.getElementById('f-vx'),
+        fVxt: document.getElementById('f-vxt'), fX: document.getElementById('f-x'),
+        fV0y: document.getElementById('f-v0y'), fV0yt2: document.getElementById('f-v0yt2'), fG: document.getElementById('f-g'), fVy: document.getElementById('f-vy'),
+        fH0: document.getElementById('f-h0'), fV0yt3: document.getElementById('f-v0yt3'), fG2: document.getElementById('f-g2'), fY: document.getElementById('f-y'),
+        liveT: document.querySelectorAll('.live-t'), liveT2: document.querySelector('.live-t2'),
+        
+        // Game
+        gXt: document.getElementById('game-xt'), gYt: document.getElementById('game-yt'),
+        btnNewTarget: document.getElementById('btn-new-target'),
+        gFeedback: document.getElementById('game-feedback')
+    };
+
+    // State Physics Variables
+    let P = {
+        v0: 30, theta: 45, h0: 0, g: 9.8,
+        v0x: 0, v0y: 0,
+        t: 0, x: 0, y: 0, vx: 0, vy: 0, v: 0,
+        Hmax: 0, Rmax: 0, tLand: 0,
+        state: 'STANDBY', // STANDBY, RUNNING, PAUSED, ENDED
+        trail: [], // array of {x,y}
+        ghostDots: [] // array of {x,y,t} for stroboscopic effect
+    };
+
+    // Camera/Scale System
+    let cam = {
+        scale: 1, // pixels per meter
+        offsetX: 50, // pixels from left edge
+        offsetY: 30, // pixels from bottom edge
+        width: 800, height: 400
+    };
+
+    // Game Target State
+    let target = { x: 40, y: 20, radius: 2, hit: false };
+
+    // Animation frames
+    let animId = null;
+    let lastTime = 0;
+    
+    function calculateStaticTrajectories() {
+        P.v0 = parseFloat(els.slV0.value);
+        P.theta = parseFloat(els.slTheta.value);
+        P.h0 = parseFloat(els.slH0.value);
+        P.g = parseFloat(els.slG.value);
+        
+        const r = rad(P.theta);
+        P.v0x = P.v0 * Math.cos(r);
+        P.v0y = P.v0 * Math.sin(r);
+        
+        // Hmax = h0 + (v0y^2 / 2g)
+        P.Hmax = P.h0 + ((P.v0y * P.v0y) / (2 * P.g));
+        
+        // t_land using quadratic equation: -0.5*g*t^2 + v0y*t + h0 = 0
+        // t = (-v0y - sqrt(v0y^2 - 4*(-0.5g)*h0)) / -g
+        const discriminant = (P.v0y * P.v0y) - (4 * (-0.5 * P.g) * P.h0);
+        P.tLand = (-P.v0y - Math.sqrt(discriminant)) / (-P.g);
+        
+        // Rmax = v0x * tLand
+        P.Rmax = P.v0x * P.tLand;
+        
+        // Update UI max values
+        els.dHmax.textContent = round(P.Hmax);
+        els.dRmax.textContent = round(P.Rmax);
+        
+        updateAutoCamera();
+        updateFormulaStatic();
+    }
+
+    function updateAutoCamera() {
+        // Resize canvas internally to match CSS display size for sharp rendering
+        const rect = canvas.parentElement.getBoundingClientRect();
+        cam.width = Math.max(100, rect.width); // Prevent zero/too small width
+        cam.height = Math.max(100, rect.height); // Prevent zero/too small height
+        canvas.width = cam.width;
+        canvas.height = cam.height;
+
+        // Auto scale to fit Rmax and Hmax with some padding
+        const padX = 100;
+        const padY = 80;
+        
+        // Prevent negative dimensions if canvas container is very small
+        const safeWidth = Math.max(10, cam.width - padX);
+        const safeHeight = Math.max(10, cam.height - padY);
+        
+        const scaleX = safeWidth / Math.max(10, P.Rmax);
+        const scaleY = safeHeight / Math.max(10, P.Hmax);
+        
+        cam.scale = Math.min(scaleX, scaleY);
+        // Ensure scale is not too absurdly large and NEVER negative
+        cam.scale = Math.max(0.1, Math.min(cam.scale, 20)); 
+    }
+
+    // Coordinate mapping functions (Meters to Pixels)
+    const px = x => cam.offsetX + (x * cam.scale);
+    const py = y => cam.height - cam.offsetY - (y * cam.scale);
+
+    // Update Input UI labels
+    function updateInputLabels() {
+        els.valV0.textContent = `${els.slV0.value} m/s`;
+        els.valTheta.textContent = `${els.slTheta.value}°`;
+        els.valH0.textContent = `${els.slH0.value} m`;
+        els.valG.textContent = `${els.slG.value} m/s²`;
+    }
+
+    function drawVectorArrow(ctx, startPx, startPy, vecX, vecY, color, label) {
+        // vecX and vecY are physical values (m/s). We need to scale them for visual representation.
+        // E.g., 1 m/s = 3 pixels length
+        const vScale = 3; 
+        if (Math.abs(vecX) < 0.1 && Math.abs(vecY) < 0.1) return;
+        
+        const endPx = startPx + (vecX * vScale);
+        const endPy = startPy - (vecY * vScale); // subtract because y-pixel grows downwards
+        
+        const angle = Math.atan2(-(vecY * vScale), vecX * vScale);
+        const headlen = 10;
+        
+        ctx.beginPath();
+        ctx.moveTo(startPx, startPy);
+        ctx.lineTo(endPx, endPy);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(endPx, endPy);
+        ctx.lineTo(endPx - headlen * Math.cos(angle - Math.PI / 6), endPy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(endPx - headlen * Math.cos(angle + Math.PI / 6), endPy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(endPx, endPy);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Label
+        if (label) {
+            ctx.fillStyle = color;
+            ctx.font = '12px Courier New';
+            ctx.fillText(label, endPx + 5, endPy - 5);
+        }
+    }
+
+    function renderMainCanvas() {
+        ctx.clearRect(0, 0, cam.width, cam.height);
+        
+        // Draw Grid & Axes (Dibuat sedikit lebih terang agar jarak mudah diobservasi)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let x=0; x<=Math.max(P.Rmax, 100); x+=10) { ctx.moveTo(px(x), 0); ctx.lineTo(px(x), cam.height); }
+        for(let y=0; y<=Math.max(P.Hmax, 100); y+=10) { ctx.moveTo(0, py(y)); ctx.lineTo(cam.width, py(y)); }
+        ctx.stroke();
+        
+        // Draw Axis Lines
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cam.offsetX, 0); ctx.lineTo(cam.offsetX, cam.height); // Y axis
+        ctx.moveTo(0, py(0)); ctx.lineTo(cam.width, py(0)); // X axis
+        ctx.stroke();
+        
+        // Draw Target Ring (Mini-Game) - Warna Pink Neon agar sangat kontras
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        // Safeguard radius with Math.abs and Math.max to prevent IndexSizeError
+        ctx.arc(px(target.x), py(target.y), Math.max(0.1, Math.abs(target.radius * cam.scale)), 0, Math.PI*2);
+        ctx.stroke();
+        // Target crosshair
+        ctx.beginPath(); ctx.moveTo(px(target.x)-10, py(target.y)); ctx.lineTo(px(target.x)+10, py(target.y));
+        ctx.moveTo(px(target.x), py(target.y)-10); ctx.lineTo(px(target.x), py(target.y)+10); ctx.stroke();
+        
+        // Draw Hmax and Rmax lines if checked
+        if (els.chkLines.checked) {
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1;
+            // Hmax
+            let peakX = P.v0x * (P.v0y / P.g); // time to peak * v0x
+            if(P.v0y > 0) {
+                ctx.beginPath(); ctx.moveTo(px(0), py(P.Hmax)); ctx.lineTo(px(peakX), py(P.Hmax)); ctx.stroke();
+                ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(`Hmax = ${round(P.Hmax)}m`, px(5), py(P.Hmax)-5);
+            }
+            // Rmax
+            ctx.beginPath(); ctx.moveTo(px(P.Rmax), py(0)); ctx.lineTo(px(P.Rmax), py(P.Hmax)); ctx.stroke();
+            ctx.fillText(`Rmax = ${round(P.Rmax)}m`, px(P.Rmax)+5, py(5));
+            ctx.setLineDash([]);
+        }
+        
+        // Draw Launcher Cannon
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(px(0) - 15, py(P.h0) - 10, 15, 20); // base block
+        // Barrel
+        ctx.save();
+        ctx.translate(px(0), py(P.h0));
+        ctx.rotate(-rad(P.theta));
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(0, -5, 30, 10);
+        ctx.restore();
+
+        // Draw Full Expected Trajectory (Diperterang menjadi Dotted Putih/Abu)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for(let t=0; t<=P.tLand; t+=0.05) {
+            let cx = P.v0x * t;
+            let cy = P.h0 + (P.v0y * t) - (0.5 * P.g * t * t);
+            if(t===0) ctx.moveTo(px(cx), py(cy)); else ctx.lineTo(px(cx), py(cy));
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw Ghost Projections (GLB & GLBB analysis)
+        if (els.chkGhost.checked) {
+            // Draw recorded ghost dots (Pisahkan warna sesuai Sumbu: Cyan=X, Amber=Y)
+            P.ghostDots.forEach(dot => {
+                // X axis shadow (Cyan)
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.6)';
+                ctx.beginPath(); ctx.arc(px(dot.x), py(0) + 15, 3.5, 0, Math.PI*2); ctx.fill();
+                // Y axis shadow (Amber)
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.6)';
+                ctx.beginPath(); ctx.arc(px(0) - 15, py(dot.y), 3.5, 0, Math.PI*2); ctx.fill();
+            });
+            
+            // Draw current projection lines (Pemisahan Warna Vektor)
+            if(P.state === 'RUNNING' || P.state === 'PAUSED') {
+                ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+                
+                // Line to X-axis (Cyan - GLB)
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)'; 
+                ctx.beginPath(); ctx.moveTo(px(P.x), py(P.y)); ctx.lineTo(px(P.x), py(0)); ctx.stroke(); 
+                
+                // Line to Y-axis (Amber - GLBB)
+                ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+                ctx.beginPath(); ctx.moveTo(px(P.x), py(P.y)); ctx.lineTo(px(0), py(P.y)); ctx.stroke(); 
+                
+                ctx.setLineDash([]);
+                
+                // Current shadow positions (Solid colors)
+                ctx.fillStyle = 'var(--vec-x)'; ctx.beginPath(); ctx.arc(px(P.x), py(0)+15, 5, 0, Math.PI*2); ctx.fill(); // X marker
+                ctx.fillStyle = 'var(--vec-y)'; ctx.beginPath(); ctx.arc(px(0)-15, py(P.y), 5, 0, Math.PI*2); ctx.fill(); // Y marker
+            }
+        }
+
+        // Draw Actual Trail
+        if (P.trail.length > 0) {
+            ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(px(P.trail[0].x), py(P.trail[0].y));
+            for(let i=1; i<P.trail.length; i++) ctx.lineTo(px(P.trail[i].x), py(P.trail[i].y));
+            ctx.stroke();
+        }
+
+        // Draw Projectile (Kuning Terang agar sangat jelas terekspos di antara warna panah)
+        const bX = px(P.x); const bY = py(P.y);
+        ctx.fillStyle = '#fef08a'; // Light bright yellow
+        ctx.beginPath(); ctx.arc(bX, bY, 7, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Draw Vectors
+        if (els.chkVec.checked && (P.state === 'RUNNING' || P.state === 'PAUSED')) {
+            drawVectorArrow(ctx, bX, bY, P.vx, 0, '#06b6d4', 'vx'); // Cyan
+            drawVectorArrow(ctx, bX, bY, 0, P.vy, '#f59e0b', 'vy'); // Amber
+            drawVectorArrow(ctx, bX, bY, P.vx, P.vy, '#10b981', 'v'); // Green
+        }
+    }
+
+    function updatePhysics(dt) {
+        if (P.state !== 'RUNNING') return;
+
+        // Advance time
+        P.t += dt;
+        
+        // Calculate new kinematics
+        P.x = P.v0x * P.t;
+        P.vy = P.v0y - (P.g * P.t);
+        P.y = P.h0 + (P.v0y * P.t) - (0.5 * P.g * P.t * P.t);
+        
+        // Ground Collision / Boundary
+        if (P.y <= 0 && P.t > 0) {
+            P.y = 0;
+            P.t = P.tLand;
+            P.x = P.Rmax;
+            P.vy = P.v0y - (P.g * P.tLand); // Final Vy before crash
+            P.state = 'ENDED';
+            els.hudStatus.textContent = "ENDED - TOUCHDOWN";
+            els.hudStatus.style.color = "var(--vec-g)";
+            checkGameCondition();
+        }
+        
+        P.v = Math.sqrt((P.vx * P.vx) + (P.vy * P.vy));
+
+        // Save trail for rendering
+        if (P.trail.length === 0 || P.t - P.trail[P.trail.length-1].t > 0.05) {
+            P.trail.push({x: P.x, y: P.y, t: P.t});
+        }
+        
+        // Save ghost dots at precise intervals (e.g., every 0.2s) for strobe effect
+        if (P.ghostDots.length === 0 || Math.floor(P.t / 0.2) > Math.floor(P.ghostDots[P.ghostDots.length-1].t / 0.2)) {
+            if(P.t > 0) P.ghostDots.push({x: P.x, y: P.y, t: P.t});
+        }
+        
+        // Game condition check during flight
+        if (P.state === 'RUNNING' && !target.hit) {
+            let dx = P.x - target.x;
+            let dy = P.y - target.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist <= target.radius) {
+                target.hit = true;
+                // Create mini confetti logic visually if needed, but handled at ENDED mostly
+            }
+        }
+    }
+
+    function updateDashboard() {
+        els.hudTime.textContent = round(P.t);
+        els.dX.textContent = round(P.x) + " m";
+        els.dY.textContent = round(P.y) + " m";
+        els.dVx.textContent = round(P.vx) + " m/s";
+        els.dVy.textContent = round(P.vy) + " m/s";
+        els.dV.textContent = round(P.v) + " m/s";
+        
+        // Update Live Math Formulas
+        els.liveT.forEach(el => el.textContent = round(P.t));
+        els.liveT2.textContent = round(P.t);
+        els.fX.textContent = round(P.x);
+        els.fVy.textContent = round(P.vy);
+        els.fY.textContent = round(P.y);
+
+        // Energy Bar Updates (m = 1kg assumption for ratio)
+        let ekx = 0.5 * (P.vx * P.vx);
+        let eky = 0.5 * (P.vy * P.vy);
+        let ep = P.g * Math.max(0, P.y);
+        let eTotal = ekx + eky + ep;
+        
+        if (eTotal > 0) {
+            els.bEkx.style.width = `${(ekx/eTotal)*100}%`;
+            els.bEky.style.width = `${(eky/eTotal)*100}%`;
+            els.bEp.style.width = `${(ep/eTotal)*100}%`;
+        }
+    }
+
+    function updateFormulaStatic() {
+        els.fV0.textContent = P.v0;
+        els.fTheta.textContent = P.theta;
+        els.fVx.textContent = round(P.v0x);
+        els.fVxt.textContent = round(P.v0x);
+        
+        els.fV0y.textContent = round(P.v0y);
+        els.fV0yt2.textContent = round(P.v0y);
+        els.fV0yt3.textContent = round(P.v0y);
+        els.fG.textContent = P.g;
+        els.fG2.textContent = P.g;
+        els.fH0.textContent = P.h0;
+        
+        P.vx = P.v0x; // Initial assignment
+    }
+
+    function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        let dt = (timestamp - lastTime) / 1000; // seconds
+        lastTime = timestamp;
+
+        // Cap dt to prevent massive jumps if tab is inactive
+        if (dt > 0.1) dt = 0.1; 
+        
+        // Physics time scale: real-time (1x)
+        updatePhysics(dt);
+        renderMainCanvas();
+        updateDashboard();
+
+        if (P.state === 'RUNNING' || P.state === 'PAUSED') {
+             animId = requestAnimationFrame(loop);
+        }
+    }
+
+    function startSimulation() {
+        if (animId) cancelAnimationFrame(animId);
+        calculateStaticTrajectories(); // Ensure fresh calculations
+        
+        P.t = 0; P.x = 0; P.y = P.h0;
+        P.vx = P.v0x; P.vy = P.v0y; P.v = P.v0;
+        P.trail = [{x:0, y:P.h0, t:0}];
+        P.ghostDots = [];
+        target.hit = false;
+        
+        els.gFeedback.style.display = 'none';
+        
+        P.state = 'RUNNING';
+        els.hudStatus.textContent = "RUNNING";
+        els.hudStatus.style.color = "var(--vec-v)";
+        lastTime = performance.now();
+        animId = requestAnimationFrame(loop);
+    }
+
+    function pauseSimulation() {
+        if (P.state === 'RUNNING') {
+            P.state = 'PAUSED';
+            els.hudStatus.textContent = "PAUSED";
+            els.hudStatus.style.color = "var(--vec-y)";
+        } else if (P.state === 'PAUSED') {
+            P.state = 'RUNNING';
+            els.hudStatus.textContent = "RUNNING";
+            els.hudStatus.style.color = "var(--vec-v)";
+            lastTime = performance.now(); // Reset timer to prevent jump
+            animId = requestAnimationFrame(loop);
+        }
+    }
+
+    function resetSimulation() {
+        if (animId) cancelAnimationFrame(animId);
+        P.state = 'STANDBY';
+        calculateStaticTrajectories();
+        P.t = 0; P.x = 0; P.y = P.h0;
+        P.vx = P.v0x; P.vy = P.v0y; P.v = P.v0;
+        P.trail = []; P.ghostDots = [];
+        
+        els.hudStatus.textContent = "STANDBY";
+        els.hudStatus.style.color = "var(--text-main)";
+        els.gFeedback.style.display = 'none';
+        
+        updateDashboard();
+        renderMainCanvas();
+    }
+
+    function generateNewTarget() {
+        // Create a reachable target based on realistic standard earth limits
+        // to prevent impossible tasks. Assume g=9.8, max v0=60. Max Range ~ 360m. Max Height ~ 180m.
+        let randX = Math.floor(Math.random() * 150) + 30; // 30 to 180
+        let randY = Math.floor(Math.random() * 60) + 10;  // 10 to 70
+        
+        target.x = randX;
+        target.y = randY;
+        els.gXt.textContent = randX;
+        els.gYt.textContent = randY;
+        els.gFeedback.style.display = 'none';
+        resetSimulation();
+    }
+
+    function checkGameCondition() {
+        els.gFeedback.style.display = 'block';
+        if (target.hit) {
+            els.gFeedback.className = 'fb-success';
+            els.gFeedback.innerHTML = `MISI BERHASIL! 🎯<br>Trajektori tepat memotong koordinat target. Presisi yang bagus!`;
+        } else {
+            els.gFeedback.className = 'fb-fail';
+            // Calculate closest point to target (rough estimation from trail)
+            let minDist = 9999;
+            P.trail.forEach(pt => {
+                let d = Math.sqrt((pt.x - target.x)**2 + (pt.y - target.y)**2);
+                if(d < minDist) minDist = d;
+            });
+            els.gFeedback.innerHTML = `MISI GAGAL 💥<br>Jarak meleset terdekat: ${round(minDist)} m.<br>Analisis: Coba sesuaikan Sudut elevasi atau Kecepatan awal.`;
+        }
+    }
+
+    // Apperception Module Logic (Drop vs Shoot)
+    let apper = { state: 'IDLE', t: 0, H: 20, g: 9.8, v0x: 30, dots: [] };
+    let apperAnimId = null;
+    let apperLast = 0;
+
+    function renderApperception() {
+        aCtx.clearRect(0, 0, aCanvas.width, aCanvas.height);
+        let scale = (aCanvas.height - 20) / 25; // 25m total height space
+        let yGround = aCanvas.height - 10;
+        let xOff = 50;
+
+        // Ground
+        aCtx.fillStyle = '#3a506b'; aCtx.fillRect(0, yGround, aCanvas.width, 10);
+        
+        // Ball A (Shot) pos
+        let ax = xOff + (apper.v0x * apper.t * scale*0.2); // scale x differently to fit
+        let ay = yGround - ((apper.H - 0.5 * apper.g * apper.t * apper.t) * scale);
+        
+        // Ball B (Dropped) pos
+        let bx = xOff;
+        let by = ay; // Y is identical physically!
+
+        // Draw dots trail (Diberi warna sesuai identitas bola agar jelas jalurnya)
+        apper.dots.forEach(d => {
+            // Ball A Trace (Cyan untuk jalur parabola)
+            aCtx.fillStyle = 'rgba(6, 182, 212, 0.6)'; 
+            aCtx.beginPath(); aCtx.arc(xOff + (d.xA*scale*0.2), yGround - (d.y*scale), 2.5, 0, Math.PI*2); aCtx.fill();
+            
+            // Ball B Trace (Merah untuk jalur jatuh bebas)
+            aCtx.fillStyle = 'rgba(239, 68, 68, 0.6)'; 
+            aCtx.beginPath(); aCtx.arc(xOff, yGround - (d.y*scale), 2.5, 0, Math.PI*2); aCtx.fill();
+        });
+
+        // Draw connecting line proving same Y (Dipertegas dengan warna putih terang)
+        if (ay <= yGround && apper.state !== 'IDLE') {
+            aCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; aCtx.lineWidth = 1.5; aCtx.setLineDash([4,4]);
+            aCtx.beginPath(); aCtx.moveTo(bx, by); aCtx.lineTo(ax, ay); aCtx.stroke();
+            aCtx.setLineDash([]);
+        }
+
+        // Draw Balls (Dengan border putih tebal agar pop-up dari background gelap)
+        if (ay <= yGround) {
+            // Bola A
+            aCtx.fillStyle = 'var(--vec-x)'; aCtx.beginPath(); aCtx.arc(ax, ay, 8, 0, Math.PI*2); aCtx.fill();
+            aCtx.strokeStyle = '#fff'; aCtx.lineWidth = 1.5; aCtx.stroke();
+            // Bola B
+            aCtx.fillStyle = 'var(--vec-g)'; aCtx.beginPath(); aCtx.arc(bx, by, 8, 0, Math.PI*2); aCtx.fill();
+            aCtx.strokeStyle = '#fff'; aCtx.lineWidth = 1.5; aCtx.stroke();
+        } else {
+             // Hit ground state
+            aCtx.fillStyle = 'var(--vec-x)'; aCtx.beginPath(); aCtx.arc(ax, yGround, 8, 0, Math.PI*2); aCtx.fill();
+            aCtx.strokeStyle = '#fff'; aCtx.lineWidth = 1.5; aCtx.stroke();
+            
+            aCtx.fillStyle = 'var(--vec-g)'; aCtx.beginPath(); aCtx.arc(bx, yGround, 8, 0, Math.PI*2); aCtx.fill();
+            aCtx.strokeStyle = '#fff'; aCtx.lineWidth = 1.5; aCtx.stroke();
+        }
+    }
+
+    function loopApperception(ts) {
+        if(!apperLast) apperLast = ts;
+        let dt = (ts - apperLast) / 1000;
+        apperLast = ts;
+        if(dt > 0.1) dt = 0.1;
+
+        if (apper.state === 'RUNNING') {
+            apper.t += dt;
+            let currentY = apper.H - 0.5 * apper.g * apper.t * apper.t;
+            
+            // Record dots every 0.2s
+            if (apper.dots.length === 0 || Math.floor(apper.t/0.2) > Math.floor(apper.dots[apper.dots.length-1].t/0.2)) {
+                 if (currentY > 0) apper.dots.push({t: apper.t, xA: apper.v0x * apper.t, y: currentY});
+            }
+
+            if (currentY <= 0) {
+                apper.state = 'ENDED';
+            }
+        }
+
+        renderApperception();
+
+        if (apper.state === 'RUNNING') {
+            apperAnimId = requestAnimationFrame(loopApperception);
+        }
+    }
+
+    document.getElementById('btn-drop').addEventListener('click', () => {
+        if(apperAnimId) cancelAnimationFrame(apperAnimId);
+        apper.state = 'RUNNING'; apper.t = 0; apper.dots = []; apperLast = performance.now();
+        apperAnimId = requestAnimationFrame(loopApperception);
+    });
+    document.getElementById('btn-drop-reset').addEventListener('click', () => {
+        if(apperAnimId) cancelAnimationFrame(apperAnimId);
+        apper.state = 'IDLE'; apper.t = 0; apper.dots = [];
+        renderApperception();
+    });
+
+    // Bind Inputs
+    [els.slV0, els.slTheta, els.slH0, els.slG].forEach(el => {
+        el.addEventListener('input', () => {
+            updateInputLabels();
+            if(P.state === 'STANDBY' || P.state === 'ENDED') resetSimulation();
+        });
+    });
+
+    els.chkVec.addEventListener('change', renderMainCanvas);
+    els.chkGhost.addEventListener('change', renderMainCanvas);
+    els.chkLines.addEventListener('change', renderMainCanvas);
+
+    els.btnLaunch.addEventListener('click', startSimulation);
+    els.btnPause.addEventListener('click', pauseSimulation);
+    els.btnReset.addEventListener('click', resetSimulation);
+    els.btnNewTarget.addEventListener('click', generateNewTarget);
+
+    window.addEventListener('resize', () => {
+        if(P.state === 'STANDBY' || P.state === 'ENDED') {
+            updateAutoCamera();
+            renderMainCanvas();
+        }
+    });
+
+    // Initialize
+    updateInputLabels();
+    calculateStaticTrajectories();
+    resetSimulation();
+    renderApperception(); // initial draw for upper canvas
+
+</script>
+</body>
+</html>
