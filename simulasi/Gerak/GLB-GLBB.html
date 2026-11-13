@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Telemetri Gerak: GLB vs GLBB</title>
+    <style>
+        :root {
+            /* Palet Warna Cybernetic */
+            --bg-main: #0f172a;
+            --bg-panel: #1e293b;
+            --glb-cyan: #06b6d4;
+            --glbb-amber: #f59e0b;
+            --glbb-magenta: #ec4899;
+            --ticker-lime: #84cc16;
+            --danger-red: #ef4444;
+            --text-white: #f8fafc;
+            --text-gray: #94a3b8;
+            --border-glow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-white);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding: 10px;
+        }
+
+        h1, h2, h3 { font-weight: 600; }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header Styles */
+        .header-section {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-panel);
+            border-radius: 12px;
+            box-shadow: var(--border-glow);
+            border-bottom: 3px solid var(--glb-cyan);
+        }
+
+        .header-section h1 {
+            color: var(--glb-cyan);
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+
+        .header-section h2 {
+            color: var(--text-gray);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .misconception-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .m-card {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 4px solid var(--glbb-amber);
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 300px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .m-card span { color: var(--danger-red); font-weight: bold; }
+        .m-card strong { color: var(--ticker-lime); }
+
+        .panel {
+            background: var(--bg-panel);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            color: var(--glbb-amber);
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        /* Grid Layouts */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 992px) {
+            .main-sim-grid { 
+                grid-template-columns: 2fr 1fr; 
+                grid-template-areas: 
+                    "sim dash"
+                    "chart chart";
+            }
+            .telemetry-grid { grid-template-columns: repeat(3, 1fr); }
+            .panel-sim { grid-area: sim; }
+            .panel-dash { grid-area: dash; }
+            .panel-chart { grid-area: chart; }
+        }
+
+        /* Canvas Styles */
+        canvas {
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: crosshair;
+        }
+
+        .sim-container { position: relative; margin-bottom: 15px; }
+
+        /* Controls & Sliders */
+        .control-group { margin-bottom: 15px; }
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-gray);
+        }
+
+        .val-display { color: var(--glb-cyan); font-weight: bold; font-family: monospace; font-size: 1.1rem; }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 20px;
+            border-radius: 50%;
+            background: var(--glb-cyan);
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px var(--glb-cyan);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        input[type=range]:disabled::-webkit-slider-thumb { background: #555; box-shadow: none; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        .btn-primary { background: var(--glb-cyan); color: #000; }
+        .btn-primary:hover { box-shadow: 0 0 15px var(--glb-cyan); }
+        .btn-warning { background: var(--glbb-amber); color: #000; }
+        .btn-warning:hover { box-shadow: 0 0 15px var(--glbb-amber); }
+        .btn-danger { background: var(--danger-red); color: #fff; }
+        .btn-danger:hover { box-shadow: 0 0 15px var(--danger-red); }
+        .btn-outline { background: transparent; border: 1px solid var(--text-gray); color: var(--text-white); }
+        .btn-outline.active { background: var(--glbb-magenta); border-color: var(--glbb-magenta); }
+
+        /* Telemetry Dashboard */
+        .telemetry-card {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-top: 3px solid var(--ticker-lime);
+        }
+        .telemetry-val {
+            font-family: monospace;
+            font-size: 2rem;
+            color: var(--ticker-lime);
+            text-shadow: 0 0 5px var(--ticker-lime);
+        }
+        .telemetry-label { font-size: 0.8rem; color: var(--text-gray); text-transform: uppercase; }
+
+        /* Formulas & Metaphor */
+        .formula-box {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-white);
+        }
+        .formula-box span.v0 { color: var(--glb-cyan); }
+        .formula-box span.a { color: var(--glbb-amber); }
+        .formula-box span.t { color: var(--ticker-lime); }
+
+        .bar-chart-container {
+            width: 100%;
+            height: 30px;
+            background: #111;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .bar-v0t { background: var(--glb-cyan); transition: width 0.1s linear; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#000; overflow:hidden;}
+        .bar-at2 { background: var(--glbb-magenta); transition: width 0.1s linear; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#fff; overflow:hidden;}
+
+        /* Apperception & Mini Game Overlays */
+        .game-status { margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; display: none; }
+        .status-success { background: rgba(132, 204, 22, 0.2); color: var(--ticker-lime); border: 1px solid var(--ticker-lime); display: block;}
+        .status-fail { background: rgba(239, 68, 68, 0.2); color: var(--danger-red); border: 1px solid var(--danger-red); display: block;}
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. HEADER & MISKONSEPSI -->
+    <header class="header-section">
+        <h1>Simulator Telemetri Gerak</h1>
+        <h2>GLB vs GLBB: Visualisasi Lintasan, Ticker-Timer & Grafik Kinematika</h2>
+        
+        <div class="misconception-box">
+            <div class="m-card">
+                <div><span>Miskonsepsi 1:</span> "Percepatan membesar selalu berarti mobil melaju cepat."</div>
+                <div style="margin-top: 5px;"><strong>Fakta:</strong> Percepatan konstan (a ≠ 0) mengubah kecepatan, sedangkan GLB bergerak konstan dengan percepatan NOL (a = 0).</div>
+            </div>
+            <div class="m-card">
+                <div><span>Miskonsepsi 2:</span> "Membaca Ticker-Timer sama dengan membaca grafik jarak-waktu."</div>
+                <div style="margin-top: 5px;"><strong>Fakta:</strong> Jarak antar titik tetesan oli merepresentasikan jarak yang ditempuh dalam <em>selang waktu konstan</em> (&Delta;t).</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. MODUL APERSEPSI -->
+    <section class="panel">
+        <h3 class="panel-title">Modul Apersepsi: Eksperimen Tetesan Oli Bocor</h3>
+        <p style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-gray);">
+            Dua mobil meneteskan oli setiap 0.5 detik. Mobil A bergerak dengan kecepatan konstan (GLB). Mobil B mempercepat dari keadaan diam (GLBB). Jalankan tes untuk melihat pola jejaknya.
+        </p>
+        <div class="sim-container">
+            <canvas id="apperceptionCanvas" height="150"></canvas>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <button class="btn-primary" id="btnRunApperception" style="flex: none; width: 200px;">Jalankan Tes Oli</button>
+            <div id="apperceptionNotes" style="font-size: 0.9rem; color: var(--glbb-amber);"></div>
+        </div>
+    </section>
+
+    <!-- 3. LABORATORIUM UTAMA -->
+    <section class="grid-layout main-sim-grid">
+        
+        <!-- Kolom Kiri (Desktop): Visualisasi & Kontrol -->
+        <div class="panel panel-sim">
+            <h3 class="panel-title">Simulator Lintasan Utama</h3>
+            
+            <div class="sim-container">
+                <canvas id="mainSimCanvas" height="250"></canvas>
+            </div>
+
+            <div class="btn-group" style="margin-bottom: 20px;">
+                <button class="btn-outline active" id="modeGLB">Mode GLB (a = 0)</button>
+                <button class="btn-outline" id="modeGLBB">Mode GLBB (a &ne; 0)</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Kecepatan Awal (v<sub>0</sub>)</span>
+                    <span class="val-display" id="valV0">10 m/s</span>
+                </div>
+                <input type="range" id="sliderV0" min="0" max="40" step="1" value="10">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Percepatan (a)</span>
+                    <span class="val-display" id="valA">0 m/s&sup2;</span>
+                </div>
+                <input type="range" id="sliderA" min="-10" max="10" step="0.5" value="0" disabled>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary" id="btnToggleSim">Mulai Simulasi</button>
+                <button class="btn-warning" id="btnResetSim">Reset</button>
+                <button class="btn-outline active" id="btnToggleTicker">Ticker-Timer: ON</button>
+            </div>
+        </div>
+
+        <!-- Kolom Kanan (Desktop): Telemetri Dashboard -->
+        <div class="panel panel-dash">
+            <h3 class="panel-title">Dashboard Telemetri Real-Time</h3>
+            <div class="grid-layout telemetry-grid">
+                <div class="telemetry-card">
+                    <div class="telemetry-val" id="dashT">0.00</div>
+                    <div class="telemetry-label">Waktu (s)</div>
+                </div>
+                <div class="telemetry-card">
+                    <div class="telemetry-val" id="dashV">10.00</div>
+                    <div class="telemetry-label">Kecepatan (m/s)</div>
+                </div>
+                <div class="telemetry-card">
+                    <div class="telemetry-val" id="dashS">0.00</div>
+                    <div class="telemetry-label">Jarak (m)</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="control-label" style="margin-bottom: 10px;">Substitusi Persamaan Dinamis</div>
+                <div class="formula-box" id="formulaDisplay">
+                    s = <span class="v0">10</span> &times; <span class="t">0.00</span> = 0.00 m
+                </div>
+                
+                <div class="control-label" style="font-size: 0.8rem;">Komposisi Jarak (v<sub>0</sub>.t vs 0.5.a.t&sup2;)</div>
+                <div class="bar-chart-container">
+                    <div class="bar-v0t" id="barV0T" style="width: 100%;">100%</div>
+                    <div class="bar-at2" id="barAT2" style="width: 0%;">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Baris Bawah Lebar Penuh (Desktop): Live Canvas Charts -->
+        <div class="panel panel-chart">
+            <h3 class="panel-title">Live Canvas Charts</h3>
+            <canvas id="chartsCanvas" height="600"></canvas>
+        </div>
+
+    </section>
+
+    <!-- 4. MINI-GAME / TANTANGAN -->
+    <section class="panel">
+        <h3 class="panel-title">Tantangan: Precision Emergency Stopping</h3>
+        <p style="font-size: 0.95rem; color: var(--text-gray); margin-bottom: 15px;">
+            Skenario: Anda melaju dengan <span style="color:var(--glb-cyan);">v<sub>0</sub> = 30 m/s</span>. Terdapat zona aman persis di jarak <span style="color:var(--ticker-lime);">s = 100 meter</span>. 
+            Hitung dan setel <strong>perlambatan (a)</strong> yang tepat agar mobil berhenti (v=0) tepat di area tersebut (&plusmn;2m). <br>
+            <em>Hint Fisika: v&sup2; = v<sub>0</sub>&sup2; + 2as</em>
+        </p>
+        
+        <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+                <div class="control-label">
+                    <span>Setel Perlambatan (a)</span>
+                    <span class="val-display" id="valGameA">-1.0 m/s&sup2;</span>
+                </div>
+                <input type="range" id="sliderGameA" min="-15" max="0" step="0.1" value="-1.0">
+            </div>
+            <button class="btn-danger" id="btnStartGame" style="flex: none;">Eksekusi Rem!</button>
+        </div>
+
+        <div id="gameFeedback" class="game-status"></div>
+    </section>
+
+</div>
+
+<script>
+    /**
+     * CORE STATE & VARIABLES
+     */
+    const state = {
+        mode: 'GLB', // 'GLB' or 'GLBB'
+        isRunning: false,
+        tickerEnabled: true,
+        t: 0,
+        s: 0,
+        v: 10,
+        v0: 10,
+        a: 0,
+        history: [], // {t, s, v, a}
+        oilDrops: [], // {x, text}
+        lastTickerTime: 0,
+        tickerInterval: 0.5, // seconds
+        pixelsPerMeter: 8,
+        cameraX: 0,
+        tooltip: null // Tooltip State
+    };
+
+    let chartHitboxes = []; // Untuk melacak titik klik grafik
+
+    const gameState = {
+        isActive: false,
+        isRunning: false,
+        v0: 30,
+        a: -1.0,
+        t: 0,
+        s: 0,
+        v: 30,
+        targetS: 100,
+        tolerance: 2
+    };
+
+    // DOM Elements
+    const UI = {
+        modeGLB: document.getElementById('modeGLB'),
+        modeGLBB: document.getElementById('modeGLBB'),
+        sliderV0: document.getElementById('sliderV0'),
+        sliderA: document.getElementById('sliderA'),
+        valV0: document.getElementById('valV0'),
+        valA: document.getElementById('valA'),
+        btnToggleSim: document.getElementById('btnToggleSim'),
+        btnResetSim: document.getElementById('btnResetSim'),
+        btnToggleTicker: document.getElementById('btnToggleTicker'),
+        dashT: document.getElementById('dashT'),
+        dashV: document.getElementById('dashV'),
+        dashS: document.getElementById('dashS'),
+        formulaDisplay: document.getElementById('formulaDisplay'),
+        barV0T: document.getElementById('barV0T'),
+        barAT2: document.getElementById('barAT2'),
+        sliderGameA: document.getElementById('sliderGameA'),
+        valGameA: document.getElementById('valGameA'),
+        btnStartGame: document.getElementById('btnStartGame'),
+        gameFeedback: document.getElementById('gameFeedback'),
+    };
+
+    // Canvas Contexts
+    const ctxApp = document.getElementById('apperceptionCanvas').getContext('2d');
+    const ctxSim = document.getElementById('mainSimCanvas').getContext('2d');
+    const ctxCharts = document.getElementById('chartsCanvas').getContext('2d');
+
+    // Chart Click Listener & Hitbox Interactivity
+    ctxCharts.canvas.addEventListener('click', (e) => {
+        const rect = ctxCharts.canvas.getBoundingClientRect();
+        const scaleX = ctxCharts.canvas.width / rect.width;
+        const scaleY = ctxCharts.canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+        
+        let found = false;
+        for(let box of chartHitboxes) {
+            let dx = mouseX - box.cx;
+            let dy = mouseY - box.cy;
+            if(dx*dx + dy*dy <= 144) { // radius klik +/- 12px
+                state.tooltip = {
+                    visible: true, x: box.cx, y: box.cy,
+                    textX: box.valX.toFixed(2), textY: box.valY.toFixed(2),
+                    title: box.title
+                };
+                found = true;
+                break; // Hentikan pencarian bila sudah ketemu klik terdekat
+            }
+        }
+        if(!found) state.tooltip = null;
+        
+        if(!state.isRunning && !gameState.isRunning) drawCharts();
+    });
+
+    let animationFrameId;
+    let lastTimestamp = 0;
+
+    /**
+     * EVENT LISTENERS
+     */
+    UI.modeGLB.addEventListener('click', () => setMode('GLB'));
+    UI.modeGLBB.addEventListener('click', () => setMode('GLBB'));
+
+    UI.sliderV0.addEventListener('input', (e) => {
+        if(!state.isRunning && !gameState.isActive) {
+            state.v0 = parseFloat(e.target.value);
+            state.v = state.v0;
+            UI.valV0.innerText = `${state.v0} m/s`;
+            updateDashboard();
+        } else {
+            e.target.value = state.v0; // Prevent changing while running
+        }
+    });
+
+    UI.sliderA.addEventListener('input', (e) => {
+        if(!state.isRunning && !gameState.isActive) {
+            state.a = parseFloat(e.target.value);
+            UI.valA.innerText = `${state.a} m/s²`;
+            updateDashboard();
+        } else {
+             e.target.value = state.a;
+        }
+    });
+
+    UI.btnToggleSim.addEventListener('click', () => {
+        if (gameState.isActive) resetGame();
+        state.isRunning = !state.isRunning;
+        UI.btnToggleSim.innerText = state.isRunning ? "Pause Simulasi" : "Lanjut Simulasi";
+        UI.btnToggleSim.className = state.isRunning ? "btn-warning" : "btn-primary";
+        if(state.isRunning) lastTimestamp = performance.now();
+    });
+
+    UI.btnResetSim.addEventListener('click', resetSimulation);
+
+    UI.btnToggleTicker.addEventListener('click', () => {
+        state.tickerEnabled = !state.tickerEnabled;
+        UI.btnToggleTicker.innerText = `Ticker-Timer: ${state.tickerEnabled ? 'ON' : 'OFF'}`;
+        UI.btnToggleTicker.classList.toggle('active', state.tickerEnabled);
+    });
+
+    UI.sliderGameA.addEventListener('input', (e) => {
+        gameState.a = parseFloat(e.target.value);
+        UI.valGameA.innerText = `${gameState.a} m/s²`;
+    });
+
+    UI.btnStartGame.addEventListener('click', startMiniGame);
+
+    function setMode(mode) {
+        if(state.isRunning || gameState.isActive) return; // Block during run
+        state.mode = mode;
+        if(mode === 'GLB') {
+            UI.modeGLB.classList.add('active');
+            UI.modeGLBB.classList.remove('active');
+            UI.sliderA.disabled = true;
+            state.a = 0;
+            UI.sliderA.value = 0;
+            UI.valA.innerText = "0 m/s²";
+        } else {
+            UI.modeGLBB.classList.add('active');
+            UI.modeGLB.classList.remove('active');
+            UI.sliderA.disabled = false;
+        }
+        resetSimulation();
+    }
+
+    function resetSimulation() {
+        state.isRunning = false;
+        gameState.isActive = false;
+        state.t = 0;
+        state.s = 0;
+        state.v = state.v0;
+        state.history = [];
+        state.oilDrops = [];
+        state.lastTickerTime = 0;
+        state.cameraX = 0;
+        state.tooltip = null; // Hapus tooltip
+        
+        UI.btnToggleSim.innerText = "Mulai Simulasi";
+        UI.btnToggleSim.className = "btn-primary";
+        UI.gameFeedback.style.display = 'none';
+        
+        updateDashboard();
+        drawSimCanvas();
+        drawCharts();
+    }
+
+    /**
+     * PHYSICS ENGINE & DATA UPDATES
+     */
+    function updatePhysics(dt) {
+        if (state.isRunning) {
+            state.t += dt;
+            
+            // Kinematic Equations
+            state.v = state.v0 + (state.a * state.t);
+            state.s = (state.v0 * state.t) + (0.5 * state.a * state.t * state.t);
+
+            // Boundary Condition: Braking to a stop
+            if (state.a < 0 && state.v <= 0) {
+                state.v = 0;
+                state.isRunning = false; // Auto pause when stopped
+                UI.btnToggleSim.innerText = "Selesai (v=0)";
+            }
+
+            // Record History for charts (every ~50ms to save memory)
+            if (state.history.length === 0 || state.t - state.history[state.history.length-1].t >= 0.05) {
+                state.history.push({ t: state.t, s: state.s, v: state.v, a: state.a });
+            }
+
+            // Ticker Timer Logic
+            if (state.tickerEnabled && state.t - state.lastTickerTime >= state.tickerInterval) {
+                state.oilDrops.push({ 
+                    x: state.s, 
+                    t: state.t,
+                    s: state.s,
+                    v: state.v,
+                    a: state.a,
+                    label: (state.lastTickerTime + state.tickerInterval).toFixed(1) + 's' 
+                });
+                state.lastTickerTime += state.tickerInterval;
+            }
+
+            updateDashboard();
+        }
+
+        if (gameState.isRunning) {
+            gameState.t += dt;
+            gameState.v = gameState.v0 + (gameState.a * gameState.t);
+            gameState.s = (gameState.v0 * gameState.t) + (0.5 * gameState.a * gameState.t * gameState.t);
+
+            // Game over condition (Car stops)
+            if (gameState.v <= 0) {
+                gameState.v = 0;
+                gameState.isRunning = false;
+                evaluateGame();
+            }
+
+            // Update main state for rendering purposes
+            state.t = gameState.t;
+            state.s = gameState.s;
+            state.v = gameState.v;
+            state.a = gameState.a;
+            
+            updateDashboard();
+        }
+    }
+
+    function updateDashboard() {
+        // Telemetry numbers
+        UI.dashT.innerText = state.t.toFixed(2);
+        UI.dashV.innerText = state.v.toFixed(2);
+        UI.dashS.innerText = state.s.toFixed(2);
+
+        // Dynamic Formulas
+        if (state.mode === 'GLB' && !gameState.isActive) {
+            UI.formulaDisplay.innerHTML = `s = <span class="v0">${state.v0.toFixed(1)}</span> &times; <span class="t">${state.t.toFixed(2)}</span> = ${state.s.toFixed(2)} m`;
+            UI.barV0T.style.width = '100%';
+            UI.barV0T.innerText = '100% (v.t)';
+            UI.barAT2.style.width = '0%';
+            UI.barAT2.innerText = '';
+        } else {
+            let s_v0t = state.v0 * state.t;
+            let s_at2 = 0.5 * state.a * state.t * state.t;
+            
+            UI.formulaDisplay.innerHTML = `s = (<span class="v0">${state.v0.toFixed(1)}</span> &times; <span class="t">${state.t.toFixed(2)}</span>) + &frac12;(<span class="a">${state.a.toFixed(1)}</span> &times; <span class="t">${state.t.toFixed(2)}</span>&sup2;) <br> s = ${s_v0t.toFixed(2)} + (${s_at2.toFixed(2)}) = ${state.s.toFixed(2)} m`;
+
+            // Bar Metaphor
+            let totalAbs = Math.abs(s_v0t) + Math.abs(s_at2);
+            if (totalAbs === 0) {
+                UI.barV0T.style.width = '50%'; UI.barAT2.style.width = '50%';
+            } else {
+                let pct1 = (Math.abs(s_v0t) / totalAbs) * 100;
+                let pct2 = (Math.abs(s_at2) / totalAbs) * 100;
+                UI.barV0T.style.width = `${pct1}%`;
+                UI.barAT2.style.width = `${pct2}%`;
+                UI.barV0T.innerText = pct1 > 15 ? 'v0.t' : '';
+                UI.barAT2.innerText = pct2 > 15 ? (state.a < 0 ? '-½at²' : '+½at²') : '';
+                UI.barAT2.style.background = state.a < 0 ? 'var(--danger-red)' : 'var(--glbb-magenta)';
+            }
+        }
+    }
+
+    /**
+     * RENDERING ENGINE
+     */
+    function drawCar(ctx, x, y, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+        
+        // Body
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(-20, -10);
+        ctx.lineTo(20, -10);
+        ctx.lineTo(30, 0);
+        ctx.lineTo(30, 10);
+        ctx.lineTo(-20, 10);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cockpit
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(-5, -10);
+        ctx.lineTo(10, -10);
+        ctx.lineTo(15, 0);
+        ctx.lineTo(-10, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Wheels
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.arc(-10, 12, 6, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(15, 12, 6, 0, Math.PI*2); ctx.fill();
+        
+        // Wheel inner
+        ctx.fillStyle = '#333';
+        ctx.beginPath(); ctx.arc(-10, 12, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(15, 12, 3, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawSimCanvas() {
+        const c = ctxSim.canvas;
+        const ctx = ctxSim;
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        // Grid background
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        for(let i=0; i<c.width; i+=40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, c.height); ctx.stroke();
+        }
+
+        // Camera Logic (Keep car at 1/4 of screen if moving past it)
+        const carPixelX = state.s * state.pixelsPerMeter;
+        const startX = 50; // Offset from left
+        
+        if (carPixelX > c.width * 0.4) {
+            state.cameraX = carPixelX - (c.width * 0.4);
+        } else {
+            state.cameraX = 0;
+        }
+
+        ctx.save();
+        ctx.translate(-state.cameraX, 0);
+
+        // Draw Track Line
+        const trackY = c.height - 60;
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(state.cameraX, trackY);
+        ctx.lineTo(state.cameraX + c.width + 200, trackY);
+        ctx.stroke();
+
+        // Draw Distance Markers (Meters)
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        
+        let startMeter = Math.floor(state.cameraX / state.pixelsPerMeter);
+        let endMeter = startMeter + Math.ceil(c.width / state.pixelsPerMeter) + 5;
+        
+        for(let m = startMeter; m <= endMeter; m++) {
+            if (m % 5 === 0) { // Marker every 5 meters
+                let px = startX + (m * state.pixelsPerMeter);
+                ctx.fillRect(px - 1, trackY, 2, 8);
+                ctx.fillText(m + 'm', px, trackY + 20);
+            }
+        }
+
+        // Mini Game Target Zone
+        if (gameState.isActive) {
+            let targetPx = startX + (gameState.targetS * state.pixelsPerMeter);
+            ctx.fillStyle = 'rgba(132, 204, 22, 0.2)';
+            let tolPx = gameState.tolerance * state.pixelsPerMeter;
+            ctx.fillRect(targetPx - tolPx, trackY - 40, tolPx * 2, 40);
+            
+            ctx.strokeStyle = '#84cc16';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(targetPx, trackY - 50); ctx.lineTo(targetPx, trackY); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#84cc16';
+            ctx.fillText("TARGET BERHENTI (100m)", targetPx, trackY - 55);
+        }
+
+        // Draw Ticker Oil Drops
+        if (state.tickerEnabled) {
+            state.oilDrops.forEach((drop, index) => {
+                let px = startX + (drop.x * state.pixelsPerMeter);
+                // Drop shadow/glow
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#84cc16';
+                ctx.fillStyle = '#84cc16';
+                ctx.beginPath();
+                ctx.arc(px, trackY, 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Drop number
+                ctx.fillStyle = '#fff';
+                ctx.font = '9px Arial';
+                ctx.fillText(index+1, px, trackY - 8);
+            });
+        }
+
+        // Draw Car
+        let carColor = state.mode === 'GLB' ? '#06b6d4' : '#f59e0b';
+        if (gameState.isActive) carColor = '#ef4444';
+        
+        drawCar(ctx, startX + carPixelX, trackY - 12, carColor);
+
+        ctx.restore();
+    }
+
+    function drawCharts() {
+        const c = ctxCharts.canvas;
+        const ctx = ctxCharts;
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        const h3 = c.height / 3;
+        
+        // Labels
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText("Jarak (s-t)", 10, 20);
+        ctx.fillText("Kecepatan (v-t)", 10, h3 + 20);
+        ctx.fillText("Percepatan (a-t)", 10, h3*2 + 20);
+
+        // Split lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h3); ctx.lineTo(c.width, h3);
+        ctx.moveTo(0, h3*2); ctx.lineTo(c.width, h3*2);
+        ctx.stroke();
+
+        chartHitboxes = []; // Reset hitboxes frame baru
+
+        if (state.history.length < 2) return;
+
+        // Viewport Grafik Dimulai dari 0 agar Bentuk Utuhnya Terlihat
+        let minT = 0;
+        let maxT = Math.max(10, state.t);
+        
+        let maxS = Math.max(10, ...state.history.map(d => d.s));
+        let maxV = Math.max(10, ...state.history.map(d => Math.abs(d.v)));
+        let maxA = 12; // Skala fix a
+
+        const paddingSides = 20;
+        const paddingTop = 45; // Ruang ekstra di atas agar grafik tidak menumpuk label teks
+        const paddingBottom = 20; // Ruang di bawah agar tidak menabrak garis pembatas
+        const drawW = c.width - (paddingSides * 2);
+        const drawH = h3 - (paddingTop + paddingBottom);
+
+        // Helper untuk memetakan titik di Canvas
+        const mapX = (t) => paddingSides + ((t - minT) / (maxT - minT)) * drawW;
+        
+        const drawLine = (dataKey, startY, maxVal, color, isCenterZero = false, titleLabel = "") => {
+            let zeroY = startY + paddingTop + (drawH / 2);
+            let baseY = startY + paddingTop + drawH;
+            
+            // Draw Zero Line if needed
+            if (isCenterZero) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.setLineDash([2,2]);
+                ctx.beginPath(); ctx.moveTo(paddingSides, zeroY); ctx.lineTo(paddingSides+drawW, zeroY); ctx.stroke();
+                ctx.restore();
+            }
+
+            // Mulai render garis grafik
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            
+            let path = new Path2D();
+            let started = false;
+            
+            for(let i=0; i<state.history.length; i++) {
+                let d = state.history[i];
+                let x = mapX(d.t);
+                let y;
+                
+                if (isCenterZero) {
+                     let normalized = (d[dataKey] + maxVal) / (maxVal * 2); 
+                     y = startY + paddingTop + drawH - (normalized * drawH);
+                } else {
+                     y = startY + paddingTop + drawH - ((d[dataKey] / maxVal) * drawH);
+                }
+
+                if (!started) { path.moveTo(x, y); started = true; }
+                else { path.lineTo(x, y); }
+            }
+            ctx.stroke(path);
+
+            // Render Area Fill transparan ke sumbu
+            let endX = mapX(state.history[state.history.length-1].t);
+            let startX = mapX(state.history[0].t);
+            path.lineTo(endX, isCenterZero ? zeroY : baseY);
+            path.lineTo(startX, isCenterZero ? zeroY : baseY);
+            path.closePath();
+            
+            // Beri warna fill sesuai profil garis (alpha transparan)
+            let fillColor = color === '#84cc16' ? 'rgba(132, 204, 22, 0.15)' : color === '#06b6d4' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(245, 158, 11, 0.15)';
+            ctx.fillStyle = fillColor;
+            ctx.fill(path);
+
+            // Render Titik-Titik Ticker Timer
+            if (state.tickerEnabled) {
+                for (let i = 0; i < state.oilDrops.length; i++) {
+                    let drop = state.oilDrops[i];
+                    if (drop.t === undefined) continue;
+                    
+                    let x = mapX(drop.t);
+                    let y;
+                    let valY = drop[dataKey];
+                    
+                    if (isCenterZero) {
+                        let normalized = (valY + maxVal) / (maxVal * 2);
+                        y = startY + paddingTop + drawH - (normalized * drawH);
+                    } else {
+                        y = startY + paddingTop + drawH - ((valY / maxVal) * drawH);
+                    }
+
+                    // Dot
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = color;
+                    ctx.stroke();
+
+                    // Simpan koordinat hitbox agar bisa diklik nanti
+                    chartHitboxes.push({ cx: x, cy: y, valX: drop.t, valY: valY, title: titleLabel });
+                }
+            }
+        };
+
+        // Render semua komponen grafik
+        drawLine('s', 0, maxS, '#84cc16', false, 'Jarak');
+        drawLine('v', h3, maxV, '#06b6d4', false, 'Kecepatan');
+        drawLine('a', h3*2, maxA, '#f59e0b', true, 'Percepatan');
+        
+        // Tooltip Interaksi (Muncul jika ada titik yang diklik)
+        if (state.tooltip && state.tooltip.visible) {
+            ctx.save();
+            ctx.font = '12px sans-serif';
+            let t1 = `Komponen X (t): ${state.tooltip.textX} s`;
+            let t2 = `Komponen Y (${state.tooltip.title}): ${state.tooltip.textY}`;
+            let w = Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width) + 24;
+            let h = 45;
+            
+            let tx = state.tooltip.x + 15;
+            let ty = state.tooltip.y - 25;
+            
+            // Adjust posisi pop-up agar tidak keluar layar Canvas
+            if (tx + w > c.width) tx = state.tooltip.x - w - 15;
+            if (ty < 0) ty = state.tooltip.y + 15;
+
+            // Box Tooltip
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+            ctx.strokeStyle = '#84cc16';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, w, h, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            // Teks
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText(t1, tx + 12, ty + 18);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillText(t2, tx + 12, ty + 34);
+            
+            // Dot Outline Marker (Beri penanda titik yang sedang dipilih)
+            ctx.beginPath();
+            ctx.arc(state.tooltip.x, state.tooltip.y, 7, 0, Math.PI*2);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+    }
+
+// Apperception Module Logic
+let apperceptionState = {
+    running: false, t: 0,
+    carA: { x: 0, v: 0, a: 0, drops: [] },
+    carB: { x: 0, v: 0, a: 0, drops: [] },
+    lastDropT: 0
+};
+
+document.getElementById('btnRunApperception').addEventListener('click', () => {
+    const c = document.getElementById('apperceptionCanvas');
+    const end_threshold = Math.max(100, c.width - 60); // Jarak target ujung lintasan
+    const targetTime = 4.0; // Waktu tempuh 4 detik agar titik oli cukup banyak (8 titik)
+
+    // Kalkulasi dinamik agar kedua mobil tiba di ujung canvas di saat bersamaan
+    let vA = end_threshold / targetTime; 
+    let aB = (2 * end_threshold) / (targetTime * targetTime);
+
+    apperceptionState.running = true;
+    apperceptionState.t = 0;
+    apperceptionState.carA = { x: 0, v: vA, a: 0, drops: [] };
+    apperceptionState.carB = { x: 0, v: 0, a: aB, drops: [] };
+    apperceptionState.lastDropT = 0;
+    document.getElementById('apperceptionNotes').innerText = "Menganalisis tetesan oli... Perhatikan jarak antar titik.";
+});
+
+function updateAndDrawApperception(dt) {
+        const c = ctxApp.canvas;
+        const ctx = ctxApp;
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        // Draw Lanes
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 75); ctx.lineTo(c.width, 75); ctx.stroke();
+
+        ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+        ctx.fillText("Mobil A (GLB - Kec. Konstan)", 10, 20);
+        ctx.fillText("Mobil B (GLBB - Dipercepat)", 10, 95);
+
+        if (apperceptionState.running) {
+            apperceptionState.t += dt;
+            
+            apperceptionState.carA.x = apperceptionState.carA.v * apperceptionState.t;
+            apperceptionState.carB.v = apperceptionState.carB.a * apperceptionState.t;
+            apperceptionState.carB.x = 0.5 * apperceptionState.carB.a * apperceptionState.t * apperceptionState.t;
+
+            // Drop oil every 0.5s
+        if (apperceptionState.t - apperceptionState.lastDropT >= 0.5) {
+            apperceptionState.carA.drops.push(apperceptionState.carA.x);
+            apperceptionState.carB.drops.push(apperceptionState.carB.x);
+            apperceptionState.lastDropT += 0.5;
+        }
+
+        // Stop condition - Berhenti saat mobil mencapai ujung canvas
+        let max_x = Math.max(apperceptionState.carA.x, apperceptionState.carB.x);
+        let end_threshold = c.width - 60;
+        
+        if (max_x >= end_threshold) {
+            apperceptionState.running = false;
+            document.getElementById('apperceptionNotes').innerHTML = `
+                <span style="color:#06b6d4">Atas (GLB):</span> Jarak antar titik <strong>TETAP</strong>.<br>
+                <span style="color:#f59e0b">Bawah (GLBB):</span> Jarak antar titik <strong>MAKIN RENGGANG</strong>.
+            `;
+        }
+    }
+
+    const drawDrops = (drops, y) => {
+            ctx.fillStyle = '#84cc16';
+            drops.forEach(x => {
+                ctx.beginPath(); ctx.arc(x + 30, y, 4, 0, Math.PI*2); ctx.fill();
+            });
+        };
+
+        drawDrops(apperceptionState.carA.drops, 50);
+        drawDrops(apperceptionState.carB.drops, 125);
+
+        drawCar(ctx, apperceptionState.carA.x + 30, 45, '#06b6d4');
+        drawCar(ctx, apperceptionState.carB.x + 30, 120, '#f59e0b');
+    }
+
+    /**
+     * MINI GAME LOGIC
+     */
+    function startMiniGame() {
+        // Override state for game
+        gameState.isActive = true;
+        gameState.isRunning = true;
+        gameState.t = 0;
+        gameState.s = 0;
+        gameState.v = gameState.v0;
+        // a is set by slider
+        
+        state.history = []; // clear history for clean chart
+        state.oilDrops = [];
+        state.lastTickerTime = 0;
+        
+        UI.gameFeedback.style.display = 'none';
+        lastTimestamp = performance.now();
+    }
+
+    function evaluateGame() {
+        const finalS = gameState.s;
+        const target = gameState.targetS;
+        const tol = gameState.tolerance;
+        const diff = finalS - target;
+        
+        UI.gameFeedback.style.display = 'block';
+        
+        if (Math.abs(diff) <= tol) {
+            UI.gameFeedback.className = 'game-status status-success';
+            UI.gameFeedback.innerHTML = `SEMPURNA! Mobil berhenti pas di target (${finalS.toFixed(1)}m).<br>Perhitungan v&sup2; = v<sub>0</sub>&sup2; + 2as Anda akurat!`;
+            createConfetti();
+        } else {
+            UI.gameFeedback.className = 'game-status status-fail';
+            if (diff < 0) {
+                 UI.gameFeedback.innerHTML = `KURANG JAUH! Anda berhenti di ${finalS.toFixed(1)}m. Perlambatan terlalu besar. Kurangi nilai negatif (a).`;
+            } else {
+                 UI.gameFeedback.innerHTML = `MENABRAK! Anda berhenti di ${finalS.toFixed(1)}m. Perlambatan kurang besar. Tambah nilai negatif (a).`;
+            }
+        }
+    }
+
+    // Simple Confetti effect on main canvas
+    let particles = [];
+    function createConfetti() {
+        for(let i=0; i<50; i++) {
+            particles.push({
+                x: state.cameraX + ctxSim.canvas.width/2,
+                y: ctxSim.canvas.height/2,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 1) * 10,
+                color: ['#06b6d4', '#f59e0b', '#ec4899', '#84cc16'][Math.floor(Math.random()*4)]
+            });
+        }
+    }
+    function drawConfetti() {
+        if(particles.length === 0) return;
+        particles.forEach((p, i) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // gravity
+            ctxSim.fillStyle = p.color;
+            ctxSim.fillRect(p.x - state.cameraX, p.y, 5, 5);
+            if(p.y > ctxSim.canvas.height) particles.splice(i, 1);
+        });
+    }
+
+    /**
+     * MAIN ANIMATION LOOP
+     */
+    function loop(timestamp) {
+        if (!lastTimestamp) lastTimestamp = timestamp;
+        // Cap dt to prevent huge jumps if tab is inactive
+        let dt = Math.min((timestamp - lastTimestamp) / 1000, 0.1); 
+        lastTimestamp = timestamp;
+
+        updatePhysics(dt);
+        updateAndDrawApperception(dt);
+        
+        // Render Main Visuals
+        drawSimCanvas();
+        drawConfetti();
+        
+        // Throttle chart rendering slightly for performance
+        if (state.isRunning || gameState.isRunning) {
+            drawCharts();
+        }
+
+        animationFrameId = requestAnimationFrame(loop);
+    }
+
+    // Initial setup
+    function resizeCanvases() {
+        const updateWidth = (canvasId) => {
+            const canvas = document.getElementById(canvasId);
+            canvas.width = canvas.parentElement.clientWidth;
+        };
+        updateWidth('apperceptionCanvas');
+        updateWidth('mainSimCanvas');
+        updateWidth('chartsCanvas');
+        
+        if(!state.isRunning && !gameState.isRunning) {
+             drawSimCanvas();
+             drawCharts();
+             updateAndDrawApperception(0);
+        }
+    }
+
+    window.addEventListener('resize', resizeCanvases);
+    
+    // Boot sequence
+    resizeCanvases();
+    resetSimulation();
+    requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
