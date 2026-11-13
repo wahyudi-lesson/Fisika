@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fluida: Gaya Apung & Hukum Archimedes</title>
+    <style>
+        /* CSS Variables for Oceanic Theme & Colors */
+        :root {
+            --bg-deep: #020b14;
+            --bg-mid: #0a2e5c;
+            --bg-light: #154c8a;
+            --water-trans: rgba(0, 116, 217, 0.4);
+            --water-solid: #0074D9;
+            --gold: #FFD700;
+            --silver: #E0E0E0;
+            --red: #FF4136;
+            --green: #2ECC40;
+            --text-main: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-deep), var(--bg-mid));
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Glassmorphism Panel Base */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Typography */
+        h1 { font-size: 2rem; color: var(--gold); margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        h2 { font-size: 1.4rem; border-bottom: 2px solid var(--water-solid); padding-bottom: 10px; margin-bottom: 20px; }
+        p { line-height: 1.6; margin-bottom: 15px; color: #d0e3ff; }
+        .subtitle { font-size: 1.1rem; font-weight: 300; color: #a8c6fa; }
+
+        /* Custom Inputs */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 15px 0;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--gold);
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--water-solid), #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 116, 217, 0.4);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 116, 217, 0.6);
+        }
+
+        /* --- Section 1: Vector Visualization --- */
+        .vector-viz { display: flex; flex-direction: column; align-items: center; }
+        .water-tank {
+            width: 250px; height: 250px;
+            background: var(--water-trans);
+            border: 2px solid var(--glass-border);
+            border-top: none;
+            position: relative;
+            border-radius: 0 0 15px 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .water-surface {
+            position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: rgba(255,255,255,0.5);
+        }
+        .cube-3d {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3), inset 5px 5px 10px rgba(255,255,255,0.4);
+            position: relative;
+            z-index: 2;
+        }
+        .arrow {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .arrow::after {
+            content: ''; position: absolute;
+            border: solid transparent;
+        }
+        .show-vectors .arrow { opacity: 1; }
+        
+        /* Vector Labels */
+        .v-label {
+            position: absolute;
+            font-size: 11px;
+            color: #fff;
+            background: rgba(0, 40, 80, 0.8);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 3px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .arr-left .v-label { right: 35px; top: -10px; }
+        .arr-right .v-label { left: 35px; top: -10px; }
+        .arr-top .v-label { bottom: 25px; left: -20px; }
+        .arr-bot .v-label { top: 45px; left: -60px; font-weight: bold; }
+        .arr-resultant .v-label { top: 30px; left: 15px; color: var(--green); font-weight: bold; }
+        .arr-weight .v-label { bottom: -25px; left: 15px; color: var(--red); font-weight: bold; }
+
+        /* Pressure Arrows (Blue) */
+        .arr-left, .arr-right, .arr-top, .arr-bot { background: #00d2ff; }
+        .arr-left { width: 30px; height: 4px; left: -30px; top: calc(50% - 2px); }
+        .arr-left::after { border-left: 8px solid #00d2ff; border-width: 5px 0 5px 8px; right: 0; top: -3px; }
+        
+        .arr-right { width: 30px; height: 4px; right: -30px; top: calc(50% - 2px); }
+        .arr-right::after { border-right: 8px solid #00d2ff; border-width: 5px 8px 5px 0; left: 0; top: -3px; }
+        
+        .arr-top { width: 4px; height: 20px; top: -20px; left: calc(50% - 2px); }
+        .arr-top::after { border-top: 8px solid #00d2ff; border-width: 8px 5px 0 5px; bottom: 0; left: -3px; }
+        
+        .arr-bot { width: 4px; height: 40px; bottom: -40px; left: calc(50% - 2px); }
+        .arr-bot::after { border-bottom: 8px solid #00d2ff; border-width: 0 5px 8px 5px; top: 0; left: -3px; }
+
+        /* Resultant Arrow (Green) - Menekan dari bawah menyentuh sisi bawah benda menuju ke atas */
+        .arr-resultant {
+            position: absolute;
+            width: 8px; height: 0px; background: var(--green);
+            top: 60px; /* Base menempel tepat di sisi bawah kubus */
+            left: calc(50% + 15px); /* DIGESER KANAN agar tidak tumpang tindih dengan P. Bawah */
+            z-index: 3; opacity: 0;
+            transition: height 0.8s ease, opacity 0.8s ease;
+        }
+        .arr-resultant::after {
+            content: ''; position: absolute;
+            border-bottom: 14px solid var(--green);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            top: -14px; /* Ujung panah pas menyentuh sisi bawah benda dan mengarah ke atas */
+            left: -6px; 
+        }
+        .show-vectors .arr-resultant { height: 70px; opacity: 1; transition-delay: 0.5s; }
+        
+        /* Weight Arrow (Red) - Dari pusat ke bawah */
+        .arr-weight {
+            position: absolute;
+            width: 4px; height: 40px; background: var(--red);
+            top: 30px; /* Berawal tepat di titik pusat kubus (50% dari 60px) */
+            left: calc(50% - 2px);
+            z-index: 4; opacity: 1;
+        }
+        /* Titik Pusat Benda (Center of Mass) */
+        .arr-weight::before {
+            content: ''; position: absolute;
+            width: 10px; height: 10px; background: var(--red);
+            border-radius: 50%;
+            top: -3px; left: -3px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .arr-weight::after {
+            content: ''; position: absolute;
+            border-top: 14px solid var(--red);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            bottom: -14px; left: -6px;
+        }
+
+        /* --- Section 2: Eureka Lab --- */
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        .lab-visual {
+            position: relative; height: 380px;
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        
+        /* FIX: Posisi yang Jelas agar tidak Overlap */
+        .eureka-can-wrapper { 
+            position: absolute; bottom: 0px; left: 30px; 
+            width: 130px; height: 160px;
+        }
+        .catch-beaker {
+            position: absolute; bottom: 0; left: 175px;
+            width: 70px; height: 100px;
+            border: 2px solid rgba(255,255,255,0.4); border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        .suspension-system {
+            position: absolute; top: 0; left: 95px; /* Pusat tepat di atas wadah besar */
+            width: 60px; display: flex; flex-direction: column; align-items: center;
+            z-index: 4; transform: translateX(-50%);
+        }
+
+        /* Realistic Dynamometer */
+        .dyna-body {
+            width: 30px; height: 90px;
+            background: linear-gradient(to right, #2c3e50, #34495e, #2c3e50);
+            border-radius: 6px 6px 0 0; position: relative; z-index: 3;
+            box-shadow: inset 0 0 5px #000; border-bottom: 2px solid #111;
+        }
+        .dyna-slider {
+            width: 14px; height: 50px;
+            background: linear-gradient(to right, #bdc3c7, #ecf0f1, #bdc3c7);
+            position: relative; z-index: 2; border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: height 0.05s linear;
+        }
+        .spring-value {
+            position: absolute; right: -60px; bottom: 0px;
+            background: #111; color: var(--gold); padding: 4px 6px;
+            border-radius: 4px; font-family: monospace; font-size: 13px; font-weight: bold;
+            border: 1px solid #444; width: 55px; text-align: center;
+            z-index: 5;
+        }
+        .dyna-string { 
+            width: 2px; height: 60px; background: #95a5a6; position: relative; z-index: 1; 
+            transition: height 0.05s linear;
+        }
+        .stone {
+            position: relative; width: 45px; height: 55px;
+            background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+            border-radius: 10px 10px 20px 20px; box-shadow: inset -5px -5px 10px rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 2px #000; z-index: 4;
+        }
+
+        /* eureka can body */
+        .eureka-body {
+            width: 100%; height: 100%;
+            border: 3px solid rgba(255,255,255,0.4); border-top: none;
+            border-radius: 0 0 10px 10px;
+            background: linear-gradient(to top, var(--water-trans) 95%, transparent 95%);
+            position: absolute;
+        }
+        .spout {
+            position: absolute; right: -28px; top: 10px;
+            width: 30px; height: 10px;
+            border-bottom: 3px solid rgba(255,255,255,0.4);
+            border-right: 3px solid rgba(255,255,255,0.4);
+            transform: rotate(15deg);
+        }
+        .spilled-water {
+            position: absolute; bottom: 0; width: 100%; height: 0%;
+            background: var(--water-trans); transition: height 0.2s;
+        }
+        
+        /* New animated stream */
+        .water-stream {
+            position: absolute; right: -25px; top: 20px;
+            width: 6px; height: 85px;
+            background: repeating-linear-gradient(to bottom, var(--water-solid) 0%, var(--water-solid) 50%, transparent 50%, transparent 100%);
+            background-size: 6px 15px;
+            border-radius: 3px; opacity: 0; z-index: 5;
+            animation: flowDown 0.3s linear infinite; transition: opacity 0.1s;
+        }
+        @keyframes flowDown { 0% { background-position: 0 0; } 100% { background-position: 0 15px; } }
+
+        /* --- Dynamic Force Arrows (Lab & Shipyard) --- */
+        .dynamic-arrow {
+            position: absolute;
+            width: 4px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .dynamic-arrow::after { 
+            content: ''; 
+            position: absolute; 
+        }
+        .dynamic-arrow .v-label {
+            position: absolute; font-size: 10px; padding: 2px 4px; 
+            border-radius: 4px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);
+            white-space: nowrap;
+        }
+
+        /* Weight (Downwards from center) */
+        .da-weight { 
+            background: var(--red); top: 50%; height: 50px; 
+            left: calc(50% - 2px); 
+        }
+        .da-weight::before {
+            content: ''; position: absolute; width: 6px; height: 6px; 
+            background: var(--red); border-radius: 50%; top: -3px; left: -1px;
+            box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+        .da-weight::after { 
+            border-top: 12px solid var(--red);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            bottom: -12px; left: -4px; 
+        }
+        .da-weight .v-label { bottom: -20px; left: 15px; background: rgba(255,65,54,0.6); }
+
+        /* Buoyancy (Upwards from bottom) */
+        .da-buoyancy { 
+            background: var(--green); bottom: 0; height: 0px; 
+            transition: height 0.1s linear, opacity 0.2s; opacity: 0;
+            left: calc(50% + 12px); /* Digeser Kanan agar tidak menumpuk dengan garis berat/tekanan bawah */
+        }
+        .da-buoyancy::after { 
+            border-bottom: 12px solid var(--green);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            top: -12px; left: -4px; 
+        }
+        .da-buoyancy .v-label { top: -25px; left: 15px; background: rgba(46,204,64,0.6); }
+
+        /* Normal Force (Upwards from bottom) */
+        .da-normal { 
+            background: var(--gold); bottom: 0; height: 0px; 
+            transition: height 0.1s linear; display: none; 
+            left: calc(50% - 15px); /* Digeser Kiri agar terpisah dari Fa dan W */
+        }
+        .da-normal::after { 
+            border-bottom: 12px solid var(--gold);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            top: -12px; left: -4px; 
+        }
+        .da-normal .v-label { top: -25px; left: 15px; background: rgba(255,215,0,0.6); color: #000; }
+
+        .data-panel { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-top: 20px;}
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: monospace; font-size: 1.1rem;}
+        .highlight { color: var(--green); font-weight: bold; }
+        .highlight-red { color: var(--red); font-weight: bold; }
+        .highlight-gold { color: var(--gold); font-weight: bold; }
+
+        /* --- Section 3: Shipyard Simulator --- */
+        .shipyard-stage {
+            height: 250px; position: relative;
+            border-radius: 10px; overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB 40%, var(--water-solid) 40%);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .ship-wrapper {
+            position: absolute; 
+            top: 20px; /* Posisi awal akurat: Dasar baja (20+80=100px) menempel tepat di garis air (40% dari 250 = 100px) */
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .metal-hull {
+            width: 80px; height: 80px;
+            background: linear-gradient(to bottom, #f0f0f0, var(--silver));
+            border-radius: 4px;
+            position: relative;
+            transition: width 0.3s, border-radius 0.3s, background 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            display: flex; justify-content: center;
+        }
+        .air-cavity {
+            position: absolute; top: 0;
+            width: 0%; height: 0%;
+            background: #87CEEB; /* matches sky */
+            border-radius: 0 0 15px 15px;
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* Animation classes for floating */
+        .float-bob { animation: bobbing 3s infinite ease-in-out; }
+        @keyframes bobbing { 
+            0% {transform: translateY(0px) rotate(0deg);} 
+            50% {transform: translateY(4px) rotate(2deg);} 
+            100% {transform: translateY(0px) rotate(0deg);} 
+        }
+        
+        .success-msg {
+            display: none; background: rgba(46, 204, 64, 0.2); border: 1px solid var(--green);
+            padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .lab-grid { grid-template-columns: 1fr; }
+            .lab-visual { transform: scale(0.9); transform-origin: top center; margin-top: 20px;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <header class="glass-panel text-center" style="text-align: center;">
+        <h1>Tahap 1.4: Eureka! Gaya Apung</h1>
+        <p class="subtitle">Mengapa besi kecil tenggelam, tapi kapal besi raksasa mengapung di lautan?</p>
+    </header>
+
+    <!-- SECTION 1: FORCE VECTORS -->
+    <section class="glass-panel">
+        <h2>1. Analisis Tekanan Air (Mengapa Ada Gaya Apung?)</h2>
+        <p>Benda yang berada di dalam air menerima tekanan dari segala arah. Namun, karena <b>tekanan air bertambah seiring kedalaman</b>, dorongan dari bawah selalu lebih besar daripada dorongan dari atas. Selisih dorongan inilah yang menciptakan <b>Gaya Apung (<span style="color:var(--green)">Fa</span>)</b> ke atas.</p>
+        
+        <div class="vector-viz">
+            <div class="water-tank" id="vectorTank">
+                <div class="water-surface"></div>
+                <div class="cube-3d">
+                    <!-- Forces -->
+                    <div class="arrow arr-left"><span class="v-label">P. Kiri</span></div>
+                    <div class="arrow arr-right"><span class="v-label">P. Kanan</span></div>
+                    <div class="arrow arr-top"><span class="v-label">P. Atas</span></div>
+                    <div class="arrow arr-bot"><span class="v-label">P. Bawah (Lebih Kuat)</span></div>
+                    <!-- Resultant & Weight -->
+                    <div class="arr-resultant"><span class="v-label">Gaya Apung (Fa)</span></div>
+                    <div class="arr-weight"><span class="v-label">Berat Benda (w)</span></div>
+                </div>
+            </div>
+            <button id="btnForces">Lihat Kekuatan Air</button>
+        </div>
+    </section>
+
+    <!-- SECTION 2: EUREKA CAN LAB -->
+    <section class="glass-panel">
+        <h2>2. Eksperimen Gelas Berpancuran (Hukum Archimedes)</h2>
+        <p>Archimedes menemukan bahwa: <i>"Gaya apung yang bekerja pada suatu benda sama dengan berat cairan yang dipindahkan oleh benda tersebut."</i> Mari kita buktikan!</p>
+        
+        <div class="lab-grid">
+            <div class="lab-controls">
+                <label><b>Celupkan Batu (Emas) ke dalam Air:</b></label>
+                <input type="range" id="dipSlider" min="0" max="100" value="0">
+                
+                <div class="data-panel">
+                    <div class="data-row"><span>Berat Asli (Udara)</span> <span>50.0 N</span></div>
+                    <div class="data-row"><span>Tegangan Tali (Neraca)</span> <span id="scaleVal">50.0 N</span></div>
+                    <hr style="border-color: rgba(255,255,255,0.2); margin: 10px 0;">
+                    <div class="data-row"><span>Gaya Apung (<span class="highlight-green">Fa</span>)</span> <span id="lossVal" class="highlight">0.0 N</span></div>
+                    <div class="data-row"><span>Berat Air Tumpah</span> <span id="spillVal" class="highlight">0.0 N</span></div>
+                    <!-- New Row for Normal Force -->
+                    <div class="data-row" id="normalForceRow" style="display: none; margin-top: 10px;">
+                        <span>Gaya Normal Dasar (<span class="highlight-gold">Fn</span>)</span> 
+                        <span id="normalVal" class="highlight-gold">0.0 N</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lab-visual">
+                <!-- Complete Realistic Suspension System -->
+                <div class="suspension-system" id="suspensionSystem">
+                    <div class="dyna-body"></div>
+                    <div class="dyna-slider" id="dynaSlider">
+                        <span class="spring-value" id="springScaleUI">50.0 N</span>
+                    </div>
+                    <div class="dyna-string" id="dynaString"></div>
+                    <div class="stone" id="goldStone">
+                        <span style="position: relative; z-index: 20;">Emas</span>
+                        <!-- Dynamic Force Arrows -->
+                        <div class="dynamic-arrow da-weight"><span class="v-label">W</span></div>
+                        <div class="dynamic-arrow da-buoyancy" id="stoneFaArrow"><span class="v-label">Fa</span></div>
+                        <div class="dynamic-arrow da-normal" id="stoneFnArrow"><span class="v-label">Fn</span></div>
+                    </div>
+                </div>
+                
+                <!-- Eureka Can -->
+                <div class="eureka-can-wrapper">
+                    <div class="eureka-body"></div>
+                    <div class="spout"></div>
+                    <div class="water-stream" id="waterStreamUI"></div>
+                </div>
+                <!-- Catch Beaker -->
+                <div class="catch-beaker">
+                    <div class="spilled-water" id="spilledWaterUI"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: SHIPYARD SIMULATOR -->
+    <section class="glass-panel">
+        <h2>3. Simulator Galangan Kapal (Massa Jenis vs Volume)</h2>
+        <p>Baja jauh lebih padat dari air, sehingga sebuah blok baja pasti tenggelam. Namun insinyur mengubah <b>bentuknya</b>. Dengan memperlebar lambung kapal, kita menambahkan "Rongga Udara" ke dalam total volume kapal. Akibatnya, <b>Massa Jenis Rata-rata (<span style="font-family:serif;">ρ</span>)</b> kapal menjadi lebih kecil dari air!</p>
+        
+        <div class="lab-grid">
+            <div>
+                <label><b>Ubah Bentuk Baja (Tambah Rongga Udara):</b></label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="0">
+                
+                <div class="data-panel">
+                    <div class="data-row"><span>Massa Baja (Tetap)</span> <span>10,000 Ton</span></div>
+                    <div class="data-row"><span>Total Volume (Baja + Rongga)</span> <span id="volVal">1,250 m³</span></div>
+                    <div class="data-row"><span>Massa Jenis Rata-rata (<span style="font-family:serif;">ρ = m/V</span>)</span> <span id="densityVal" class="highlight-red">8.00 ton/m³</span></div>
+                    <!-- Baris Baru: Rasio / Volume Tercelup -->
+                    <div class="data-row">
+                        <span>Bagian Tercelup Air (<span style="font-family:serif;">ρ<sub>b</sub> / ρ<sub>a</sub></span>)</span> 
+                        <span id="ratioVal" class="highlight-red">100% (Tenggelam)</span>
+                    </div>
+                    <div style="font-size: 0.9em; margin-top: 10px; color: #a8c6fa;">*Massa Jenis Air Laut (ρ<sub>a</sub>) = 1.03 ton/m³</div>
+                </div>
+                <button id="btnDrop" style="margin-top: 15px; width: 100%;">Cemplungkan ke Laut</button>
+            </div>
+            
+            <div class="shipyard-stage">
+                <div class="ship-wrapper" id="shipWrapper" style="transform: translateY(0px);">
+                    <div class="metal-hull" id="metalHull">
+                        <div class="air-cavity" id="airCavity"></div>
+                        <!-- Dynamic Force Arrows -->
+                        <div class="dynamic-arrow da-weight" style="height: 40px; z-index: 10;"><span class="v-label">W</span></div>
+                        <div class="dynamic-arrow da-buoyancy" id="shipFaArrow" style="z-index: 10;"><span class="v-label">Fa</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="success-msg" id="successMsg">
+            <b>🎉 Insinyur Berhasil!</b><br>
+            Dengan membentuk lambung kapal dan mengisinya dengan udara, massa jenis rata-rata kapal sekarang lebih ringan dari air laut. Kapal raksasa pun mengapung!
+        </div>
+    </section>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- SECTION 1 LOGIC ---
+        const btnForces = document.getElementById('btnForces');
+        const tank = document.getElementById('vectorTank');
+        let vectorsVisible = false;
+
+        if (btnForces && tank) {
+            btnForces.addEventListener('click', () => {
+                vectorsVisible = !vectorsVisible;
+                if(vectorsVisible) {
+                    tank.classList.add('show-vectors');
+                    btnForces.innerText = "Sembunyikan Kekuatan Air";
+                } else {
+                    tank.classList.remove('show-vectors');
+                    btnForces.innerText = "Lihat Kekuatan Air";
+                }
+            });
+        }
+
+        // --- SECTION 2 LOGIC (Eureka Can) ---
+        const dipSlider = document.getElementById('dipSlider');
+        const suspensionSystem = document.getElementById('suspensionSystem');
+        const dynaSlider = document.getElementById('dynaSlider');
+        const dynaString = document.getElementById('dynaString');
+        const scaleUI = document.getElementById('springScaleUI');
+        const spilledWaterUI = document.getElementById('spilledWaterUI');
+        const waterStreamUI = document.getElementById('waterStreamUI'); 
+        
+        const scaleVal = document.getElementById('scaleVal');
+        const lossVal = document.getElementById('lossVal');
+        const spillVal = document.getElementById('spillVal');
+        
+        // New UI Elements for Normal Force
+        const normalForceRow = document.getElementById('normalForceRow');
+        const normalVal = document.getElementById('normalVal');
+
+        // Dynamic Force Arrows
+        const stoneFaArrow = document.getElementById('stoneFaArrow');
+        const stoneFnArrow = document.getElementById('stoneFnArrow');
+
+        let previousFa = 0;
+        let streamTimeout;
+
+        if (dipSlider && suspensionSystem && dynaSlider && dynaString) {
+            dipSlider.addEventListener('input', (e) => {
+                let percent = e.target.value;
+                
+                let baseTop = -40; // Posisi dudukan di atas
+                let maxStandDrop = 240; // Diperpanjang agar benda pasti mencapai dasar
+                let systemTop = baseTop + (percent / 100) * maxStandDrop;
+                
+                let stoneH = 55;
+                let waterLevel = 220; // Batas atas air
+                let maxBottomY = 377; // Batas mentok dasar Eureka Can
+                
+                // Menghitung gaya tegangan tali (tanpa interaksi lantai)
+                let theoreticalStretch = 50.0; 
+                let fa = 0.0;
+                let submergedDepth = 0.0;
+
+                for(let i = 0; i < 5; i++) {
+                    let stoneBottomY = systemTop + 90 + theoreticalStretch + 60 + stoneH;
+                    submergedDepth = Math.max(0, Math.min(stoneH, stoneBottomY - waterLevel));
+                    fa = (submergedDepth / stoneH) * 20.0; 
+                    theoreticalStretch = 50.0 - fa; 
+                }
+
+                // Kalkulasi benturan dengan dasar wadah (Gaya Normal)
+                let theoreticalBottomY = systemTop + 90 + theoreticalStretch + 60 + stoneH;
+                let actualStretch = theoreticalStretch;
+                let stringSlack = 0; // Seberapa kendur talinya
+                let fn = 0.0; // Gaya Normal
+
+                if (theoreticalBottomY >= maxBottomY) {
+                    // Berapa tegangan pegas yg dibutuhkan agar batu tepat menyentuh lantai
+                    let requiredStretch = maxBottomY - (systemTop + 90 + 60 + stoneH);
+                    
+                    if (requiredStretch < 0) {
+                        // Jika negatif, pegas tertekan full (0), dan sisa jarak membuat tali kendur
+                        actualStretch = 0;
+                        stringSlack = -requiredStretch;
+                        fn = theoreticalStretch; // Lantai menahan seluruh sisa beban
+                    } else {
+                        // Jika pegas masih tegang sebagian saat batu di lantai
+                        actualStretch = requiredStretch;
+                        fn = theoreticalStretch - actualStretch; // Selisihnya ditahan lantai
+                    }
+                }
+
+                // Terapkan ke Elemen Visual CSS
+                suspensionSystem.style.top = systemTop + 'px';
+                dynaSlider.style.height = actualStretch + 'px';
+                dynaString.style.height = Math.max(0, 60 - stringSlack) + 'px'; // Animasi Tali Kendur
+
+                let currentWeight = actualStretch;
+
+                // Teks Output Dinamometer & Tabel Data
+                scaleUI.innerText = currentWeight.toFixed(1) + ' N';
+                scaleVal.innerText = currentWeight.toFixed(1) + ' N';
+                lossVal.innerText = fa.toFixed(1) + ' N';
+                spillVal.innerText = fa.toFixed(1) + ' N'; 
+
+                // Tampilkan Gaya Normal jika benda mengenai dasar
+                if (fn > 0.1) {
+                    normalForceRow.style.display = 'flex';
+                    normalVal.innerText = fn.toFixed(1) + ' N';
+                } else {
+                    normalForceRow.style.display = 'none';
+                    normalVal.innerText = '0.0 N';
+                }
+
+                // Update Visual Animasi Panah Gaya Dinamis (Skala Tinggi)
+                if (stoneFaArrow) {
+                    stoneFaArrow.style.height = (fa * 2.5) + 'px'; // 1 N = 2.5px tinggi
+                    stoneFaArrow.style.opacity = fa > 0.1 ? 1 : 0;
+                }
+                if (stoneFnArrow) {
+                    if (fn > 0.1) {
+                        stoneFnArrow.style.display = 'block';
+                        stoneFnArrow.style.height = (fn * 1.5) + 'px'; // 1 N = 1.5px tinggi
+                    } else {
+                        stoneFnArrow.style.display = 'none';
+                    }
+                }
+
+                // Hitung kembali aktual yang tercelup air berdasar ketinggian nyata batu (sebab tertahan lantai)
+                let actualStoneBottomY = systemTop + 90 + actualStretch + Math.max(0, 60 - stringSlack) + stoneH;
+                let actualSubmerged = Math.max(0, Math.min(stoneH, actualStoneBottomY - waterLevel));
+                spilledWaterUI.style.height = (actualSubmerged / stoneH * 65) + '%';
+                
+                // Animasi pancuran
+                if (fa > previousFa && fa < 20.0 && percent < 95) {
+                    waterStreamUI.style.opacity = '1';
+                    clearTimeout(streamTimeout);
+                    streamTimeout = setTimeout(() => {
+                        waterStreamUI.style.opacity = '0';
+                    }, 150);
+                }
+                previousFa = fa;
+            });
+        }
+
+        // --- SECTION 3 LOGIC (Shipyard) ---
+        const volSlider = document.getElementById('volumeSlider');
+        const btnDrop = document.getElementById('btnDrop');
+        const shipWrapper = document.getElementById('shipWrapper');
+        const metalHull = document.getElementById('metalHull');
+        const airCavity = document.getElementById('airCavity');
+        const shipFaArrow = document.getElementById('shipFaArrow');
+        
+        const volVal = document.getElementById('volVal');
+        const densityVal = document.getElementById('densityVal');
+        const ratioVal = document.getElementById('ratioVal');
+        const successMsg = document.getElementById('successMsg');
+
+        const massTons = 10000;
+        const minVol = 1250; 
+        const maxVol = 25000; 
+        const waterDensity = 1.03; 
+
+        let isDropped = false;
+        let currentDensity = 8.0;
+
+        if (volSlider && btnDrop && shipWrapper) {
+            volSlider.addEventListener('input', (e) => {
+                if (isDropped) {
+                    shipWrapper.style.transform = 'translateY(0px)';
+                    metalHull.classList.remove('float-bob');
+                    btnDrop.innerText = "Cemplungkan ke Laut";
+                    btnDrop.style.background = "";
+                    successMsg.style.display = "none";
+                    if(shipFaArrow) shipFaArrow.style.opacity = '0'; // Sembunyikan Fa saat diangkat
+                    isDropped = false;
+                }
+
+                let percent = e.target.value;
+                let currentVol = minVol + (percent / 100) * (maxVol - minVol);
+                currentDensity = massTons / currentVol;
+
+                volVal.innerText = Math.round(currentVol).toLocaleString() + ' m³';
+                densityVal.innerText = currentDensity.toFixed(2) + ' ton/m³';
+
+                // Kalkulasi Ratio Tercelup
+                let ratio = currentDensity / waterDensity;
+
+                if (currentDensity > waterDensity) {
+                    densityVal.className = 'highlight-red';
+                    ratioVal.innerText = '100% (Tenggelam)';
+                    ratioVal.className = 'highlight-red';
+                } else {
+                    densityVal.className = 'highlight';
+                    ratioVal.innerText = (ratio * 100).toFixed(1) + '% (Mengapung)';
+                    ratioVal.className = 'highlight';
+                }
+
+                let currentWidth = 80 + (percent / 100) * 140;
+                metalHull.style.width = currentWidth + 'px';
+                
+                if (percent > 10) {
+                    let br = 4 + (percent / 100) * 36;
+                    metalHull.style.borderRadius = `0 0 ${br}px ${br}px`;
+                    airCavity.style.width = (percent * 0.9) + '%';
+                    airCavity.style.height = (percent * 0.8) + '%';
+                } else {
+                    metalHull.style.borderRadius = '4px';
+                    airCavity.style.width = '0%';
+                    airCavity.style.height = '0%';
+                }
+            });
+
+            btnDrop.addEventListener('click', () => {
+                if(isDropped) return;
+                
+                isDropped = true;
+                btnDrop.innerText = "Mengobservasi...";
+                btnDrop.style.background = "#555";
+
+                let ratio = currentDensity / waterDensity;
+
+                if (currentDensity > waterDensity) {
+                    // Tenggelam ke dasar wadah laut
+                    shipWrapper.style.transform = `translateY(150px)`;
+                    if(shipFaArrow) {
+                        shipFaArrow.style.opacity = '1';
+                        shipFaArrow.style.height = '15px'; // Fa lebih kecil dari W (Tenggelam)
+                    }
+                } else {
+                    // Mengapung: Tinggi tenggelam proporsional terhadap ratio rasio (tinggi benda = 80px)
+                    let submergedDepth = ratio * 80; 
+                    shipWrapper.style.transform = `translateY(${submergedDepth}px)`;
+                    
+                    if(shipFaArrow) {
+                        shipFaArrow.style.opacity = '1';
+                        shipFaArrow.style.height = '40px'; // Fa seimbang dengan W (Mengapung)
+                    }
+                    setTimeout(() => {
+                        if(isDropped) metalHull.classList.add('float-bob');
+                        successMsg.style.display = "block";
+                    }, 1500);
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
