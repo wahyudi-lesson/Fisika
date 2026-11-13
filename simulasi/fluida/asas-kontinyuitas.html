@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fluida Dinamis: Aliran & Kontinuitas</title>
+    <style>
+        :root {
+            --bg-color: #080c10;
+            --grid-color: rgba(0, 255, 255, 0.05);
+            --panel-bg: rgba(10, 20, 30, 0.7);
+            --glass-border: rgba(0, 255, 255, 0.2);
+            --cyan: #00ffff;
+            --green: #33ff33;
+            --red: #ff3333;
+            --text-main: #e0e6ed;
+            --text-muted: #8b9bb4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.05);
+        }
+
+        h1 {
+            color: var(--cyan);
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .section-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-title {
+            color: var(--cyan);
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid var(--glass-border);
+        }
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 22px; width: 22px;
+            left: 3px; bottom: 3px;
+            background-color: var(--text-muted);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-toggle {
+            background-color: rgba(0, 255, 255, 0.2);
+            border-color: var(--cyan);
+        }
+        input:checked + .slider-toggle:before {
+            transform: translateX(30px);
+            background-color: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+        }
+        .toggle-label-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .mode-text { font-weight: bold; }
+        .mode-nyata { color: var(--text-muted); }
+        .mode-ideal { color: var(--cyan); text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+
+        /* Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 20px;
+            border-radius: 50%;
+            background: var(--cyan);
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        /* Dashboard Data */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .data-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        .data-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .val-cyan { color: var(--cyan); }
+        .val-red { color: var(--red); }
+        .val-green { color: var(--green); }
+        
+        .equation {
+            grid-column: 1 / -1;
+            font-size: 1.8rem;
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px dashed var(--cyan);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .blink-warning {
+            color: var(--red);
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.6);
+            animation: blink 1s infinite;
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .instruction {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        /* Speedometers Layout */
+        .speedometers {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .speedometer-container {
+            text-align: center;
+            width: 120px;
+        }
+        .speed-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Tahap 2.1: Aturan Lalu Lintas Fluida</h1>
+        <h2>Apa yang terjadi jika sungai lebar tiba-tiba menyempit?</h2>
+    </header>
+
+    <!-- VISUALISASI 1: FLUIDA IDEAL VS NYATA -->
+    <div class="section-card">
+        <div class="section-title">Konsep 1: Fluida Nyata vs Fluida Ideal</div>
+        <p class="instruction">Sebelum membahas rumus, mari samakan persepsi. Dalam fisika SMA, kita menganggap fluida itu "Ideal" (tidak kental/viskos), sehingga semua bagian air bergerak bersamaan.</p>
+        
+        <canvas id="canvas1" width="800" height="200"></canvas>
+        
+        <div class="controls">
+            <div class="toggle-label-container">
+                <span class="mode-text mode-nyata" id="lbl-nyata">Mode Nyata (Viskos)</span>
+                <label class="switch">
+                    <input type="checkbox" id="fluidToggle" checked>
+                    <span class="slider-toggle"></span>
+                </label>
+                <span class="mode-text mode-ideal" id="lbl-ideal">Mode Ideal (Fisika SMA)</span>
+            </div>
+            <div style="flex:1; text-align:right; font-size:0.9rem; color:var(--cyan);" id="fluid-desc">
+                Semua partikel bergerak serentak. Tidak ada gesekan dinding.
+            </div>
+        </div>
+    </div>
+
+    <!-- VISUALISASI 2: LABORATORIUM KONTINUITAS -->
+    <div class="section-card">
+        <div class="section-title">Laboratorium Utama: Simulasi Persamaan Kontinuitas</div>
+        <p class="instruction">Geser slider untuk menyempitkan bagian tengah pipa. Perhatikan perubahan kecepatan partikel dan indikator debit air (Q).</p>
+        
+        <canvas id="canvas2" width="800" height="300"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Luas Penampang Tengah (A₂): <span id="valA2" class="val-cyan">100%</span></label>
+                <input type="range" id="sliderA2" min="10" max="100" value="100">
+            </div>
+            <div class="speedometers">
+                <div class="speedometer-container">
+                    <canvas id="speedo1" width="100" height="60"></canvas>
+                    <div class="speed-label">Kecepatan V₁ (Masuk)</div>
+                </div>
+                <div class="speedometer-container">
+                    <canvas id="speedo2" width="100" height="60"></canvas>
+                    <div class="speed-label">Kecepatan V₂ (Tengah)</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="warningMsg" class="blink-warning">⚠️ Area Mengecil → Partikel HARUS Lari Lebih Cepat! ⚠️</div>
+
+        <div class="dashboard">
+            <div class="equation">A₁ × v₁ = A₂ × v₂</div>
+            <div class="data-box">
+                <div class="data-title">Debit Masuk (Q_in)</div>
+                <div class="data-value val-cyan" id="qIn">200</div>
+            </div>
+            <div class="data-box">
+                <div class="data-title">Status Massa</div>
+                <div class="data-value" style="color:#aaa; font-size:1rem; margin-top:5px;">Hukum Kekekalan Massa:<br><strong class="val-green">Q_in = Q_out</strong></div>
+            </div>
+            <div class="data-box">
+                <div class="data-title">Debit Keluar (Q_out)</div>
+                <div class="data-value val-cyan" id="qOut">200</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISUALISASI 3: MINI GAME -->
+    <div class="section-card">
+        <div class="section-title">Mini-Game: Tantangan Tukang Kebun</div>
+        <p class="instruction">Bunga di ujung sana layu. Siram bunganya dengan cara mengatur bukaan ujung selang (Hukum Kontinuitas dalam kehidupan sehari-hari).</p>
+        
+        <canvas id="canvas3" width="800" height="350"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Tutup Lubang Selang dengan Jempol: <span id="valJempol" class="val-cyan">0%</span></label>
+                <input type="range" id="sliderJempol" min="0" max="85" value="0">
+            </div>
+            <div id="gameStatus" style="color: var(--cyan); font-weight: bold; font-size: 1.1rem;">Status: Menunggu Air...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Utils & Globals
+    const requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+    
+    // --- VISUALISASI 1: FLUIDA IDEAL VS NYATA ---
+    const ctx1 = document.getElementById('canvas1').getContext('2d');
+    const c1 = document.getElementById('canvas1');
+    const fluidToggle = document.getElementById('fluidToggle');
+    const lblNyata = document.getElementById('lbl-nyata');
+    const lblIdeal = document.getElementById('lbl-ideal');
+    const fluidDesc = document.getElementById('fluid-desc');
+    
+    let isIdeal = true;
+    let particles1 = [];
+    const numParticles1 = 150;
+
+    // Inisialisasi Partikel Vis 1
+    for(let i=0; i<numParticles1; i++) {
+        particles1.push({
+            x: Math.random() * c1.width,
+            y: 20 + Math.random() * (c1.height - 40),
+            baseSpeed: 2 + Math.random() * 0.5,
+            size: 2 + Math.random() * 2
+        });
+    }
+
+    fluidToggle.addEventListener('change', (e) => {
+        isIdeal = e.target.checked;
+        if(isIdeal) {
+            lblIdeal.style.color = 'var(--cyan)';
+            lblIdeal.style.textShadow = '0 0 5px rgba(0,255,255,0.5)';
+            lblNyata.style.color = 'var(--text-muted)';
+            lblNyata.style.textShadow = 'none';
+            fluidDesc.textContent = "Semua partikel bergerak serentak lurus. Tidak ada gesekan dinding (Fisika SMA).";
+            fluidDesc.style.color = "var(--cyan)";
+        } else {
+            lblNyata.style.color = '#ff9900';
+            lblNyata.style.textShadow = '0 0 5px rgba(255,153,0,0.5)';
+            lblIdeal.style.color = 'var(--text-muted)';
+            lblIdeal.style.textShadow = 'none';
+            fluidDesc.textContent = "Partikel tengah cepat, pinggir lambat karena gesekan. Ada pusaran kecil (Realita).";
+            fluidDesc.style.color = "#ff9900";
+        }
+    });
+
+    function drawVis1() {
+        // Clear with slight trailing
+        ctx1.fillStyle = 'rgba(10, 20, 30, 0.4)';
+        ctx1.fillRect(0, 0, c1.width, c1.height);
+
+        // Draw pipe borders
+        ctx1.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx1.lineWidth = 4;
+        ctx1.beginPath();
+        ctx1.moveTo(0, 15); ctx1.lineTo(c1.width, 15);
+        ctx1.moveTo(0, c1.height - 15); ctx1.lineTo(c1.width, c1.height - 15);
+        ctx1.stroke();
+
+        let centerY = c1.height / 2;
+        let pipeRadius = (c1.height - 30) / 2;
+
+        particles1.forEach(p => {
+            let speed = 3;
+            let vy = 0;
+            
+            if(!isIdeal) {
+                // Parabolic velocity profile for real fluid
+                let distFromCenter = Math.abs(p.y - centerY);
+                let normalizedDist = distFromCenter / pipeRadius;
+                // v = vmax * (1 - r^2/R^2)
+                speed = 5 * (1 - Math.pow(normalizedDist, 2)) + 0.2; 
+                // Add tiny turbulence
+                vy = (Math.random() - 0.5) * 0.5 * normalizedDist;
+            }
+
+            p.x += speed;
+            p.y += vy;
+
+            // Keep within pipe
+            if(p.y < 20) p.y = 20;
+            if(p.y > c1.height - 20) p.y = c1.height - 20;
+
+            if(p.x > c1.width) {
+                p.x = 0;
+            }
+
+            ctx1.beginPath();
+            ctx1.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx1.fillStyle = isIdeal ? 'rgba(0, 255, 255, 0.8)' : 'rgba(255, 153, 0, 0.8)';
+            ctx1.fill();
+        });
+    }
+
+    // --- VISUALISASI 2: LABORATORIUM KONTINUITAS ---
+    const ctx2 = document.getElementById('canvas2').getContext('2d');
+    const c2 = document.getElementById('canvas2');
+    const sliderA2 = document.getElementById('sliderA2');
+    const valA2 = document.getElementById('valA2');
+    const qIn = document.getElementById('qIn');
+    const qOut = document.getElementById('qOut');
+    const warningMsg = document.getElementById('warningMsg');
+    
+    // Speedometer Contexts
+    const ctxS1 = document.getElementById('speedo1').getContext('2d');
+    const ctxS2 = document.getElementById('speedo2').getContext('2d');
+
+    let a2Percent = 100;
+    let particles2 = [];
+    const numParticles2 = 300;
+    const baseV1 = 2; // Kecepatan masuk konstan
+    const baseA1 = 100; // Luas masuk konstan
+
+    for(let i=0; i<numParticles2; i++) {
+        particles2.push({
+            x: Math.random() * c2.width,
+            rY: Math.random(), // Relative Y inside the pipe (0 to 1)
+            size: 1.5 + Math.random() * 2
+        });
+    }
+
+    sliderA2.addEventListener('input', (e) => {
+        a2Percent = parseInt(e.target.value);
+        valA2.textContent = a2Percent + '%';
+        
+        let v2 = baseV1 * (baseA1 / a2Percent);
+        
+        if(a2Percent < 50) {
+            warningMsg.style.display = 'block';
+            valA2.className = 'val-red';
+        } else {
+            warningMsg.style.display = 'none';
+            valA2.className = 'val-cyan';
+        }
+
+        // Update Dashboard
+        qIn.textContent = (baseA1 * baseV1).toFixed(0);
+        qOut.textContent = (a2Percent * v2).toFixed(0);
+    });
+
+    function getPipeBounds(x, a2) {
+        const H1 = 180; // Lebar pipa maksimal
+        const H2 = H1 * (a2 / 100);
+        const yCenter = c2.height / 2;
+        const w = c2.width;
+        
+        // Segmen pipa
+        const s1 = w * 0.25;
+        const s2 = w * 0.4;
+        const s3 = w * 0.6;
+        const s4 = w * 0.75;
+
+        let h;
+        if (x < s1) h = H1;
+        else if (x < s2) h = H1 + (H2 - H1) * ((x - s1) / (s2 - s1)); // Taper down
+        else if (x < s3) h = H2;
+        else if (x < s4) h = H2 + (H1 - H2) * ((x - s3) / (s4 - s3)); // Taper up
+        else h = H1;
+
+        return { 
+            top: yCenter - h/2, 
+            bottom: yCenter + h/2, 
+            height: h 
+        };
+    }
+
+    function drawSpeedometer(ctx, speed, maxSpeed, title) {
+        ctx.clearRect(0, 0, 100, 60);
+        
+        // Arc background
+        ctx.beginPath();
+        ctx.arc(50, 50, 40, Math.PI, 0);
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.stroke();
+
+        // Color mapped arc (gradient based on speed)
+        let ratio = Math.min(speed / maxSpeed, 1);
+        let hue = 180 - (ratio * 180); // Cyan(180) to Red(0)
+        
+        ctx.beginPath();
+        ctx.arc(50, 50, 40, Math.PI, Math.PI + (ratio * Math.PI));
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.stroke();
+
+        // Needle
+        let angle = Math.PI + (ratio * Math.PI);
+        ctx.beginPath();
+        ctx.moveTo(50, 50);
+        ctx.lineTo(50 + 30 * Math.cos(angle), 50 + 30 * Math.sin(angle));
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+        
+        // Center dot
+        ctx.beginPath();
+        ctx.arc(50, 50, 4, 0, Math.PI*2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        // Value text
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.font = '12px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(speed.toFixed(1) + ' m/s', 50, 25);
+    }
+
+    function drawVis2() {
+        // Motion Blur Effect
+        ctx2.fillStyle = 'rgba(8, 12, 16, 0.3)';
+        ctx2.fillRect(0, 0, c2.width, c2.height);
+
+        // Draw Pipe Shape (Glassy)
+        ctx2.beginPath();
+        for(let x=0; x<=c2.width; x+=10) {
+            let b = getPipeBounds(x, a2Percent);
+            if(x===0) ctx2.moveTo(x, b.top);
+            else ctx2.lineTo(x, b.top);
+        }
+        for(let x=c2.width; x>=0; x-=10) {
+            let b = getPipeBounds(x, a2Percent);
+            ctx2.lineTo(x, b.bottom);
+        }
+        ctx2.closePath();
+        ctx2.fillStyle = 'rgba(0, 255, 255, 0.05)';
+        ctx2.fill();
+        ctx2.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+        ctx2.lineWidth = 2;
+        ctx2.stroke();
+
+        // Draw Particles
+        const H1 = 180; // Reference full height
+        
+        particles2.forEach(p => {
+            // Get bounds AT current position to determine speed
+            let bCurrent = getPipeBounds(p.x, a2Percent);
+            
+            // Kecepatan berbanding terbalik dengan luas (tinggi)
+            let vCurrent = baseV1 * (H1 / bCurrent.height);
+            
+            // Move particle
+            p.x += vCurrent;
+            
+            if(p.x > c2.width) {
+                p.x = 0;
+                p.rY = Math.random(); // Reset Y randomly when looping
+            }
+
+            // Calculate actual Y based on relative Y and new bounds
+            let bNew = getPipeBounds(p.x, a2Percent);
+            let pY = bNew.top + p.rY * bNew.height;
+
+            // Determine Color based on speed
+            let speedRatio = vCurrent / baseV1; // 1 to ~10
+            let hue = 180 - Math.min((speedRatio - 1) * 20, 180); // Cyan -> Green -> Red
+            
+            // Draw particle with trail length relative to speed
+            ctx2.beginPath();
+            ctx2.moveTo(p.x - vCurrent*1.5, pY);
+            ctx2.lineTo(p.x, pY);
+            ctx2.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+            ctx2.lineWidth = p.size;
+            ctx2.stroke();
+            
+            // Glow head
+            ctx2.beginPath();
+            ctx2.arc(p.x, pY, p.size, 0, Math.PI*2);
+            ctx2.fillStyle = '#fff';
+            ctx2.fill();
+        });
+
+        // Update Speedometers
+        drawSpeedometer(ctxS1, baseV1, 20, 'V1');
+        let v2Mid = baseV1 * (100 / a2Percent);
+        drawSpeedometer(ctxS2, v2Mid, 20, 'V2');
+    }
+
+    // --- VISUALISASI 3: MINI GAME TUKANG KEBUN ---
+    const ctx3 = document.getElementById('canvas3').getContext('2d');
+    const c3 = document.getElementById('canvas3');
+    const sliderJempol = document.getElementById('sliderJempol');
+    const valJempol = document.getElementById('valJempol');
+    const gameStatus = document.getElementById('gameStatus');
+
+    let thumbPercent = 0;
+    let drops = [];
+    let flowerWaterLevel = 0;
+    let isBloomed = false;
+    let confetti = [];
+
+    // Target (Flower)
+    const targetX = 650;
+    const targetY = 280;
+    const targetWidth = 60;
+    const targetHeight = 40;
+
+    sliderJempol.addEventListener('input', (e) => {
+        thumbPercent = parseInt(e.target.value);
+        valJempol.textContent = thumbPercent + '%';
+        if(thumbPercent > 0) {
+            valJempol.style.color = 'var(--red)';
+        } else {
+            valJempol.style.color = 'var(--cyan)';
+        }
+    });
+
+    function createConfetti(x, y) {
+        for(let i=0; i<30; i++) {
+            confetti.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 1) * 10,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                life: 1.0
+            });
+        }
+    }
+
+    function drawVis3() {
+        // Clear
+        ctx3.fillStyle = 'rgba(8, 12, 16, 1)';
+        ctx3.fillRect(0, 0, c3.width, c3.height);
+
+        // Draw Ground
+        ctx3.fillStyle = '#1a1a1a';
+        ctx3.fillRect(0, 300, c3.width, 50);
+        ctx3.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+        ctx3.lineWidth = 1;
+        ctx3.beginPath();
+        ctx3.moveTo(0, 300); ctx3.lineTo(c3.width, 300);
+        ctx3.stroke();
+
+        // Draw Hose (Left)
+        ctx3.fillStyle = '#555';
+        ctx3.fillRect(20, 280, 50, 20); // Hose body
+        ctx3.fillStyle = '#888';
+        ctx3.fillRect(70, 275, 10, 30); // Nozzle
+        
+        // Draw Thumb (Red overlay depending on slider)
+        let thumbHeight = 30 * (thumbPercent / 100);
+        ctx3.fillStyle = 'rgba(255, 100, 100, 0.8)';
+        ctx3.fillRect(70, 275, 10, thumbHeight);
+
+        // Draw Flower Pot
+        ctx3.fillStyle = '#8b4513'; // Brown
+        ctx3.beginPath();
+        ctx3.moveTo(targetX, 300);
+        ctx3.lineTo(targetX + targetWidth, 300);
+        ctx3.lineTo(targetX + targetWidth - 10, 340);
+        ctx3.lineTo(targetX + 10, 340);
+        ctx3.fill();
+
+        // Draw Flower
+        ctx3.strokeStyle = '#228B22'; // Stem
+        ctx3.lineWidth = 4;
+        ctx3.beginPath();
+        ctx3.moveTo(targetX + targetWidth/2, 300);
+        if(isBloomed) {
+            ctx3.lineTo(targetX + targetWidth/2, 240);
+            ctx3.stroke();
+            
+            // Petals
+            ctx3.fillStyle = '#FF69B4'; // Pink
+            let centerX = targetX + targetWidth/2;
+            let centerY = 240;
+            for(let i=0; i<5; i++) {
+                let angle = (i * Math.PI * 2) / 5;
+                ctx3.beginPath();
+                ctx3.arc(centerX + Math.cos(angle)*15, centerY + Math.sin(angle)*15, 10, 0, Math.PI*2);
+                ctx3.fill();
+            }
+            // Center
+            ctx3.fillStyle = '#FFD700';
+            ctx3.beginPath();
+            ctx3.arc(centerX, centerY, 8, 0, Math.PI*2);
+            ctx3.fill();
+            
+            gameStatus.textContent = "BERHASIL! Bunga Mekar!";
+            gameStatus.style.color = "var(--green)";
+
+        } else {
+            // Wilted stem
+            ctx3.quadraticCurveTo(targetX + targetWidth/2 + 20, 260, targetX + targetWidth/2 + 30, 280);
+            ctx3.stroke();
+            // Dead leaf
+            ctx3.fillStyle = '#556B2F';
+            ctx3.beginPath();
+            ctx3.arc(targetX + targetWidth/2 + 30, 280, 5, 0, Math.PI*2);
+            ctx3.fill();
+        }
+
+        // Logic Water Flow
+        // Continuity: v = Q/A. Let Q = constant.
+        let baseA = 100;
+        let currentA = 100 - thumbPercent;
+        if(currentA < 1) currentA = 1; // Prevent div by zero
+        let vInitial = 5 * (baseA / currentA); // Base speed 5
+
+        // Spawn drops
+        if(Math.random() < 0.8) {
+            drops.push({
+                x: 80,
+                y: 285 + Math.random() * (30 - thumbHeight),
+                vx: vInitial * Math.cos(-0.5), // Angle ~ -30 deg
+                vy: vInitial * Math.sin(-0.5),
+                size: 2 + Math.random() * 2
+            });
+        }
+
+        // Update & Draw Drops
+        const gravity = 0.3;
+        for(let i = drops.length - 1; i >= 0; i--) {
+            let d = drops[i];
+            d.vy += gravity;
+            d.x += d.vx;
+            d.y += d.vy;
+
+            // Draw
+            ctx3.fillStyle = 'rgba(0, 255, 255, 0.7)';
+            ctx3.beginPath();
+            ctx3.arc(d.x, d.y, d.size, 0, Math.PI*2);
+            ctx3.fill();
+
+            // Collision with pot/flower area
+            if(!isBloomed && d.x > targetX && d.x < targetX + targetWidth && d.y > 250 && d.y < 310) {
+                flowerWaterLevel++;
+                drops.splice(i, 1);
+                
+                // Show tiny splash
+                ctx3.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx3.beginPath(); ctx3.arc(d.x, d.y, 4, 0, Math.PI*2); ctx3.fill();
+
+                if(flowerWaterLevel > 50) {
+                    isBloomed = true;
+                    createConfetti(targetX + targetWidth/2, 240);
+                }
+                continue;
+            }
+
+            // Remove if off screen or hits ground
+            if(d.y > 300 || d.x > c3.width) {
+                drops.splice(i, 1);
+                // Draw splash on ground
+                if(d.y >= 300) {
+                    ctx3.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                    ctx3.fillRect(d.x-5, 298, 10, 2);
+                }
+            }
+        }
+
+        // Update & Draw Confetti
+        for(let i = confetti.length - 1; i >= 0; i--) {
+            let c = confetti[i];
+            c.vy += gravity * 0.5;
+            c.x += c.vx;
+            c.y += c.vy;
+            c.life -= 0.02;
+
+            if(c.life <= 0) {
+                confetti.splice(i, 1);
+                continue;
+            }
+
+            ctx3.fillStyle = c.color;
+            ctx3.globalAlpha = c.life;
+            ctx3.fillRect(c.x, c.y, 5, 5);
+            ctx3.globalAlpha = 1.0;
+        }
+    }
+
+    // --- MAIN GAME LOOP ---
+    function animate() {
+        drawVis1();
+        drawVis2();
+        drawVis3();
+        requestAnimationFrame(animate);
+    }
+
+    // Start Simulation
+    animate();
+
+</script>
+</body>
+</html>
