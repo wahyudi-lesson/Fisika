@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torque & Equilibrium Lab: Dinamika Rotasi</title>
+    
+    <!-- MathJax Configuration -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: NEON DARK MODE (KONTRAST TINGGI)
+           ======================================================== */
+        :root {
+            --bg-base: #000000;       
+            --bg-panel: #0a0e17;
+            --cyan-neon: #00e5ff;     
+            --amber-neon: #ffaa00;    
+            --emerald-green: #39ff14; 
+            --crimson-red: #ff1744;   
+            --magenta-neon: #f000ff;  
+            --blue-bright: #3b82f6;   
+            --orange-bright: #ff6a00; 
+            --text-main: #ffffff;     
+            --text-muted: #a5f3fc;    
+            --grid-line: rgba(0, 229, 255, 0.15);
+            --font-sans: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center center;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+        /* HEADER */
+        header {
+            text-align: center; padding: 30px 20px; background: var(--bg-panel);
+            border: 1px solid var(--cyan-neon); border-radius: 12px; border-top: 4px solid var(--amber-neon);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+        header h1 { color: var(--cyan-neon); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: 900; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
+        header p { color: var(--amber-neon); font-size: 1.05rem; font-weight: 700; }
+
+        /* PANELS & GRIDS */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid rgba(0,229,255,0.4); border-radius: 10px;
+            padding: 20px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); position: relative;
+        }
+        .panel-title { font-size: 1.25rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid rgba(0,229,255,0.4); display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        
+        .info-box { background: rgba(0,229,255,0.05); border-left: 4px solid var(--amber-neon); padding: 15px; font-size: 0.95rem; color: var(--text-main); margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--amber-neon); font-weight: bold; }
+
+        /* CANVAS */
+        .canvas-container {
+            width: 100%; background: #000510; border: 2px solid var(--cyan-neon); border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,229,255,0.2);
+        }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+        /* UI CONTROLS */
+        .btn {
+            width: 100%; padding: 12px; background: rgba(0,229,255,0.1); color: var(--cyan-neon); 
+            border: 2px solid var(--cyan-neon); border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.2s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: var(--cyan-neon); color: #000; box-shadow: 0 0 15px var(--cyan-neon); }
+        .btn-action { border-color: var(--amber-neon); color: var(--amber-neon); background: rgba(255,170,0,0.1); }
+        .btn-action:hover { background: var(--amber-neon); color: #000; box-shadow: 0 0 15px var(--amber-neon); }
+
+        .slider-box { background: rgba(0,229,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,229,255,0.3); margin-bottom: 10px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-main); font-family: var(--font-mono); font-weight: bold;}
+        .slider-val { font-weight: bold; color: var(--text-main); }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; background: #003344; border-radius: 4px; outline: none; touch-action: manipulation; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--text-main); cursor: pointer; border: 2px solid #000; box-shadow: 0 0 10px var(--text-main); }
+        .s-cyan::-webkit-slider-thumb { background: var(--cyan-neon); border-color:#000; box-shadow: 0 0 10px var(--cyan-neon);}
+        .s-amber::-webkit-slider-thumb { background: var(--amber-neon); border-color:#000; box-shadow: 0 0 10px var(--amber-neon);}
+        .s-emerald::-webkit-slider-thumb { background: var(--emerald-green); border-color:#000; box-shadow: 0 0 10px var(--emerald-green);}
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;}
+        .tab-btn { flex: 1; padding: 8px; background: rgba(0,229,255,0.05); border: 2px solid rgba(0,229,255,0.3); color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; text-align: center; font-size: 0.85rem; }
+        .tab-btn.active { background: rgba(0,229,255,0.2); border-color: var(--cyan-neon); color: var(--cyan-neon); box-shadow: 0 0 10px rgba(0,229,255,0.2);}
+
+        /* TELEMETRY DATA */
+        .telemetry-row { display: flex; justify-content: space-between; align-items: center; background: #000510; border: 2px dashed var(--cyan-neon); padding: 10px; border-radius: 6px; margin-bottom: 10px; font-family: var(--font-mono); }
+        .tel-label { font-size: 0.85rem; color: var(--text-main); text-transform: uppercase; font-weight: bold; }
+        .tel-val { font-size: 1.1rem; font-weight: bold; }
+
+        .c-cyan { color: var(--cyan-neon); text-shadow: 0 0 5px var(--cyan-neon); }
+        .c-amber { color: var(--amber-neon); text-shadow: 0 0 5px var(--amber-neon); }
+        .c-green { color: var(--emerald-green); text-shadow: 0 0 5px var(--emerald-green); }
+        .c-red { color: var(--crimson-red); text-shadow: 0 0 5px var(--crimson-red); }
+
+        /* MATH & TABLES */
+        .math-box { background: rgba(240,0,255,0.05); border: 2px dashed var(--magenta-neon); padding: 15px; border-radius: 8px; text-align: center; color: var(--text-main); margin-bottom: 15px; overflow-x: auto; font-size: 1.05rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-top: 15px; background: #000510; border: 1px solid var(--cyan-neon); }
+        th, td { border: 1px solid var(--cyan-neon); padding: 12px; text-align: left; }
+        th { background: rgba(0,229,255,0.1); color: var(--cyan-neon); font-weight: bold; text-transform: uppercase; }
+        td { color: var(--text-main); font-weight: bold; }
+
+        /* GAME OVERLAY */
+        .game-panel { border-color: var(--emerald-green); background: #001100; }
+        .game-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; border-radius: 8px; text-align: center; padding: 20px;}
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+        .game-msg { font-size: 2rem; font-weight: 900; margin-bottom: 10px; }
+
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Torque & Equilibrium Lab</h1>
+            <p>Eksplorasi Vektor Momen Gaya ($\tau$), Gerak Rotasi-Translasi, & Stabilitas Mekanik</p>
+        </header>
+
+        <!-- APERSEPSI -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--amber-neon);">🚪 Apersepsi: Eksperimen Dinamika Pintu</h2>
+            <div class="info-box">
+                Gaya dorong ($F$) saja tidak cukup untuk memutar benda! Kemampuan gaya untuk memutar benda disebut <strong>Momen Gaya (Torsi / $\tau$)</strong>. Atur posisi tangan dan sudut dorongan untuk memutar pintu ini.
+            </div>
+            
+            <div class="grid-2">
+                <div class="canvas-container" style="height: 250px;">
+                    <canvas id="apersepsiCanvas"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div class="slider-box">
+                        <div class="slider-label"><span>Jarak Engsel ke Tangan ($r$)</span> <span class="slider-val c-amber" id="ap-val-r">1.0 m</span></div>
+                        <input type="range" class="s-amber" id="ap-r" min="0.1" max="1" step="0.1" value="1" oninput="updateApersepsi()">
+                    </div>
+                    <div class="slider-box">
+                        <div class="slider-label"><span>Sudut Dorongan ($\theta$)</span> <span class="slider-val c-cyan" id="ap-val-th">90°</span></div>
+                        <input type="range" class="s-cyan" id="ap-th" min="0" max="180" step="5" value="90" oninput="updateApersepsi()">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-action" id="btn-ap" onclick="pushDoor()">DORONG PINTU SEKARANG!</button>
+                        <button class="btn" id="btn-ap-reset" onclick="resetApersepsi()" style="display: none; width: auto; padding: 12px 20px; border-color: #3b82f6; color: #3b82f6; background: rgba(59, 130, 246, 0.1);">RESET PINTU</button>
+                    </div>
+                    <div id="ap-popup" class="info-box" style="margin-top: 15px; border-color: var(--cyan-neon); display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- MODUL 1: TORSI & VEKTOR -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--amber-neon);">📐 Modul 1: Vektor Lengan Momen ($\tau$)</h2>
+                <div class="info-box">
+                    Torsi ($\tau$) bergantung pada Jarak ($r$), Gaya ($F$), dan Lengan Momen Efektif ($d = r \sin \theta$). Jika gaya sejajar batang ($\theta = 0^\circ$ atau $180^\circ$), maka $\tau = 0$.
+                </div>
+
+                <div class="canvas-container" style="height: 220px;">
+                    <canvas id="mod1Canvas"></canvas>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="tel-label">Torsi Terhasilkan ($\tau$)</span>
+                    <span class="tel-val c-amber" id="m1-tau">0.0 Nm</span>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Besar Gaya ($F$)</span> <span class="slider-val c-cyan" id="m1-val-f">50 N</span></div>
+                    <input type="range" class="s-cyan" id="m1-f" min="0" max="100" step="1" value="50" oninput="updateMod1()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Jarak Gaya dari Poros ($r$)</span> <span class="slider-val c-amber" id="m1-val-r">3.0 m</span></div>
+                    <input type="range" class="s-amber" id="m1-r" min="0.1" max="5" step="0.1" value="3" oninput="updateMod1()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Sudut Gaya ($\theta$)</span> <span class="slider-val" id="m1-val-th">45°</span></div>
+                    <input type="range" id="m1-th" min="0" max="180" step="1" value="45" oninput="updateMod1()">
+                </div>
+            </div>
+
+            <!-- MODUL 2: TRANSLASI VS ROTASI -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-neon);">⚙️ Modul 2: Dinamika Translasi vs Rotasi</h2>
+                <div class="info-box">
+                    Bongkar Miskonsepsi: Resultan Gaya Nol ($\Sigma F = 0$) tidak selalu berarti benda diam. Jika Resultan Torsi ($\Sigma \tau \neq 0$), benda akan berputar di tempat (Kopel)!
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" id="tab-t1" onclick="setMod2('translasi')">Translasi Murni</button>
+                    <button class="tab-btn" id="tab-t2" onclick="setMod2('rotasi')">Rotasi Murni (Kopel)</button>
+                    <button class="tab-btn" id="tab-t3" onclick="setMod2('statis')">Kesetimbangan Statis</button>
+                </div>
+
+                <div class="canvas-container" style="height: 200px;">
+                    <canvas id="mod2Canvas"></canvas>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div class="telemetry-row" style="flex: 1; border-color: var(--cyan-neon);">
+                        <span class="tel-label">Resultan Gaya ($\Sigma F$)</span>
+                        <span class="tel-val c-cyan" id="m2-sf">20 N</span>
+                    </div>
+                    <div class="telemetry-row" style="flex: 1; border-color: var(--amber-neon);">
+                        <span class="tel-label">Resultan Torsi ($\Sigma \tau$)</span>
+                        <span class="tel-val c-amber" id="m2-st">0 Nm</span>
+                    </div>
+                </div>
+                <div class="info-box" id="m2-desc" style="background: transparent; border-left: none; text-align: center; font-weight: bold; margin-bottom: 0;"></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- MODUL 3: STABILITAS KESETIMBANGAN -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--emerald-green);">⚖️ Modul 3: Jenis Kesetimbangan Mekanik</h2>
+                <div class="info-box">Analisis perilaku titik berat benda saat diberikan gangguan kecil (simpangan $\Delta x$).</div>
+
+                <div class="canvas-container" style="height: 200px;">
+                    <canvas id="mod3Canvas"></canvas>
+                </div>
+
+                <div class="slider-box" style="border-color: var(--emerald-green);">
+                    <div class="slider-label"><span>Beri Simpangan Gangguan ($\Delta x$)</span></div>
+                    <input type="range" class="s-emerald" id="m3-dx" min="-50" max="50" step="1" value="0" oninput="updateMod3Drag()" onchange="releaseMod3()">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div class="telemetry-row" style="flex:1; flex-direction: column; text-align: center; padding: 5px;">
+                        <span class="tel-label" style="font-size:0.7rem;">K. Stabil (Lembah)</span>
+                        <span class="tel-val c-green" style="font-size:0.9rem;">Titik Berat Naik</span>
+                    </div>
+                    <div class="telemetry-row" style="flex:1; flex-direction: column; text-align: center; padding: 5px;">
+                        <span class="tel-label" style="font-size:0.7rem;">K. Labil (Bukit)</span>
+                        <span class="tel-val c-red" style="font-size:0.9rem;">Titik Berat Turun</span>
+                    </div>
+                    <div class="telemetry-row" style="flex:1; flex-direction: column; text-align: center; padding: 5px;">
+                        <span class="tel-label" style="font-size:0.7rem;">K. Netral (Datar)</span>
+                        <span class="tel-val c-cyan" style="font-size:0.9rem;">Titik Berat Tetap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NERACA TORSI -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--text-main);">⚖️ Neraca Torsi (Jungkat-Jungkit)</h2>
+                <div class="info-box">Syarat mendatar/seimbang sempurna: $\Sigma \tau = \tau_{\text{kanan}} - \tau_{\text{kiri}} = 0$. (Bisa seret beban langsung di kanvas!)</div>
+
+                <div class="canvas-container" style="height: 150px;">
+                    <canvas id="seesawCanvas" style="cursor: grab;"></canvas>
+                </div>
+
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div class="slider-box" style="padding: 10px;">
+                            <div class="slider-label"><span>Beban Kiri ($m_1$)</span> <span class="slider-val" id="ss-val-m1">10 kg</span></div>
+                            <input type="range" id="ss-m1" min="1" max="20" value="10" oninput="updateSeesaw()">
+                        </div>
+                        <div class="slider-box" style="padding: 10px;">
+                            <div class="slider-label"><span>Jarak Kiri ($r_1$)</span> <span class="slider-val" id="ss-val-r1">2 m</span></div>
+                            <input type="range" id="ss-r1" min="0.5" max="4" step="0.5" value="2" oninput="updateSeesaw()">
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="slider-box" style="padding: 10px;">
+                            <div class="slider-label"><span>Beban Kanan ($m_2$)</span> <span class="slider-val" id="ss-val-m2">5 kg</span></div>
+                            <input type="range" id="ss-m2" min="1" max="20" value="5" oninput="updateSeesaw()">
+                        </div>
+                        <div class="slider-box" style="padding: 10px;">
+                            <div class="slider-label"><span>Jarak Kanan ($r_2$)</span> <span class="slider-val" id="ss-val-r2">4 m</span></div>
+                            <input type="range" id="ss-r2" min="0.5" max="4" step="0.5" value="4" oninput="updateSeesaw()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATH & CONCEPTS -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">📚 Formulasi & Analogi Fisika</h2>
+            <div class="grid-2">
+                <div class="math-box">
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Momen Gaya (Torsi)</div>
+                    $$\tau = r \cdot F \cdot \sin \theta$$
+                    <div style="font-size:0.9rem; margin-top:10px;">Torsi adalah hasil kali silang vektor (cross product): $\vec{\tau} = \vec{r} \times \vec{F}$</div>
+                </div>
+                <div class="math-box" style="border-color: var(--emerald-green);">
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Syarat Kesetimbangan Statis Tegar</div>
+                    $$\Sigma \vec{F} = 0 \quad \text{dan} \quad \Sigma \vec{\tau} = 0$$
+                    <div style="font-size:0.9rem; margin-top:10px;">(Tidak bergeser Translasi & Tidak berputar Rotasi)</div>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Besaran Fisis</th>
+                            <th>Gerak Translasi (Linear)</th>
+                            <th>Gerak Rotasi (Melingkar)</th>
+                            <th>Hubungan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Penyebab Gerak</strong></td>
+                            <td class="c-cyan">Gaya Netto ($\Sigma F$) [Newton]</td>
+                            <td class="c-amber">Momen Gaya/Torsi ($\Sigma \tau$) [Nm]</td>
+                            <td>$\tau = r \cdot F \sin \theta$</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ukuran Kelembaman</strong></td>
+                            <td>Massa ($m$) [kg]</td>
+                            <td>Momen Inersia ($I$) [kg·m²]</td>
+                            <td>$I = \Sigma m r^2$</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hukum II Newton</strong></td>
+                            <td>$\Sigma F = m \cdot a$</td>
+                            <td>$\Sigma \tau = I \cdot \alpha$</td>
+                            <td>$a_t = r \cdot \alpha$</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MINI GAME -->
+        <div class="panel game-panel">
+            <h2 class="panel-title" style="color: var(--cyan-neon);">🔧 Mini-Game: Tantangan Kunci Pas & Baut Macet</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px;">
+                Sebuah baut mesin macet parah dan butuh torsi putar minimal <strong class="c-amber">$\tau \ge 150 \text{ Nm}$</strong> untuk terbuka. Namun, kekuatan otot mekanik Anda terbatas maksimal hanya <strong class="c-cyan">$F = 75 \text{ N}$</strong> (Gaya lebih dari itu akan membuat tangan cedera). 
+                Atur panjang kunci pas ($r$) dan sudut tarik ($\theta$) se-efisien mungkin!
+            </p>
+
+            <div class="grid-2" style="align-items: center;">
+                <div class="canvas-container" style="height: 180px; margin-bottom: 0;">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+                <div>
+                    <div class="telemetry-row" style="border-color: var(--amber-neon);">
+                        <span class="tel-label">Torsi Terhasilkan ($\tau$)</span>
+                        <span class="tel-val c-amber" id="g-tau">0.0 Nm</span>
+                    </div>
+                    <div class="slider-box">
+                        <div class="slider-label"><span>Pilih Gaya Otot ($F$)</span> <span class="slider-val c-cyan" id="g-val-f">50 N</span></div>
+                        <input type="range" class="s-cyan" id="g-f" min="10" max="100" step="5" value="50" oninput="updateGame()">
+                    </div>
+                    <div class="slider-box">
+                        <div class="slider-label"><span>Pilih Panjang Kunci ($r$)</span> <span class="slider-val c-amber" id="g-val-r">1.0 m</span></div>
+                        <input type="range" class="s-amber" id="g-r" min="0.5" max="3.0" step="0.5" value="1.0" oninput="updateGame()">
+                    </div>
+                    <div class="slider-box">
+                        <div class="slider-label"><span>Pilih Sudut Tarik ($\theta$)</span> <span class="slider-val" id="g-val-th">30°</span></div>
+                        <input type="range" id="g-th" min="10" max="180" step="10" value="30" oninput="updateGame()">
+                    </div>
+                    <button class="btn btn-action" style="border-color: var(--cyan-neon); color: var(--cyan-neon);" onclick="tryTurnBolt()">PUTAR BAUT SEKARANG!</button>
+                </div>
+            </div>
+
+            <div class="game-overlay" id="game-overlay">
+                <div class="game-msg" id="game-msg">Berhasil!</div>
+                <p id="game-desc" style="color: var(--text-main); margin-bottom: 20px; font-size: 1.1rem; max-width: 80%;"></p>
+                <button class="btn btn-action" style="width: auto; padding: 10px 30px; border-color: var(--cyan-neon); color: var(--cyan-neon);" onclick="closeGame()">Tutup & Evaluasi</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        function resizeCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            return canvas.getContext('2d');
+        }
+
+        function drawGrid(ctx, w, h) {
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)'; // Mengubah grid menjadi Cyan Neon Transparan
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let x = 0; x <= w; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+            for (let y = 0; y <= h; y += 40) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+            ctx.stroke();
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width=3, label="") {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const len = Math.hypot(dx, dy);
+            if (len < 1) return; 
+
+            ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = color; ctx.fill();
+
+            if (label !== "") {
+                ctx.fillStyle = color; ctx.font = 'bold 12px monospace';
+                let lx = toX + 15 * Math.cos(angle); let ly = toY + 15 * Math.sin(angle) + 5;
+                ctx.textAlign = 'center'; ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+            }
+        }
+
+        // ==========================================
+        // APERSEPSI (DOOR & WRENCH)
+        // ==========================================
+        const ctxAp = resizeCanvas('apersepsiCanvas');
+        let ap = {
+            r: 1, th: 90, playing: false, angle: 0, vAng: 0, time: 0
+        };
+
+        function updateApersepsi() {
+            if(ap.playing) return;
+            ap.r = parseFloat(document.getElementById('ap-r').value);
+            ap.th = parseFloat(document.getElementById('ap-th').value);
+            document.getElementById('ap-val-r').innerText = ap.r.toFixed(1) + " m";
+            document.getElementById('ap-val-th').innerText = ap.th + "°";
+            drawApersepsiFrame();
+        }
+
+        function resetApersepsi() {
+            ap.playing = false;
+            ap.angle = 0;
+            ap.vAng = 0;
+            ap.time = 0;
+            document.getElementById('ap-popup').style.display = 'none';
+            document.getElementById('btn-ap').style.display = 'block';
+            document.getElementById('btn-ap-reset').style.display = 'none';
+            updateApersepsi();
+        }
+
+        function pushDoor() {
+            if (ap.playing) return;
+            ap.playing = true;
+            ap.time = 0;
+            document.getElementById('ap-popup').style.display = 'none';
+            document.getElementById('btn-ap').style.display = 'none';
+            document.getElementById('btn-ap-reset').style.display = 'block';
+            requestAnimationFrame(loopApersepsi);
+        }
+
+        function loopApersepsi() {
+            if (!ap.playing) return;
+            
+            // F const = 50. I = 1/3 * m * L^2. L=1, m=10 -> I = 3.33
+            let F = 50;
+            let tau = ap.r * F * Math.sin(ap.th * Math.PI / 180);
+            let alpha = tau / 3.33;
+
+            // Apply force for 0.5s
+            ap.time += 0.02;
+            if (ap.time < 0.5) {
+                ap.vAng += alpha * 0.02;
+            }
+            
+            // Damping
+            ap.vAng *= 0.98;
+            ap.angle -= ap.vAng * 0.02; // minus for counter-clockwise up
+
+            // Deteksi Tumbukan dengan Dinding (Berhenti di -90 derajat)
+            let hitWall = false;
+            if (ap.angle <= -Math.PI / 2) {
+                ap.angle = -Math.PI / 2; // Paksa berhenti tepat di dinding
+                ap.vAng = 0; // Kecepatan nol (membentur dinding)
+                hitWall = true;
+            }
+
+            // Stop condition
+            if (hitWall || (ap.time >= 1.5 && Math.abs(ap.vAng) < 0.1)) {
+                ap.playing = false;
+                if(!hitWall && Math.abs(ap.vAng) < 0.1) ap.angle = 0; 
+                ap.vAng = 0;
+                
+                let pop = document.getElementById('ap-popup');
+                if (hitWall) {
+                    pop.innerHTML = "<strong>💥 BRAK! Pintu menabrak dinding!</strong> Torsi ($\\tau$) maksimal karena Anda mendorong dekat ujung pintu ($r$ besar) dengan sudut tegak lurus ($90^\\circ$). Efisien sekali!";
+                    pop.style.borderColor = "var(--emerald-green)";
+                } else if (tau < 10) {
+                    pop.innerHTML = "<strong>Sulit Dibuka!</strong> Torsi ($\\tau$) sangat kecil karena didorong dekat engsel atau sudutnya tidak efektif. Anda butuh tenaga raksasa jika posisinya begini.";
+                    pop.style.borderColor = "var(--crimson-red)";
+                } else {
+                    pop.innerHTML = "<strong>Terbuka Sedang.</strong> Posisi atau sudut dorongan lumayan, namun tidak cukup untuk menabrak dinding. Geser ke ujung pintu agar lebih ringan.";
+                    pop.style.borderColor = "var(--amber-neon)";
+                }
+                pop.style.display = 'block';
+                if(window.MathJax) MathJax.typesetPromise([pop]);
+                updateApersepsi();
+                return;
+            }
+
+            drawApersepsiFrame();
+            requestAnimationFrame(loopApersepsi);
+        }
+
+        function drawApersepsiFrame() {
+            const w = ctxAp.canvas.width; const h = ctxAp.canvas.height;
+            ctxAp.clearRect(0,0,w,h);
+            drawGrid(ctxAp, w, h);
+
+            let pivotX = 50; 
+            let pivotY = h - 50; 
+            let doorL = Math.min(w - 100, pivotY - 20); 
+
+            // Wall (Kusen / Dinding)
+            ctxAp.fillStyle = '#3b82f6'; 
+            ctxAp.fillRect(20, 0, 30, h); // Dinding Kiri utama
+            
+            // Dinding Penahan (Stopper) di posisi -90 derajat
+            ctxAp.fillStyle = '#3b82f6';
+            ctxAp.fillRect(20, 0, pivotX + 15, pivotY - doorL - 5); 
+
+            ctxAp.save();
+            ctxAp.translate(pivotX, pivotY);
+            ctxAp.rotate(ap.angle);
+
+            // Door (Top Down)
+            ctxAp.fillStyle = '#ff6a00'; 
+            ctxAp.fillRect(0, -6, doorL, 12);
+            ctxAp.fillStyle = '#ffaa00';
+            ctxAp.fillRect(0, -4, doorL, 8);
+
+            // Pivot Hinge
+            ctxAp.fillStyle = '#ffffff'; ctxAp.beginPath(); ctxAp.arc(0, 0, 8, 0, Math.PI*2); ctxAp.fill();
+            ctxAp.strokeStyle = '#ff1744'; ctxAp.lineWidth = 3; ctxAp.stroke();
+
+            // Force interaction point
+            let hitX = ap.r * doorL;
+            ctxAp.fillStyle = '#ffffff'; ctxAp.beginPath(); ctxAp.arc(hitX, 0, 6, 0, Math.PI*2); ctxAp.fill();
+
+            // Draw Force Vector if pushing
+            if(!ap.playing || ap.time < 0.5) {
+                let fLen = 60;
+                let thRad = ap.th * Math.PI / 180;
+                // Vektor gaya bertitik tolak dari pintu (titik kontak) menunjuk ke luar/atas
+                let fx = hitX + fLen * Math.cos(thRad);
+                let fy = 0 - fLen * Math.sin(thRad); // minus karena koordinat Y canvas ke bawah
+                drawArrow(ctxAp, hitX, 0, fx, fy, '#00e5ff', 4, 'F');
+                
+                // Draw r vector
+                drawArrow(ctxAp, 0, 15, hitX, 15, '#ffaa00', 3, 'r');
+            }
+
+            ctxAp.restore();
+        }
+
+        // ==========================================
+        // MODUL 1: TORQUE & MOMENT ARM VECTOR
+        // ==========================================
+        const ctxM1 = resizeCanvas('mod1Canvas');
+
+        function updateMod1() {
+            let F = parseFloat(document.getElementById('m1-f').value);
+            let r = parseFloat(document.getElementById('m1-r').value);
+            let th = parseFloat(document.getElementById('m1-th').value);
+
+            document.getElementById('m1-val-f').innerText = F + " N";
+            document.getElementById('m1-val-r').innerText = r.toFixed(1) + " m";
+            document.getElementById('m1-val-th').innerText = th + "°";
+
+            let tau = r * F * Math.sin(th * Math.PI / 180);
+            document.getElementById('m1-tau').innerText = tau.toFixed(1) + " Nm";
+
+            drawMod1(F, r, th, tau);
+        }
+
+        function drawMod1(F, r, th, tau) {
+            const w = ctxM1.canvas.width; const h = ctxM1.canvas.height;
+            ctxM1.clearRect(0,0,w,h);
+            drawGrid(ctxM1, w, h);
+
+            let px = 50; let py = h/2; // Pivot
+            let pxPerM = (w - 100) / 5; // 5m max
+            
+            // Bar
+            ctxM1.fillStyle = '#f000ff'; ctxM1.fillRect(px, py - 6, w - 80, 12);
+            ctxM1.fillStyle = '#ffffff'; ctxM1.beginPath(); ctxM1.arc(px, py, 6, 0, Math.PI*2); ctxM1.fill();
+
+            let hitX = px + r * pxPerM;
+            let thRad = th * Math.PI / 180;
+            let fScale = 1.0;
+
+            // r Vector
+            drawArrow(ctxM1, px, py, hitX, py, '#ffaa00', 3, 'r');
+
+            if (F > 0) {
+                // Force Vector starting from hitX
+                let fdx = F * fScale * Math.cos(thRad);
+                let fdy = -F * fScale * Math.sin(thRad); // -y is up in canvas
+                drawArrow(ctxM1, hitX, py, hitX + fdx, py + fdy, '#00e5ff', 3, 'F');
+
+                // Proyeksi F tegak lurus (F sin theta)
+                if (Math.abs(fdy) > 1 && th !== 90 && th !== 0 && th !== 180) {
+                    // Gambar vektor komponen F sin theta
+                    drawArrow(ctxM1, hitX, py, hitX, py + fdy, '#39ff14', 3, 'F sinθ');
+                    
+                    // Gambar garis putus-putus proyeksi (membentuk persegi panjang komponen)
+                    ctxM1.strokeStyle = '#a5f3fc'; ctxM1.setLineDash([4, 4]); ctxM1.lineWidth = 1.5;
+                    ctxM1.beginPath(); 
+                    ctxM1.moveTo(hitX, py + fdy);
+                    ctxM1.lineTo(hitX + fdx, py + fdy); 
+                    ctxM1.lineTo(hitX + fdx, py); 
+                    ctxM1.stroke();
+                    ctxM1.setLineDash([]);
+                } else if (th === 90) {
+                    ctxM1.fillStyle = '#39ff14'; ctxM1.font = 'bold 12px monospace';
+                    ctxM1.fillText("F = F sinθ", hitX + 15, py + fdy / 2);
+                }
+
+                // Gambar Sudut Theta (θ)
+                if (th > 0 && th < 180) {
+                    ctxM1.strokeStyle = '#ffffff'; ctxM1.lineWidth = 2;
+                    ctxM1.beginPath();
+                    // Menggambar busur sudut antara r (horizontal) dan F
+                    ctxM1.arc(hitX, py, 25, 0, -thRad, true);
+                    ctxM1.stroke();
+                    
+                    ctxM1.fillStyle = '#ffffff'; ctxM1.font = 'bold 14px monospace';
+                    // Menempatkan teks tepat di garis bagi sudut (bisector)
+                    let txtX = hitX + 35 * Math.cos(-thRad/2);
+                    let txtY = py + 35 * Math.sin(-thRad/2) + 5;
+                    ctxM1.fillText("θ", txtX, txtY);
+                }
+
+                // Torque Arc indicator (Diperbaiki arahnya menjadi Berlawanan Jarum Jam / CCW)
+                if (Math.abs(tau) > 0.1) {
+                    ctxM1.strokeStyle = '#39ff14'; ctxM1.lineWidth = 3;
+                    let arcR = 35;
+                    
+                    // Rotasi berlawanan jarum jam (karena gaya mendorong batang ke atas)
+                    // Di canvas, Y negatif adalah ke atas, jadi sudut dirender dari 0 ke -90 derajat (-PI/2)
+                    ctxM1.beginPath();
+                    ctxM1.arc(px, py, arcR, 0, -Math.PI/2, true);
+                    ctxM1.stroke();
+                    
+                    // Menggambar mata panah di ujung atas busur (menunjuk ke kiri)
+                    ctxM1.beginPath();
+                    ctxM1.moveTo(px, py - arcR);
+                    ctxM1.lineTo(px + 10, py - arcR - 6);
+                    ctxM1.lineTo(px + 10, py - arcR + 6);
+                    ctxM1.fillStyle = '#39ff14';
+                    ctxM1.fill();
+
+                    ctxM1.fillStyle = '#39ff14'; 
+                    ctxM1.font = 'bold 16px monospace';
+                    ctxM1.fillText(`τ = ${tau.toFixed(1)}`, px + 15, py - arcR - 10);
+                }
+            }
+        }
+
+        // ==========================================
+        // MODUL 2: TRANSLASI VS ROTASI
+        // ==========================================
+        const ctxM2 = resizeCanvas('mod2Canvas');
+        let m2Mode = 'translasi';
+        let m2Obj = { x: 0, y: 0, angle: 0 };
+        let m2Anim = null;
+
+        function setMod2(mode) {
+            m2Mode = mode;
+            document.querySelectorAll('#mod2Canvas ~ .tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + (mode==='translasi'?'t1':(mode==='rotasi'?'t2':'t3'))).classList.add('active');
+            
+            m2Obj.x = ctxM2.canvas.width / 2;
+            m2Obj.y = ctxM2.canvas.height / 2;
+            m2Obj.angle = 0;
+            
+            let sf, st, desc;
+            if (mode === 'translasi') { sf = 20; st = 0; desc = "Translasi Murni: Batang bergeser lurus (percepatan a), tanpa putaran karena Torsi saling menghilangkan."; }
+            else if (mode === 'rotasi') { sf = 0; st = 30; desc = "Rotasi Murni (Kopel): Batang diam di tempat (a = 0), tapi berputar kencang (percepatan sudut α)."; }
+            else { sf = 0; st = 0; desc = "Kesetimbangan Statis: Total Gaya = 0, Total Torsi = 0. Benda diam sempurna."; }
+            
+            document.getElementById('m2-sf').innerText = sf + " N";
+            document.getElementById('m2-st').innerText = st + " Nm";
+            document.getElementById('m2-desc').innerText = desc;
+
+            if(m2Anim) cancelAnimationFrame(m2Anim);
+            m2Loop();
+        }
+
+        function m2Loop() {
+            const w = ctxM2.canvas.width; const h = ctxM2.canvas.height;
+            ctxM2.clearRect(0,0,w,h);
+            drawGrid(ctxM2, w, h);
+
+            let speed = 2; let rotSpeed = 0.05;
+            
+            if (m2Mode === 'translasi') {
+                m2Obj.x += speed;
+                if (m2Obj.x > w + 50) m2Obj.x = -50;
+            } else if (m2Mode === 'rotasi') {
+                m2Obj.angle += rotSpeed;
+            }
+
+            ctxM2.save();
+            ctxM2.translate(m2Obj.x, m2Obj.y);
+            ctxM2.rotate(m2Obj.angle);
+
+            // Draw Block
+            ctxM2.fillStyle = '#00e5ff'; ctxM2.fillRect(-10, -50, 20, 100);
+            ctxM2.fillStyle = '#ffffff'; ctxM2.beginPath(); ctxM2.arc(0, 0, 5, 0, Math.PI*2); ctxM2.fill(); // CM
+
+            // Draw Forces
+            let fLen = 30;
+            if (m2Mode === 'translasi') {
+                drawArrow(ctxM2, 10, -40, 10 + fLen, -40, '#00e5ff', 3, 'F1');
+                drawArrow(ctxM2, 10, 40, 10 + fLen, 40, '#f000ff', 3, 'F2');
+            } else if (m2Mode === 'rotasi') {
+                drawArrow(ctxM2, 10, -40, 10 + fLen, -40, '#ffaa00', 3, 'F1');
+                drawArrow(ctxM2, -10, 40, -10 - fLen, 40, '#39ff14', 3, 'F2');
+            } else {
+                drawArrow(ctxM2, 10, -40, 10 + fLen, -40, '#00e5ff', 3, 'F1');
+                drawArrow(ctxM2, 10, -40, 10 - fLen, -40, '#f000ff', 3, 'F2');
+            }
+
+            ctxM2.restore();
+            m2Anim = requestAnimationFrame(m2Loop);
+        }
+
+        // ==========================================
+        // MODUL 3: STABILITAS KESETIMBANGAN
+        // ==========================================
+        const ctxM3 = resizeCanvas('mod3Canvas');
+        let m3Dx = 0;
+        let m3Anim = null;
+        let m3Balls = [
+            { id: 0, x: 0, v: 0, type: 'stabil' },
+            { id: 1, x: 0, v: 0, type: 'labil' },
+            { id: 2, x: 0, v: 0, type: 'netral' }
+        ];
+
+        function updateMod3Drag() {
+            if(m3Anim) cancelAnimationFrame(m3Anim);
+            let dx = parseFloat(document.getElementById('m3-dx').value);
+            m3Balls.forEach(b => { b.x = dx; b.v = 0; });
+            drawMod3();
+        }
+
+        function releaseMod3() {
+            document.getElementById('m3-dx').value = 0; // Reset slider visual
+            m3Loop();
+        }
+
+        function m3Loop() {
+            let moving = false;
+            m3Balls.forEach(b => {
+                if (b.type === 'stabil') {
+                    // Restoring force (spring-like)
+                    let a = -0.1 * b.x;
+                    b.v += a; b.v *= 0.95; b.x += b.v;
+                    if(Math.abs(b.x) > 0.1 || Math.abs(b.v) > 0.1) moving = true;
+                } else if (b.type === 'labil') {
+                    // Repulsive force
+                    if (Math.abs(b.x) > 0) {
+                        let a = 0.05 * b.x; 
+                        b.v += a; b.x += b.v;
+                        if (Math.abs(b.x) < 150) moving = true;
+                    }
+                } else if (b.type === 'netral') {
+                    // No force, but drag stops it if it had velocity
+                    b.v *= 0.9; b.x += b.v;
+                    if(Math.abs(b.v) > 0.1) moving = true;
+                }
+            });
+
+            drawMod3();
+            if (moving) m3Anim = requestAnimationFrame(m3Loop);
+        }
+
+        function drawMod3() {
+            const w = ctxM3.canvas.width; const h = ctxM3.canvas.height;
+            ctxM3.clearRect(0,0,w,h);
+            
+            let secW = w / 3;
+            let cy = h/2 + 20;
+
+            for(let i=0; i<3; i++) {
+                let cx = secW * i + secW/2;
+                ctxM3.strokeStyle = '#00e5ff'; ctxM3.lineWidth = 4;
+                
+                // Draw Surface
+                ctxM3.beginPath();
+                for(let lx = -secW/2 + 20; lx < secW/2 - 20; lx+=5) {
+                    let ly = 0;
+                    if (i===0) ly = -(lx*lx) * 0.01; // Valley (U-shape / Stabil)
+                    else if (i===1) ly = (lx*lx) * 0.01; // Hill (Inverted U / Labil)
+                    
+                    if(lx === -secW/2 + 20) ctxM3.moveTo(cx + lx, cy + ly);
+                    else ctxM3.lineTo(cx + lx, cy + ly);
+                }
+                ctxM3.stroke();
+
+                // Draw Ball
+                let b = m3Balls[i];
+                let bx = cx + b.x;
+                // Cap visual x
+                if (bx < cx - secW/2 + 20) bx = cx - secW/2 + 20;
+                if (bx > cx + secW/2 - 20) bx = cx + secW/2 - 20;
+                
+                let by = cy;
+                let actualLx = bx - cx;
+                if(i===0) by -= (actualLx*actualLx)*0.01;
+                else if(i===1) by += (actualLx*actualLx)*0.01;
+
+                ctxM3.fillStyle = (i===0) ? '#39ff14' : ((i===1) ? '#ff1744' : '#ffaa00');
+                ctxM3.beginPath(); ctxM3.arc(bx, by - 10, 10, 0, Math.PI*2); ctxM3.fill();
+            }
+        }
+
+        // ==========================================
+        // NERACA TORSI (SEESAW)
+        // ==========================================
+        const ctxSS = resizeCanvas('seesawCanvas');
+        let ss = { angle: 0, targetAngle: 0, anim: null };
+        let ssDragging = 0; // 0: none, 1: left mass, 2: right mass
+
+        // --- Event Listeners untuk Dragging Beban ---
+        function getSSMousePos(evt) {
+            const rect = ctxSS.canvas.getBoundingClientRect();
+            let clientX = evt.clientX || (evt.touches && evt.touches[0].clientX);
+            let clientY = evt.clientY || (evt.touches && evt.touches[0].clientY);
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        ctxSS.canvas.addEventListener('mousedown', ssStartDrag);
+        ctxSS.canvas.addEventListener('touchstart', ssStartDrag, {passive: false});
+        window.addEventListener('mousemove', ssDrag);
+        window.addEventListener('touchmove', ssDrag, {passive: false});
+        window.addEventListener('mouseup', ssEndDrag);
+        window.addEventListener('touchend', ssEndDrag);
+
+        function ssStartDrag(e) {
+            const pos = getSSMousePos(e);
+            if(isNaN(pos.x)) return;
+            let w = ctxSS.canvas.width; let h = ctxSS.canvas.height;
+            let cx = w/2; let cy = h/2 + 20;
+            let pxPerM = (w/2 - 40) / 4;
+            
+            // Konversi posisi mouse terhadap rotasi kanvas
+            let mx = pos.x - cx; let my = pos.y - cy;
+            let unRotX = mx * Math.cos(ss.angle) - my * Math.sin(ss.angle);
+            let unRotY = mx * Math.sin(ss.angle) + my * Math.cos(ss.angle);
+
+            let r1 = parseFloat(document.getElementById('ss-r1').value);
+            let r2 = parseFloat(document.getElementById('ss-r2').value);
+            let m1 = parseFloat(document.getElementById('ss-m1').value);
+            let m2 = parseFloat(document.getElementById('ss-m2').value);
+
+            let s1 = 15 + m1; let s2 = 15 + m2;
+            
+            // Cek tumbukan sentuhan dengan balok beban Kiri
+            let x1 = -r1 * pxPerM; let y1 = -4 - s1/2;
+            if (Math.abs(unRotX - x1) < s1 && Math.abs(unRotY - y1) < s1) {
+                ssDragging = 1;
+                ctxSS.canvas.style.cursor = 'grabbing';
+                if(e.cancelable) e.preventDefault();
+            }
+            // Cek tumbukan sentuhan dengan balok beban Kanan
+            let x2 = r2 * pxPerM; let y2 = -4 - s2/2;
+            if (Math.abs(unRotX - x2) < s2 && Math.abs(unRotY - y2) < s2) {
+                ssDragging = 2;
+                ctxSS.canvas.style.cursor = 'grabbing';
+                if(e.cancelable) e.preventDefault();
+            }
+        }
+
+        function ssDrag(e) {
+            if (ssDragging === 0) return;
+            const pos = getSSMousePos(e);
+            if(isNaN(pos.x)) return;
+            let w = ctxSS.canvas.width; let h = ctxSS.canvas.height;
+            let cx = w/2; let cy = h/2 + 20;
+            let pxPerM = (w/2 - 40) / 4;
+            
+            let mx = pos.x - cx; let my = pos.y - cy;
+            let unRotX = mx * Math.cos(ss.angle) - my * Math.sin(ss.angle);
+
+            if (ssDragging === 1) {
+                let newR1 = -unRotX / pxPerM;
+                if (newR1 < 0.5) newR1 = 0.5;
+                if (newR1 > 4) newR1 = 4;
+                newR1 = Math.round(newR1 * 2) / 2; // Paksa step per 0.5
+                document.getElementById('ss-r1').value = newR1;
+                updateSeesaw();
+            } else if (ssDragging === 2) {
+                let newR2 = unRotX / pxPerM;
+                if (newR2 < 0.5) newR2 = 0.5;
+                if (newR2 > 4) newR2 = 4;
+                newR2 = Math.round(newR2 * 2) / 2; // Paksa step per 0.5
+                document.getElementById('ss-r2').value = newR2;
+                updateSeesaw();
+            }
+            if(e.cancelable) e.preventDefault();
+        }
+
+        function ssEndDrag() {
+            ssDragging = 0;
+            ctxSS.canvas.style.cursor = 'grab';
+        }
+
+        function updateSeesaw() {
+            let m1 = parseFloat(document.getElementById('ss-m1').value);
+            let r1 = parseFloat(document.getElementById('ss-r1').value);
+            let m2 = parseFloat(document.getElementById('ss-m2').value);
+            let r2 = parseFloat(document.getElementById('ss-r2').value);
+
+            document.getElementById('ss-val-m1').innerText = m1 + " kg";
+            document.getElementById('ss-val-r1').innerText = r1 + " m";
+            document.getElementById('ss-val-m2').innerText = m2 + " kg";
+            document.getElementById('ss-val-r2').innerText = r2 + " m";
+
+            let t1 = m1 * r1; // CCW (Positive)
+            let t2 = m2 * r2; // CW (Negative)
+            let netT = t1 - t2;
+
+            // Map net torque to an angle (max tilt 20 deg)
+            ss.targetAngle = (netT / 20) * (20 * Math.PI / 180);
+            if (ss.targetAngle > 20*Math.PI/180) ss.targetAngle = 20*Math.PI/180;
+            if (ss.targetAngle < -20*Math.PI/180) ss.targetAngle = -20*Math.PI/180;
+
+            if(!ss.anim) ssLoop();
+        }
+
+        function ssLoop() {
+            ss.angle += (ss.targetAngle - ss.angle) * 0.1;
+            drawSeesaw();
+            
+            if (Math.abs(ss.targetAngle - ss.angle) > 0.001) {
+                ss.anim = requestAnimationFrame(ssLoop);
+            } else {
+                ss.anim = null;
+            }
+        }
+
+        function drawSeesaw() {
+            const w = ctxSS.canvas.width; const h = ctxSS.canvas.height;
+            ctxSS.clearRect(0,0,w,h);
+            drawGrid(ctxSS, w, h);
+
+            let cx = w/2; let cy = h/2 + 20;
+            let pxPerM = (w/2 - 40) / 4; // 4m max
+
+            let m1 = parseFloat(document.getElementById('ss-m1').value);
+            let r1 = parseFloat(document.getElementById('ss-r1').value);
+            let m2 = parseFloat(document.getElementById('ss-m2').value);
+            let r2 = parseFloat(document.getElementById('ss-r2').value);
+
+            // Pivot Triangle
+            ctxSS.fillStyle = '#00e5ff';
+            ctxSS.beginPath(); ctxSS.moveTo(cx, cy); ctxSS.lineTo(cx-15, cy+30); ctxSS.lineTo(cx+15, cy+30); ctxSS.fill();
+
+            ctxSS.save();
+            ctxSS.translate(cx, cy);
+            ctxSS.rotate(-ss.angle); // JS canvas +rot is CW, but physical CCW is +t1. So negate.
+
+            // Beam
+            ctxSS.fillStyle = '#f000ff'; ctxSS.fillRect(-cx+20, -4, w-40, 8);
+            
+            // Markings
+            ctxSS.fillStyle = '#ffffff';
+            for(let i=1; i<=4; i++) {
+                ctxSS.fillRect(-i*pxPerM, -4, 2, 8);
+                ctxSS.fillRect(i*pxPerM, -4, 2, 8);
+            }
+
+            // Masses
+            let s1 = 15 + m1; let s2 = 15 + m2;
+            ctxSS.fillStyle = '#00e5ff'; ctxSS.fillRect(-r1*pxPerM - s1/2, -4 - s1, s1, s1);
+            ctxSS.fillStyle = '#ffaa00'; ctxSS.fillRect(r2*pxPerM - s2/2, -4 - s2, s2, s2);
+
+            ctxSS.restore();
+
+            // Status Text
+            ctxSS.fillStyle = '#ffffff'; ctxSS.font = 'bold 16px sans-serif'; ctxSS.textAlign = 'center';
+            if (Math.abs(ss.targetAngle) < 0.01) {
+                ctxSS.fillStyle = '#39ff14'; ctxSS.fillText("Στ = 0 (SETIMBANG)", cx, 20);
+            } else {
+                ctxSS.fillStyle = '#ff1744'; ctxSS.fillText("Στ ≠ 0 (BEROTASI)", cx, 20);
+            }
+        }
+
+        // ==========================================
+        // MINI GAME
+        // ==========================================
+        const ctxG = resizeCanvas('gameCanvas');
+        
+        function updateGame() {
+            let F = parseFloat(document.getElementById('g-f').value);
+            let r = parseFloat(document.getElementById('g-r').value);
+            let th = parseFloat(document.getElementById('g-th').value);
+
+            document.getElementById('g-val-f').innerText = F + " N";
+            document.getElementById('g-val-r').innerText = r.toFixed(1) + " m";
+            document.getElementById('g-val-th').innerText = th + "°";
+
+            let tau = r * F * Math.sin(th * Math.PI / 180);
+            document.getElementById('g-tau').innerText = tau.toFixed(1) + " Nm";
+
+            drawGameVisual(F, r, th);
+        }
+
+        function drawGameVisual(F, r, th) {
+            const w = ctxG.canvas.width; const h = ctxG.canvas.height;
+            ctxG.clearRect(0,0,w,h);
+            
+            let cx = 60; let cy = h/2 + 20;
+            let len = r * 50;
+
+            // Bolt
+            ctxG.fillStyle = '#ffaa00';
+            ctxG.beginPath();
+            for(let i=0; i<6; i++) {
+                let a = i * Math.PI / 3;
+                let x = cx + 15 * Math.cos(a); let y = cy + 15 * Math.sin(a);
+                if(i==0) ctxG.moveTo(x,y); else ctxG.lineTo(x,y);
+            }
+            ctxG.fill(); ctxG.stroke();
+
+            // Wrench
+            ctxG.save();
+            ctxG.translate(cx, cy);
+            ctxG.rotate(-Math.PI/6); // Default angle for visual
+            ctxG.fillStyle = '#00e5ff';
+            ctxG.beginPath(); ctxG.arc(0, 0, 20, 0, Math.PI*2); ctxG.fill();
+            ctxG.fillStyle = '#ffffff'; ctxG.beginPath(); ctxG.arc(0, 0, 16, 0, Math.PI*2); ctxG.fill(); // Hole
+            
+            ctxG.fillStyle = '#f000ff';
+            ctxG.fillRect(0, -8, len, 16);
+            ctxG.beginPath(); ctxG.arc(len, 0, 8, 0, Math.PI*2); ctxG.fill();
+            
+            // Interaction point
+            ctxG.translate(len, 0);
+            
+            let thRad = th * Math.PI / 180;
+            let fLen = (F / 100) * 80;
+            
+            let fx = fLen * Math.cos(thRad);
+            let fy = -fLen * Math.sin(thRad); 
+            
+            ctxG.fillStyle = '#ffffff'; ctxG.beginPath(); ctxG.arc(0, 0, 6, 0, Math.PI*2); ctxG.fill();
+            drawArrow(ctxG, 0, 0, fx, fy, '#00e5ff', 3, 'F');
+            
+            ctxG.restore();
+        }
+
+        function tryTurnBolt() {
+            let F = parseFloat(document.getElementById('g-f').value);
+            let r = parseFloat(document.getElementById('g-r').value);
+            let th = parseFloat(document.getElementById('g-th').value);
+            let tau = r * F * Math.sin(th * Math.PI / 180);
+
+            let overlay = document.getElementById('game-overlay');
+            let msg = document.getElementById('game-msg');
+            let desc = document.getElementById('game-desc');
+
+            if (F > 75) {
+                msg.innerText = "❌ CEDERA / ALAT PATAH!";
+                msg.style.color = "var(--crimson-red)";
+                desc.innerText = `Gaya Anda (${F} N) melampaui batas maksimal otot/alat (75 N). Cari cara untuk memanjangkan lengan momen (r) atau memperbaiki sudut (θ)!`;
+            } else if (tau >= 150) {
+                msg.innerText = "✅ BAUT BERHASIL DIBUKA!";
+                msg.style.color = "var(--emerald-green)";
+                desc.innerText = `Sempurna! Anda menghasilkan Torsi ${tau.toFixed(1)} Nm hanya dengan Gaya ${F} N. Ini adalah contoh nyata efisiensi Fisika terapan!`;
+            } else {
+                msg.innerText = "⚠️ TORSI KURANG!";
+                msg.style.color = "var(--amber-neon)";
+                desc.innerText = `Torsi Anda (${tau.toFixed(1)} Nm) masih di bawah batas minimal 150 Nm. Baut belum bergeming. Coba ubah r atau θ!`;
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function closeGame() {
+            document.getElementById('game-overlay').classList.remove('active');
+        }
+
+        // ==========================================
+        // INIT
+        // ==========================================
+        window.onload = () => {
+            updateApersepsi();
+            updateMod1();
+            setMod2('translasi');
+            drawMod3();
+            updateSeesaw();
+            updateGame();
+        };
+
+        window.addEventListener('resize', () => {
+            if(!ap.playing) drawApersepsiFrame();
+            drawMod1(parseFloat(document.getElementById('m1-f').value), parseFloat(document.getElementById('m1-r').value), parseFloat(document.getElementById('m1-th').value), parseFloat(document.getElementById('m1-tau').innerText));
+            drawMod3();
+            drawSeesaw();
+            updateGame();
+        });
+
+    </script>
+</body>
+</html>
