@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium GHS: Simfoni Gaya Pemulih</title>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        *, *::before, *::after { box-sizing: border-box; }
+        
+        :root {
+            --bg-deep: #0B0C10;
+            --bg-panel: #1F2833;
+            --text-main: #C5C6C7;
+            --text-bright: #FFFFFF;
+            --neon-cyan: #66FCF1;
+            --dark-cyan: #45A29E;
+            --vibrant-orange: #FF5722;
+            --lime-green: #39FF14;
+            --alert-red: #FF2A2A;
+            --vector-acc: #FFD700;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2, h3 { color: var(--text-bright); margin-top: 0; }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--dark-cyan);
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .info-grid { grid-template-columns: 1fr 1.5fr; } }
+
+        .req-list {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 25px;
+            border-left: 4px solid var(--neon-cyan);
+            border-radius: 8px;
+        }
+        .req-list li { margin-bottom: 10px; }
+        
+        .math-inline {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 1.1em;
+            color: var(--vibrant-orange);
+            font-style: italic;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { background-color: rgba(102, 252, 241, 0.1); color: var(--neon-cyan); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+
+        .module-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 900px) { .module-layout { grid-template-columns: 2fr 1fr; } }
+
+        .visual-container { display: flex; flex-direction: column; gap: 10px; }
+        .canvas-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        .canvas-main { min-height: 350px; }
+        .canvas-graph { height: 180px; cursor: crosshair; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .control-group { display: flex; flex-direction: column; }
+        .control-group label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-bright); }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--neon-cyan); }
+
+        .switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+
+        .vector-toggles {
+            display: flex; flex-direction: column; gap: 8px;
+            background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;
+            border: 1px solid #444; margin-top: 10px;
+        }
+        .vector-toggles strong { color: var(--text-bright); margin-bottom: 2px; font-size: 0.95rem; }
+        .chk-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; font-weight: bold; }
+        .chk-orange { accent-color: var(--vibrant-orange); }
+        .chk-green { accent-color: var(--lime-green); }
+        .chk-yellow { accent-color: var(--vector-acc); }
+
+        .time-controls {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(102, 252, 241, 0.1); padding: 10px;
+            border-radius: 8px; border: 1px solid var(--dark-cyan); margin-bottom: 10px;
+        }
+
+        .btn-pause {
+            background: var(--vibrant-orange); color: white; border: none;
+            padding: 8px 12px; border-radius: 5px; font-size: 0.95rem;
+            cursor: pointer; font-weight: bold; transition: background 0.3s, transform 0.1s;
+            flex: 1; text-align: center;
+        }
+        .btn-pause:active { transform: scale(0.95); }
+        .btn-pause.paused { background: var(--lime-green); color: black; }
+
+        .btn-forward { background: var(--lime-green); color: black; flex: 0.6; padding: 8px 10px; font-size: 0.9rem; }
+        .btn-forward:hover { background: #33ff00; }
+
+        .speed-select {
+            padding: 8px 10px; background: #222; color: #fff; border: 1px solid var(--neon-cyan);
+            border-radius: 5px; font-size: 0.95rem; cursor: pointer; flex: 1;
+        }
+
+        .data-display {
+            background: #000; padding: 15px; border-radius: 8px;
+            border-left: 4px solid var(--dark-cyan); font-family: monospace;
+            font-size: 1.1rem; color: var(--neon-cyan); margin-top: 10px;
+        }
+
+        .warning-overlay {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 42, 42, 0.2); color: var(--alert-red);
+            padding: 10px 20px; border: 1px solid var(--alert-red); border-radius: 5px;
+            font-weight: bold; opacity: 0; transition: opacity 0.3s ease;
+            pointer-events: none; text-align: center; width: 80%;
+        }
+
+        .math-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .math-box { background: rgba(0,0,0,0.4); border-left: 4px solid var(--text-main); padding: 15px; border-radius: 8px; text-align: center; }
+        .math-box:nth-child(1) { border-color: var(--neon-cyan); }
+        .math-box:nth-child(2) { border-color: var(--lime-green); }
+        .math-box:nth-child(3) { border-color: var(--vector-acc); }
+        
+        .math-title { font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; }
+        .math-eq { font-family: 'Cambria Math', 'Times New Roman', serif; font-size: 1.4rem; letter-spacing: 1px; color: var(--text-bright); }
+        .math-eq-sub { font-family: 'Cambria Math', 'Times New Roman', serif; font-size: 1.1rem; color: var(--vibrant-orange); margin-top: 5px; }
+
+        .graph-legend { display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; border: 1px solid #333; }
+        .graph-legend-items { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; font-size: 0.85rem; }
+        .graph-hint { font-size: 0.75rem; color: #aaa; margin-top: 5px; font-style: italic; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Laboratorium GHS: Simfoni Gaya Pemulih</h1>
+    </header>
+
+    <!-- INFO PENGANTAR -->
+    <div class="panel">
+        <div class="info-grid">
+            <div>
+                <h3 style="color: var(--neon-cyan);">Syarat Getaran Harmonik Sederhana (GHS)</h3>
+                <ul class="req-list">
+                    <li>Gerakannya periodik (bolak-balik secara teratur).</li>
+                    <li>Gerakan selalu melewati <strong>Titik Kesetimbangan</strong>.</li>
+                    <li>Gaya Pemulih (F) atau Percepatan (a) berbanding lurus dengan simpangannya (y), dan arahnya <strong>selalu menuju titik kesetimbangan</strong> <span class="math-inline">(F ∝ -y)</span>.</li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color: var(--neon-cyan);">Analisis Titik Balik & Setimbang</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kondisi Posisi</th>
+                            <th>Kecepatan (v)</th>
+                            <th>Percepatan (a) / Gaya (F)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Titik Setimbang</strong> (y = 0)</td>
+                            <td style="color: var(--lime-green);">Maksimum</td>
+                            <td>Nol</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Titik Terjauh / Amplitudo</strong></td>
+                            <td>Nol</td>
+                            <td style="color: var(--vibrant-orange);">Maksimum (Arah Balik)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PERSAMAAN MATEMATIS -->
+    <div class="panel">
+        <h2>Persamaan Matematis GHS</h2>
+        <p>Hubungan turunan kinematika antara posisi, kecepatan, dan percepatan terhadap waktu pada sistem yang mengalami Getaran Harmonik Sederhana (dengan asumsi fase awal disederhanakan pada titik setimbang).</p>
+        <div class="math-container">
+            <div class="math-box">
+                <div class="math-title" style="color: var(--neon-cyan);">Simpangan (Posisi)</div>
+                <div class="math-eq">y(t) = A · sin(ωt)</div>
+            </div>
+            <div class="math-box">
+                <div class="math-title" style="color: var(--lime-green);">Kecepatan (v)</div>
+                <div class="math-eq">v(t) = Aω · cos(ωt)</div>
+            </div>
+            <div class="math-box">
+                <div class="math-title" style="color: var(--vector-acc);">Percepatan (a)</div>
+                <div class="math-eq">a(t) = -Aω² · sin(ωt)</div>
+                <div class="math-eq-sub">a(t) = -ω² · y(t)</div>
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; margin-top: 15px; color: #888;">*Keterangan: <strong>A</strong> = Amplitudo (simpangan terjauh), <strong>ω</strong> = Kecepatan sudut (2πf atau 2π/T), <strong>t</strong> = Waktu.</p>
+
+        <h3 style="color: var(--neon-cyan); margin-top: 30px; border-bottom: 1px solid #333; padding-bottom: 10px;">Periode & Frekuensi Alami Sistem</h3>
+        <div class="math-container">
+            <div class="math-box">
+                <div class="math-title" style="color: var(--neon-cyan);">Osilasi Pegas</div>
+                <div class="math-eq">T = 2π √(m/k)</div>
+                <div class="math-eq-sub">f = 1/(2π) √(k/m)</div>
+            </div>
+            <div class="math-box">
+                <div class="math-title" style="color: var(--lime-green);">Osilasi Bandul Matematis</div>
+                <div class="math-eq">T = 2π √(l/g)</div>
+                <div class="math-eq-sub">f = 1/(2π) √(g/l)</div>
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; margin-top: 15px; color: #888;">*Keterangan: <strong>m</strong> = massa beban (kg), <strong>k</strong> = konstanta pegas (N/m), <strong>l</strong> = panjang tali (m), <strong>g</strong> = percepatan gravitasi (m/s²).</p>
+    </div>
+
+    <!-- MODUL 1: FREKUENSI DAN PERIODE (Dipindah ke atas) -->
+    <div class="panel">
+        <h2>Modul 1: Penentu Frekuensi & Periode</h2>
+        <p>Hitung jumlah getaran dalam waktu tertentu untuk menentukan <strong>Frekuensi (f)</strong> dan <strong>Periode (T)</strong>. Sistem ini menggunakan fisika real-time berdasarkan Hukum Hooke.</p>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="math-container">
+                <div class="math-box">
+                    <div class="math-title" style="color: var(--neon-cyan);">Frekuensi</div>
+                    <div class="math-eq">f = N / t</div>
+                    <div class="math-eq-sub" style="font-size: 0.9rem; margin-top: 8px;">N = jumlah getaran, t = waktu (s)</div>
+                </div>
+                <div class="math-box">
+                    <div class="math-title" style="color: var(--lime-green);">Periode</div>
+                    <div class="math-eq">T = 1 / f</div>
+                    <div class="math-eq-sub" style="font-size: 0.9rem; margin-top: 8px;">atau T = t / N</div>
+                </div>
+                <div class="math-box">
+                    <div class="math-title" style="color: var(--vector-acc);">Hubungan Keduanya</div>
+                    <div class="math-eq">f × T = 1</div>
+                    <div class="math-eq-sub" style="font-size: 0.9rem; margin-top: 8px;">Frekuensi & Periode berbalik nilai</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="module-layout">
+            <div class="visual-container">
+                <div class="canvas-container canvas-main"><canvas id="frequencyCanvas"></canvas></div>
+                <div class="canvas-container canvas-graph"><canvas id="frequencyGraphCanvas"></canvas></div>
+                <div class="graph-legend">
+                    <div class="graph-legend-items">
+                        <span style="color: var(--neon-cyan); font-weight: bold;">■ Simpangan Fisik (m)</span>
+                        <span style="color: var(--lime-green); font-weight: bold;">■ E. Kinetik (J)</span>
+                        <span style="color: var(--dark-cyan); font-weight: bold;">■ E. Potensial (J)</span>
+                    </div>
+                    <div class="graph-hint">* Grafik menampilkan data berdasarkan hukum fisika kekekalan energi</div>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="time-controls">
+                    <button id="btn-pause-freq" class="btn-pause">Jeda Simulasi</button>
+                    <button id="btn-reset-freq" class="btn-pause btn-forward" style="background: var(--dark-cyan);" title="Reset Penghitung">Reset</button>
+                    <select id="speed-freq" class="speed-select">
+                        <option value="1">Normal (1x)</option>
+                        <option value="0.5">Lambat (0.5x)</option>
+                        <option value="0.1">Super Lambat (0.1x)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label><span>Konstanta Pegas (k)</span> <span id="lbl-freq-k">15 N/m</span></label>
+                    <input type="range" id="slider-freq-k" min="5" max="50" value="15">
+                </div>
+                <div class="control-group">
+                    <label><span>Massa Beban (m)</span> <span id="lbl-freq-m">1.0 kg</span></label>
+                    <input type="range" id="slider-freq-m" min="0.2" max="3" step="0.1" value="1.0">
+                </div>
+                <div class="switch-container">
+                    <input type="checkbox" id="enable-crossings" checked>
+                    <label for="enable-crossings">Hitung Persilangan Zero-Point (Otomatis)</label>
+                </div>
+                <div class="vector-toggles">
+                    <strong>Status Pengamatan:</strong>
+                    <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 6px; margin-top: 8px; font-family: monospace; font-size: 0.9rem;">
+                        <div style="color: var(--neon-cyan); margin-bottom: 6px;">Waktu Pengamatan: <span id="obs-time" style="color: var(--text-bright);">0.00</span> s</div>
+                        <div style="color: var(--lime-green); margin-bottom: 6px;">Jumlah Getaran (N): <span id="obs-count" style="color: var(--text-bright);">0</span></div>
+                        <div style="color: var(--vibrant-orange); margin-bottom: 6px;">Frekuensi Terukur: <span id="obs-freq" style="color: var(--text-bright);">0.00</span> Hz</div>
+                        <div style="color: var(--vector-acc);">Periode Terukur: <span id="obs-period" style="color: var(--text-bright);">0.00</span> s</div>
+                    </div>
+                </div>
+                <div class="data-display" style="border-left-color: var(--neon-cyan); margin-top: 15px;">
+                    <strong>Target / Teori Fisika:</strong><br>
+                    Periode Teori (T): <span id="data-freq-t-theory" style="color: var(--text-bright);">0.00</span> s<br>
+                    Frekuensi Teori (f): <span id="data-freq-f-theory" style="color: var(--text-bright);">0.00</span> Hz<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 2: PEGAS VERTIKAL -->
+    <div class="panel">
+        <h2>Modul 2: Laboratorium Pegas Vertikal</h2>
+        <p>Tarik kotak massa (drag & drop) ke bawah/atas untuk memberikan simpangan awal. Amati arah vektor gaya dan kecepatan.</p>
+        <div class="module-layout">
+            <div class="visual-container">
+                <div class="canvas-container canvas-main"><canvas id="springCanvas"></canvas></div>
+                <div class="canvas-container canvas-graph"><canvas id="springGraphCanvas"></canvas></div>
+                <div class="graph-legend">
+                    <div class="graph-legend-items">
+                        <span style="color: var(--neon-cyan); font-weight: bold;">■ Simpangan (y)</span>
+                        <span style="color: var(--lime-green); font-weight: bold;">■ E. Kinetik (EK)</span>
+                        <span style="color: var(--dark-cyan); font-weight: bold;">■ E. Potensial (EP)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="time-controls">
+                    <button id="btn-pause-spring" class="btn-pause">Jeda Simulasi</button>
+                    <button id="btn-forward-spring" class="btn-pause btn-forward" title="Maju 0.1 detik">+0.1s</button>
+                    <select id="speed-spring" class="speed-select">
+                        <option value="1">Normal (1x)</option>
+                        <option value="0.5">Lambat (0.5x)</option>
+                        <option value="0.1">Super Lambat (0.1x)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label><span>Konstanta Pegas (k)</span> <span id="lbl-k">15 N/m</span></label>
+                    <input type="range" id="slider-k" min="5" max="50" value="15">
+                </div>
+                <div class="control-group">
+                    <label><span>Massa Beban (m)</span> <span id="lbl-m">1.0 kg</span></label>
+                    <input type="range" id="slider-m" min="0.2" max="3" step="0.1" value="1.0">
+                </div>
+                <div class="switch-container">
+                    <input type="checkbox" id="damp-spring">
+                    <label for="damp-spring">Aktifkan Gesekan Udara (Redaman)</label>
+                </div>
+                <div class="vector-toggles">
+                    <strong>Tampilkan Vektor:</strong>
+                    <label class="chk-label" style="color: var(--text-main);">
+                        <input type="checkbox" id="chk-spring-f" class="chk-orange" checked>
+                        <span style="display:inline-block; width:12px; height:12px; background:var(--vibrant-orange); border-radius:2px;"></span> Gaya Pemulih (F)
+                    </label>
+                    <label class="chk-label" style="color: var(--text-main);">
+                        <input type="checkbox" id="chk-spring-v" class="chk-green" checked>
+                        <span style="display:inline-block; width:12px; height:12px; background:var(--lime-green); border-radius:2px;"></span> Kecepatan (v)
+                    </label>
+                    <label class="chk-label" style="color: var(--text-main);">
+                        <input type="checkbox" id="chk-spring-a" class="chk-yellow" checked>
+                        <span style="display:inline-block; width:12px; height:12px; background:var(--vector-acc); border-radius:2px;"></span> Percepatan (a)
+                    </label>
+                </div>
+                <div class="data-display">
+                    Waktu (t): <span id="time-spring" style="color: var(--text-bright);">0.00</span> s<br>
+                    Periode (T): <span id="data-spring-t">0.00</span> s<br>
+                    Frekuensi (f): <span id="data-spring-f">0.00</span> Hz
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 3: BANDUL -->
+    <div class="panel">
+        <h2>Modul 3: Dualisme Bandul (Matematis vs Fisis)</h2>
+        <p>Membandingkan GHS ideal (Matematis/Biru) yang mengasumsikan <span class="math-inline">sin(θ) ≈ θ</span> dengan realita fisis (Putih). Miskonsepsi sering terjadi saat sudut simpangan terlalu besar.</p>
+        <div class="module-layout">
+            <div class="visual-container">
+                <div class="canvas-container canvas-main">
+                    <canvas id="pendulumCanvas"></canvas>
+                    <div id="pendulum-warning" class="warning-overlay">
+                        PERINGATAN MISKONSEPSI!<br>
+                        Sudut > 15°. GHS (rumus ideal) hanya berlaku akurat untuk sudut kecil (<span class="math-inline" style="color:var(--alert-red);">sin(θ) ≈ θ</span> rad). Perhatikan perbedaan lintasan.
+                    </div>
+                </div>
+                <div class="canvas-container canvas-graph"><canvas id="pendulumGraphCanvas"></canvas></div>
+            </div>
+            <div class="controls">
+                <div class="time-controls">
+                    <button id="btn-pause-pen" class="btn-pause">Jeda Simulasi</button>
+                    <button id="btn-forward-pen" class="btn-pause btn-forward" title="Maju 0.1 detik">+0.1s</button>
+                    <select id="speed-pen" class="speed-select">
+                        <option value="1">Normal (1x)</option>
+                        <option value="0.5">Lambat (0.5x)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label><span>Panjang Tali (l)</span> <span id="lbl-l">2.0 m</span></label>
+                    <input type="range" id="slider-l" min="0.5" max="4.0" step="0.1" value="2.0">
+                </div>
+                <div class="control-group">
+                    <label><span>Sudut Simpangan Awal (θ)</span> <span id="lbl-theta">10°</span></label>
+                    <input type="range" id="slider-theta" min="2" max="60" value="10">
+                </div>
+                <div class="vector-toggles">
+                    <strong>Tampilkan Vektor:</strong>
+                    <label class="chk-label" style="color: var(--text-main);"><input type="checkbox" id="chk-pen-f" class="chk-orange" checked> Gaya Pemulih (F)</label>
+                    <label class="chk-label" style="color: var(--text-main);"><input type="checkbox" id="chk-pen-v" class="chk-green" checked> Kecepatan (v)</label>
+                    <label class="chk-label" style="color: var(--text-main);"><input type="checkbox" id="chk-pen-a" class="chk-yellow" checked> Percepatan (a)</label>
+                    <div style="color: var(--neon-cyan); font-size: 0.85rem; margin-top: 5px; font-weight:bold;">
+                        ● Bandul Matematis (Ideal)<br><span style="color: white;">● Bandul Fisis (Real)</span>
+                    </div>
+                </div>
+                <div class="data-display">
+                    Waktu (t): <span id="time-pendulum" style="color: var(--text-bright);">0.00</span> s<br>
+                    Periode Ideal (T): <span id="data-pen-t">0.00</span> s
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINI GAME -->
+    <div class="panel">
+        <h2>Mini-Game: Tantangan Resonansi</h2>
+        <p>Sebuah sistem pegas diletakkan di atas panggung yang bergetar. Tugas Anda: Sesuaikan frekuensi panggung dengan <strong>Frekuensi Alami</strong> sistem agar mencapai <strong>Amplitudo Maksimal (Resonansi)</strong>!</p>
+        <div class="module-layout">
+            <div class="canvas-container" style="min-height: 350px;">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <div class="controls">
+                <div class="data-display" style="border-left-color: var(--vibrant-orange);">
+                    Frekuensi Alami Sistem: <strong style="color: var(--text-bright);">1.50 Hz</strong><br>
+                    Frekuensi Panggung (Drive): <span id="data-game-drive">0.50</span> Hz
+                </div>
+                <div class="control-group" style="margin-top: 20px;">
+                    <label><span>Tuning Frekuensi Penggetar</span></label>
+                    <input type="range" id="slider-drive" min="0.5" max="3.0" step="0.05" value="0.5">
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <h3 id="game-status" style="color: var(--text-main); transition: color 0.3s;">Amplitudo Rendah</h3>
+                    <div style="height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 10px;">
+                        <div id="game-amp-bar" style="height: 100%; width: 10%; background: var(--neon-cyan); transition: width 0.1s, background 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const PI = Math.PI;
+const G = 9.8; 
+const PX_PER_METER = 100; // Skala fisika: 100 pixel = 1 meter
+
+function resizeCanvas(canvas) {
+    if(!canvas) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY, color) {
+    const headlen = 10; 
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+}
+
+function drawSpringZigzag(ctx, x, yStart, yEnd, coils, width) {
+    ctx.beginPath();
+    ctx.moveTo(x, yStart);
+    let springLength = yEnd - yStart;
+    let coilHeight = springLength / coils;
+    for (let i = 0; i < coils; i++) {
+        let currentY = yStart + i * coilHeight;
+        if (i % 2 === 0) ctx.lineTo(x + width, currentY + coilHeight/2);
+        else ctx.lineTo(x - width, currentY + coilHeight/2);
+    }
+    ctx.lineTo(x, yEnd);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+function drawModuleGraph(canvas, ctx, history, maxGraphPoints, tooltipX = null) {
+    if (!ctx) return;
+    let w = canvas.width;
+    let h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.stroke();
+
+    if (history.length === 0) return;
+    let step = w / maxGraphPoints;
+
+    let maxE = 0.001;
+    let maxY = 0.001;
+    for (let data of history) {
+        if ((data.pe + data.ke) > maxE) maxE = data.pe + data.ke;
+        if (Math.abs(data.y) > maxY) maxY = Math.abs(data.y);
+    }
+
+    // Grafik Simpangan
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+        let x = i * step;
+        let yPlot = (h/2) - (history[i].y / maxY) * (h/2.2); 
+        if (i === 0) ctx.moveTo(x, yPlot);
+        else ctx.lineTo(x, yPlot);
+    }
+    ctx.strokeStyle = '#66FCF1'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Grafik EP
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+        let x = i * step;
+        let yPlot = h - (history[i].pe / maxE) * (h * 0.9);
+        if (i === 0) ctx.moveTo(x, yPlot);
+        else ctx.lineTo(x, yPlot);
+    }
+    ctx.strokeStyle = '#45A29E'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Grafik EK
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+        let x = i * step;
+        let yPlot = h - (history[i].ke / maxE) * (h * 0.9);
+        if (i === 0) ctx.moveTo(x, yPlot);
+        else ctx.lineTo(x, yPlot);
+    }
+    ctx.strokeStyle = '#39FF14'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ------------------------------------------
+// SISTEM FREKUENSI (Modul 1 Baru)
+// ------------------------------------------
+const FrequencySystem = {
+    canvas: document.getElementById('frequencyCanvas'),
+    ctx: document.getElementById('frequencyCanvas').getContext('2d'),
+    graphCanvas: document.getElementById('frequencyGraphCanvas'),
+    graphCtx: document.getElementById('frequencyGraphCanvas').getContext('2d'),
+    k: 15, m: 1.0, 
+    y_phys: 0.5, v_phys: 0, // Dalam METER secara fisika nyata
+    y_eq_px: 150, massSize: 40,
+    
+    time: 0, simSpeed: 1.0, isPaused: false,
+    obsTime: 0, oscCount: 0, lastY_phys: 0.5, crossingMode: 1,
+    history: [], maxGraphPoints: 200,
+    
+    init() {
+        resizeCanvas(this.canvas);
+        resizeCanvas(this.graphCanvas);
+        
+        document.getElementById('slider-freq-k').addEventListener('input', (e) => {
+            this.k = parseFloat(e.target.value);
+            document.getElementById('lbl-freq-k').innerText = this.k + " N/m";
+            this.updateTheoryData();
+        });
+        document.getElementById('slider-freq-m').addEventListener('input', (e) => {
+            this.m = parseFloat(e.target.value);
+            document.getElementById('lbl-freq-m').innerText = this.m.toFixed(1) + " kg";
+            this.updateTheoryData();
+        });
+
+        const btnPause = document.getElementById('btn-pause-freq');
+        btnPause.addEventListener('click', () => {
+            this.isPaused = !this.isPaused;
+            btnPause.textContent = this.isPaused ? "Lanjutkan" : "Jeda Simulasi";
+            this.isPaused ? btnPause.classList.add('paused') : btnPause.classList.remove('paused');
+        });
+
+        document.getElementById('btn-reset-freq').addEventListener('click', () => {
+            this.obsTime = 0; this.oscCount = 0; this.crossingMode = 1;
+            this.history = []; this.time = 0;
+            this.y_phys = 0.5; this.v_phys = 0; // Reset ke Amplitudo 0.5m
+            this.lastY_phys = this.y_phys;
+            this.updateDisplay();
+        });
+
+        document.getElementById('speed-freq').addEventListener('change', (e) => {
+            this.simSpeed = parseFloat(e.target.value);
+        });
+
+        this.updateTheoryData();
+    },
+
+    updateTheoryData() {
+        let T = 2 * PI * Math.sqrt(this.m / this.k);
+        document.getElementById('data-freq-t-theory').innerText = T.toFixed(2);
+        document.getElementById('data-freq-f-theory').innerText = (1/T).toFixed(2);
+    },
+
+    updateDisplay() {
+        document.getElementById('obs-time').innerText = this.obsTime.toFixed(2);
+        document.getElementById('obs-count').innerText = this.oscCount;
+        let measuredF = (this.oscCount > 0 && this.obsTime > 0) ? this.oscCount / this.obsTime : 0;
+        document.getElementById('obs-freq').innerText = measuredF.toFixed(2);
+        document.getElementById('obs-period').innerText = measuredF > 0 ? (1/measuredF).toFixed(2) : "0.00";
+    },
+
+    update(dt) {
+        if (this.isPaused) return;
+        let simDt = dt * this.simSpeed;
+        this.time += simDt;
+        this.obsTime += simDt;
+
+        // Fisika Semi-Implicit Euler yang akurat 100%
+        let F = -this.k * this.y_phys;
+        let a = F / this.m;
+        this.v_phys += a * simDt;
+        this.y_phys += this.v_phys * simDt;
+
+        // Penghitung Persilangan Logika (Zero Crossing)
+        if (document.getElementById('enable-crossings').checked) {
+            if (this.lastY_phys * this.y_phys <= 0 && Math.abs(this.y_phys) > 0.01) {
+                if (this.crossingMode === 1 && this.y_phys < 0) {
+                    this.oscCount += 0.5; this.crossingMode = -1;
+                } else if (this.crossingMode === -1 && this.y_phys > 0) {
+                    this.oscCount += 0.5; this.crossingMode = 1;
+                }
+            }
+        }
+        this.lastY_phys = this.y_phys;
+
+        let pe = 0.5 * this.k * Math.pow(this.y_phys, 2);
+        let ke = 0.5 * this.m * Math.pow(this.v_phys, 2);
+        
+        this.history.push({ y: this.y_phys, pe: pe, ke: ke });
+        if (this.history.length > this.maxGraphPoints) this.history.shift();
+
+        this.updateDisplay();
+    },
+
+    draw() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let cx = this.canvas.width / 2;
+        let y_pixel = this.y_eq_px + (this.y_phys * PX_PER_METER);
+
+        ctx.beginPath(); ctx.setLineDash([5, 5]);
+        ctx.moveTo(0, this.y_eq_px); ctx.lineTo(this.canvas.width, this.y_eq_px);
+        ctx.strokeStyle = '#FFFFFF'; ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#FFFFFF'; ctx.font = '12px Arial';
+        ctx.fillText("Titik Setimbang (y=0)", 10, this.y_eq_px - 5);
+
+        drawSpringZigzag(ctx, cx, 0, y_pixel - this.massSize/2, 12, 20);
+
+        ctx.fillStyle = '#66FCF1'; ctx.shadowBlur = 10; ctx.shadowColor = '#66FCF1';
+        ctx.fillRect(cx - this.massSize/2, y_pixel - this.massSize/2, this.massSize, this.massSize);
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#66FCF1'; ctx.font = 'bold 14px Arial';
+        ctx.fillText(`y = ${this.y_phys.toFixed(2)} m`, cx + 30, y_pixel);
+
+        drawModuleGraph(this.graphCanvas, this.graphCtx, this.history, this.maxGraphPoints);
+    }
+};
+
+// ------------------------------------------
+// SISTEM PEGAS VERTIKAL (Modul 2)
+// ------------------------------------------
+const SpringSystem = {
+    canvas: document.getElementById('springCanvas'),
+    ctx: document.getElementById('springCanvas').getContext('2d'),
+    graphCanvas: document.getElementById('springGraphCanvas'),
+    graphCtx: document.getElementById('springGraphCanvas').getContext('2d'),
+    
+    k: 15, m: 1.0, damp: false,
+    y_phys: 0.5, v_phys: 0,
+    y_eq_px: 150, massSize: 40,
+    isDragging: false, time: 0, simSpeed: 1.0, isPaused: false,
+    history: [], maxGraphPoints: 200,
+
+    init() {
+        resizeCanvas(this.canvas);
+        resizeCanvas(this.graphCanvas);
+        
+        const startDrag = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let mouseY = clientY - rect.top;
+            let currentPixelY = this.y_eq_px + (this.y_phys * PX_PER_METER);
+            
+            if (Math.abs(mouseY - currentPixelY) < this.massSize * 2) {
+                this.isDragging = true; this.time = 0; this.history = [];
+            }
+        };
+
+        const drag = (e) => {
+            if (!this.isDragging) return;
+            e.preventDefault();
+            const rect = this.canvas.getBoundingClientRect();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let pixelY = clientY - rect.top;
+            this.y_phys = (pixelY - this.y_eq_px) / PX_PER_METER;
+            this.v_phys = 0; 
+        };
+
+        const endDrag = () => { this.isDragging = false; };
+
+        this.canvas.addEventListener('mousedown', startDrag);
+        this.canvas.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+
+        document.getElementById('slider-k').addEventListener('input', (e) => {
+            this.k = parseFloat(e.target.value);
+            document.getElementById('lbl-k').innerText = this.k + " N/m";
+            this.updateData();
+        });
+        document.getElementById('slider-m').addEventListener('input', (e) => {
+            this.m = parseFloat(e.target.value);
+            document.getElementById('lbl-m').innerText = this.m.toFixed(1) + " kg";
+            this.updateData();
+        });
+        document.getElementById('damp-spring').addEventListener('change', (e) => {
+            this.damp = e.target.checked;
+        });
+
+        const btnPause = document.getElementById('btn-pause-spring');
+        btnPause.addEventListener('click', () => {
+            this.isPaused = !this.isPaused;
+            btnPause.textContent = this.isPaused ? "Lanjutkan" : "Jeda Simulasi";
+            this.isPaused ? btnPause.classList.add('paused') : btnPause.classList.remove('paused');
+        });
+
+        document.getElementById('btn-forward-spring').addEventListener('click', () => {
+            for (let i = 0; i < 5; i++) this.update(0.02);
+            this.draw();
+        });
+
+        document.getElementById('speed-spring').addEventListener('change', (e) => {
+            this.simSpeed = parseFloat(e.target.value);
+        });
+
+        this.updateData();
+    },
+
+    updateData() {
+        let T = 2 * PI * Math.sqrt(this.m / this.k);
+        document.getElementById('data-spring-t').innerText = T.toFixed(2);
+        document.getElementById('data-spring-f').innerText = (1/T).toFixed(2);
+    },
+
+    update(dt) {
+        if (this.isPaused) return;
+        let simDt = dt * this.simSpeed;
+
+        if (!this.isDragging) {
+            this.time += simDt;
+            let F = -this.k * this.y_phys;
+            if (this.damp) F -= 0.5 * this.v_phys; // Redaman udara
+            
+            let a = F / this.m;
+            this.v_phys += a * simDt;
+            this.y_phys += this.v_phys * simDt;
+        }
+
+        document.getElementById('time-spring').innerText = this.time.toFixed(2);
+
+        let pe = 0.5 * this.k * Math.pow(this.y_phys, 2); 
+        let ke = 0.5 * this.m * Math.pow(this.v_phys, 2);
+
+        this.history.push({ y: this.y_phys, pe: pe, ke: ke });
+        if (this.history.length > this.maxGraphPoints) this.history.shift();
+    },
+
+    draw() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let cx = this.canvas.width / 2;
+        let pixelY = this.y_eq_px + (this.y_phys * PX_PER_METER);
+
+        ctx.beginPath(); ctx.setLineDash([5, 5]);
+        ctx.moveTo(0, this.y_eq_px); ctx.lineTo(this.canvas.width, this.y_eq_px);
+        ctx.strokeStyle = '#FFFFFF'; ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#FFFFFF'; ctx.font = '12px Arial';
+        ctx.fillText("Titik Setimbang (y=0)", 10, this.y_eq_px - 5);
+
+        drawSpringZigzag(ctx, cx, 0, pixelY - this.massSize/2, 15, 20);
+
+        ctx.fillStyle = '#66FCF1'; ctx.shadowBlur = 10; ctx.shadowColor = '#66FCF1';
+        ctx.fillRect(cx - this.massSize/2, pixelY - this.massSize/2, this.massSize, this.massSize);
+        ctx.shadowBlur = 0;
+
+        let F = -this.k * this.y_phys;
+        let a = F / this.m; 
+
+        if (document.getElementById('chk-spring-f').checked && Math.abs(F) > 0.5) {
+            drawArrow(ctx, cx + 25, pixelY, cx + 25, pixelY + (F * 2), '#FF5722'); 
+        }
+        if (document.getElementById('chk-spring-a').checked && Math.abs(a) > 0.5) {
+            drawArrow(ctx, cx + 40, pixelY, cx + 40, pixelY + (a * 2), '#FFD700'); 
+        }
+        if (document.getElementById('chk-spring-v').checked && Math.abs(this.v_phys) > 0.1 && !this.isDragging) {
+            drawArrow(ctx, cx - 25, pixelY, cx - 25, pixelY + (this.v_phys * 15), '#39FF14'); 
+        }
+
+        drawModuleGraph(this.graphCanvas, this.graphCtx, this.history, this.maxGraphPoints);
+    }
+};
+
+// ------------------------------------------
+// SISTEM BANDUL (Modul 3)
+// ------------------------------------------
+const PendulumSystem = {
+    canvas: document.getElementById('pendulumCanvas'),
+    ctx: document.getElementById('pendulumCanvas').getContext('2d'),
+    graphCanvas: document.getElementById('pendulumGraphCanvas'),
+    graphCtx: document.getElementById('pendulumGraphCanvas').getContext('2d'),
+    
+    l: 2.0, 
+    theta_ideal: 10 * PI / 180, theta_real: 10 * PI / 180,  
+    omega_ideal: 0, omega_real: 0,
+    originY: 20, time: 0, simSpeed: 1.0, isPaused: false,
+    history: [], maxGraphPoints: 200,
+    
+    init() {
+        resizeCanvas(this.canvas); resizeCanvas(this.graphCanvas);
+        
+        document.getElementById('slider-theta').addEventListener('input', (e) => {
+            let deg = parseFloat(e.target.value);
+            document.getElementById('lbl-theta').innerHTML = deg + "°";
+            this.theta_ideal = deg * PI / 180; this.theta_real = deg * PI / 180;
+            this.omega_ideal = 0; this.omega_real = 0;
+            this.time = 0; this.history = []; 
+            document.getElementById('pendulum-warning').style.opacity = deg > 15 ? 1 : 0;
+        });
+
+        document.getElementById('slider-l').addEventListener('input', (e) => {
+            this.l = parseFloat(e.target.value);
+            document.getElementById('lbl-l').innerText = this.l.toFixed(1) + " m";
+            this.time = 0; this.history = []; this.updateData();
+        });
+
+        const btnPause = document.getElementById('btn-pause-pen');
+        btnPause.addEventListener('click', () => {
+            this.isPaused = !this.isPaused;
+            btnPause.textContent = this.isPaused ? "Lanjutkan" : "Jeda Simulasi";
+            this.isPaused ? btnPause.classList.add('paused') : btnPause.classList.remove('paused');
+        });
+
+        document.getElementById('btn-forward-pen').addEventListener('click', () => {
+            for (let i = 0; i < 5; i++) this.update(0.02);
+            this.draw();
+        });
+
+        document.getElementById('speed-pen').addEventListener('change', (e) => {
+            this.simSpeed = parseFloat(e.target.value);
+        });
+
+        this.updateData();
+    },
+
+    updateData() {
+        let T = 2 * PI * Math.sqrt(this.l / G);
+        document.getElementById('data-pen-t').innerText = T.toFixed(2);
+    },
+
+    update(dt) {
+        if (this.isPaused) return;
+        let simDt = dt * this.simSpeed;
+        this.time += simDt; 
+        
+        // GHS Ideal (Miskonsepsi Siswa)
+        let alpha_ideal = -(G / this.l) * this.theta_ideal;
+        this.omega_ideal += alpha_ideal * simDt;
+        this.theta_ideal += this.omega_ideal * simDt;
+
+        // Fisika Asli / Real
+        let alpha_real = -(G / this.l) * Math.sin(this.theta_real);
+        this.omega_real += alpha_real * simDt;
+        this.theta_real += this.omega_real * simDt;
+
+        document.getElementById('time-pendulum').innerText = this.time.toFixed(2);
+
+        // Energi Konstan untuk Fisika Asli
+        let h = this.l * (1 - Math.cos(this.theta_real));
+        let pe = G * h; // asumsi m = 1kg
+        let v_real = this.omega_real * this.l;
+        let ke = 0.5 * Math.pow(v_real, 2);
+
+        this.history.push({ y: this.theta_real, pe: pe, ke: ke });
+        if (this.history.length > this.maxGraphPoints) this.history.shift();
+    },
+
+    draw() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let cx = this.canvas.width / 2;
+        let l_px = this.l * 100; // 100px per meter
+
+        ctx.beginPath(); ctx.setLineDash([5, 5]);
+        ctx.moveTo(cx, this.originY); ctx.lineTo(cx, this.originY + 300);
+        ctx.strokeStyle = '#555'; ctx.stroke(); ctx.setLineDash([]);
+
+        // Ideal Draw
+        let id_x = cx + l_px * Math.sin(this.theta_ideal);
+        let id_y = this.originY + l_px * Math.cos(this.theta_ideal);
+        ctx.beginPath(); ctx.moveTo(cx, this.originY); ctx.lineTo(id_x, id_y);
+        ctx.strokeStyle = 'rgba(102, 252, 241, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(id_x, id_y, 12, 0, 2*PI);
+        ctx.fillStyle = 'rgba(102, 252, 241, 0.5)'; ctx.fill();
+
+        // Real Draw
+        let r_x = cx + l_px * Math.sin(this.theta_real);
+        let r_y = this.originY + l_px * Math.cos(this.theta_real);
+        ctx.beginPath(); ctx.moveTo(cx, this.originY); ctx.lineTo(r_x, r_y);
+        ctx.strokeStyle = '#FFF'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.beginPath(); ctx.arc(r_x, r_y, 15, 0, 2*PI);
+        ctx.fillStyle = '#FFF'; ctx.shadowBlur = 10; ctx.shadowColor = '#FFF'; ctx.fill(); ctx.shadowBlur = 0;
+
+        let forceTangential = -Math.sin(this.theta_real) * G; 
+        let angleVec = this.theta_real + PI/2; 
+
+        if (document.getElementById('chk-pen-f').checked && Math.abs(forceTangential) > 0.5) {
+            let toX = r_x + forceTangential * 10 * Math.cos(angleVec);
+            let toY = r_y + forceTangential * 10 * Math.sin(angleVec);
+            drawArrow(ctx, r_x, r_y, toX, toY, '#FF5722');
+        }
+
+        let aTangential = forceTangential; // karena a = F/m, jika m=1
+        if (document.getElementById('chk-pen-a').checked && Math.abs(aTangential) > 0.5) {
+            let outX = r_x + 20 * Math.sin(this.theta_real); let outY = r_y + 20 * Math.cos(this.theta_real);
+            let aToX = outX + aTangential * 10 * Math.cos(angleVec);
+            let aToY = outY + aTangential * 10 * Math.sin(angleVec);
+            drawArrow(ctx, outX, outY, aToX, aToY, '#FFD700');
+        }
+
+        let v_phys = this.omega_real * this.l;
+        if (document.getElementById('chk-pen-v').checked && Math.abs(v_phys) > 0.1) {
+            let inX = r_x - 20 * Math.sin(this.theta_real); let inY = r_y - 20 * Math.cos(this.theta_real);
+            let vToX = inX + v_phys * 15 * Math.cos(angleVec);
+            let vToY = inY + v_phys * 15 * Math.sin(angleVec);
+            drawArrow(ctx, inX, inY, vToX, vToY, '#39FF14');
+        }
+
+        drawModuleGraph(this.graphCanvas, this.graphCtx, this.history, this.maxGraphPoints);
+    }
+};
+
+// ------------------------------------------
+// MINI GAME RESONANSI
+// ------------------------------------------
+const GameSystem = {
+    canvas: document.getElementById('gameCanvas'),
+    ctx: document.getElementById('gameCanvas').getContext('2d'),
+    k: 20, m: 0.5, c: 0.1,
+    y_phys: 0, v_phys: 0,
+    base_time: 0, drive_freq: 0.5, natural_freq: 1.5,
+    
+    init() {
+        resizeCanvas(this.canvas);
+        // Menyesuaikan K agar frekuensi alami persis 1.5 Hz secara fisika -> k = (2*pi*f)^2 * m
+        this.k = Math.pow(this.natural_freq * 2 * PI, 2) * this.m; 
+
+        document.getElementById('slider-drive').addEventListener('input', (e) => {
+            this.drive_freq = parseFloat(e.target.value);
+            document.getElementById('data-game-drive').innerText = this.drive_freq.toFixed(2);
+        });
+    },
+
+    update(dt) {
+        let simDt = dt * 3; 
+        this.base_time += simDt;
+        
+        let drive_amp_phys = 0.2; // 20cm
+        let y_base_phys = drive_amp_phys * Math.sin(2 * PI * this.drive_freq * this.base_time);
+        
+        let stretch_phys = (this.y_phys - y_base_phys);
+        let F = -this.k * stretch_phys - this.c * this.v_phys;
+        let a = F / this.m;
+        
+        this.v_phys += a * simDt;
+        this.y_phys += this.v_phys * simDt;
+
+        let amp_visual = Math.abs(this.y_phys * PX_PER_METER); 
+        let bar = document.getElementById('game-amp-bar');
+        let status = document.getElementById('game-status');
+        
+        let percentage = Math.min((amp_visual / 120) * 100, 100);
+        bar.style.width = percentage + '%';
+
+        if (percentage > 85) {
+            bar.style.background = 'var(--alert-red)';
+            status.innerText = "RESONANSI TERCAPAI! KONDISI KRITIS!";
+            status.style.color = 'var(--alert-red)';
+            status.style.textShadow = '0 0 10px red';
+        } else if (percentage > 50) {
+            bar.style.background = 'var(--vibrant-orange)';
+            status.innerText = "Amplitudo Meningkat";
+            status.style.color = 'var(--vibrant-orange)';
+            status.style.textShadow = 'none';
+        } else {
+            bar.style.background = 'var(--neon-cyan)';
+            status.innerText = "Amplitudo Rendah";
+            status.style.color = 'var(--text-main)';
+            status.style.textShadow = 'none';
+        }
+    },
+
+    draw() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let cx = this.canvas.width / 2;
+        
+        let drive_amp_phys = 0.2;
+        let y_base_px = 50 + (drive_amp_phys * Math.sin(2 * PI * this.drive_freq * this.base_time) * PX_PER_METER);
+        let y_mass_px = y_base_px + 100 + (this.y_phys * PX_PER_METER);
+
+        ctx.fillStyle = '#444'; ctx.fillRect(cx - 50, y_base_px - 10, 100, 20);
+        ctx.strokeStyle = '#FF5722'; ctx.lineWidth = 2; ctx.strokeRect(cx - 50, y_base_px - 10, 100, 20);
+
+        drawSpringZigzag(ctx, cx, y_base_px + 10, y_mass_px - 20, 10, 15);
+
+        ctx.fillStyle = '#66FCF1'; ctx.shadowBlur = 15; ctx.shadowColor = '#66FCF1';
+        ctx.fillRect(cx - 20, y_mass_px - 20, 40, 40); ctx.shadowBlur = 0;
+    }
+};
+
+let lastTime = 0;
+function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000; 
+    if (dt > 0.05) dt = 0.05; // Capping mencegah ledakan jika pindah tab browser
+    lastTime = timestamp;
+
+    FrequencySystem.update(dt);
+    SpringSystem.update(dt);
+    PendulumSystem.update(dt);
+    GameSystem.update(dt);
+
+    FrequencySystem.draw();
+    SpringSystem.draw();
+    PendulumSystem.draw();
+    GameSystem.draw();
+
+    requestAnimationFrame(loop);
+}
+
+window.addEventListener('load', () => {
+    FrequencySystem.init();
+    SpringSystem.init();
+    PendulumSystem.init();
+    GameSystem.init();
+    requestAnimationFrame(loop);
+});
+
+window.addEventListener('resize', () => {
+    resizeCanvas(FrequencySystem.canvas); resizeCanvas(FrequencySystem.graphCanvas);
+    resizeCanvas(SpringSystem.canvas); resizeCanvas(SpringSystem.graphCanvas);
+    resizeCanvas(PendulumSystem.canvas); resizeCanvas(PendulumSystem.graphCanvas);
+    resizeCanvas(GameSystem.canvas);
+});
+</script>
+</body>
+</html>
