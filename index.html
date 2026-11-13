@@ -64,7 +64,7 @@
                     </button>
                     <div class="absolute left-0 mt-1 w-60 bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden group-hover:block">
                         <a href="#" onclick="openTopic('Besaran dan Pengukuran')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Besaran dan Pengukuran</a>
-                        <a href="#" onclick="openTopic('Pengolahan Sumber Daya Alam')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Pengolahan Sumber Daya Alam</a>
+                        <a href="#" onclick="openTopic('Pengolahan Sumber Daya Alam')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Pengolahan Sumber Daya Alam dan Dampaknya</a>
                     </div>
                 </div>
 
@@ -73,7 +73,7 @@
                         Kelas XI <i class="fa-solid fa-chevron-down text-[10px]"></i>
                     </button>
                     <div class="absolute left-0 mt-1 w-60 bg-white dark:bg-darkcard rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden group-hover:block">
-                        <a href="#" onclick="openTopic('Gerak')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Gerak & Kinematika</a>
+                        <a href="#" onclick="openTopic('Gerak')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Kinematika dan Dinamika</a>
                         <a href="#" onclick="openTopic('Fluida')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Fluida Statis & Dinamis</a>
                         <a href="#" onclick="openTopic('Getaran dan Gelombang')" class="block px-4 py-2 hover:bg-blue-50 dark:hover:bg-slate-800">Getaran dan Gelombang</a>
                     </div>
@@ -398,15 +398,18 @@
                 judul: "Besaran dan Pengukuran",
                 kelas: "X",
                 icon: "📐",
-                sheetId: "GANTI_DENGAN_SHEET_ID_PENGUKURAN",
-                aiUrl: "https://gemini.google.com/",
+                sheetId: "1AZCs3MbfXhi6jSVkAcP5FhvDznnfZ_XYrX5W4w9ll2s",
+                aiUrl: "https://gemini.google.com/gem/11KAgX7xw2WJLqS_yvbDKIgOVD5WMsZx1?usp=sharing",
                 deskripsi: "Pengukuran presisi, jangka sorong, mikrometer sekrup, dan angka penting.",
                 subMateri: {
                     "Tutor AI dan Media": [
                         { nama: "Media & Tutor AI: Pengukuran & Angka Penting", url: "./media/media-pengukuran.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Virtual Lab: Jangka Sorong & Mikrometer", url: "./simulasi/sim-pengukuran.html" }
+                        { nama: "Besaran, Satuan, Dimensi, dan Sistem Matrik", url: "./simulasi/Besaran-Pengukuran/Besaran-Satuan.html" }
+                        { nama: "Angka Penting, Notasi Ilmiah dan Ketidakpastian", url: "./simulasi/Besaran-Pengukuran/AngkaPenting-NotasiIlmiah.html" }
+                        { nama: "Pengukuran dengan berbagai alat ukur", url: "./simulasi/Besaran-Pengukuran/Pengukuran.html" }
+                        { nama: "Variabel, Pengumpulan Data, Analisis Grafik", url: "./simulasi/Besaran-Pengukuran/AnalisisData.html" }
                     ],
                     "Lembar Kerja": [
                         { nama: "LKPD 1: Pengukuran Tunggal & Berulang", url: "./lkpd/lkpd-pengukuran.html", simUrl: "./simulasi/sim-pengukuran.html" }
@@ -421,15 +424,18 @@
                 judul: "Pengolahan Sumber Daya Alam",
                 kelas: "X",
                 icon: "♻️",
-                sheetId: "GANTI_DENGAN_SHEET_ID_SDA",
-                aiUrl: "https://gemini.google.com/",
+                sheetId: "1rPVUiBrRg9ws76zBqmAH5I_5Tffed-QkvLPaRDFW7WA",
+                aiUrl: "https://gemini.google.com/gem/1i5jP-Ktd7ir_spPWmqB-dDpqHHaVzkVK?usp=sharing",
                 deskripsi: "Energi terbarukan, transformasi energi, dan efisiensi daya listrik.",
                 subMateri: {
                     "Tutor AI dan Media": [
                         { nama: "Media & Tutor AI: Energi & Diagram Sankey", url: "./media/media-sda.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulasi Transformasi & Efisiensi Energi", url: "./simulasi/sim-sda.html" }
+                        { nama: "Simulasi Proses Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/PengelolaanSumberEnergi.html" }
+                        { nama: "Simulasi Dampak Negatif dan Dampak Positif dari Pengelolaan Sumber Energi", url: "./simulasi/SumberEnergi/DampakPengelolaanSumberEnergi.html" }
+                        { nama: "Simulasi Terjadinya Pemanasan Global Akibat Gas Rumah Kaca", url: "./simulasi/SumberEnergi/PemanasanGlobal.html" }
+                        { nama: "Simulasi Hujan Asam dan Dampaknya", url: "./simulasi/SumberEnergi/HujanAsam.html" }
                     ],
                     "Lembar Kerja": [
                         { nama: "LKPD: Audit Energi Listrik Rumah Tangga", url: "./lkpd/lkpd-sda.html", simUrl: "./simulasi/sim-sda.html" }
@@ -469,15 +475,20 @@
                 judul: "Fluida",
                 kelas: "XI",
                 icon: "🌊",
-                sheetId: "GANTI_DENGAN_SHEET_ID_FLUIDA",
-                aiUrl: "https://gemini.google.com/",
+                sheetId: "16CAYCmjtZ9k5TQdLaJkr7551MM2KarbGPo9yqy0a3rg",
+                aiUrl: "https://gemini.google.com/gem/1DzF0zMgOHAAUWHA8bUJlfxypl61kzoO0?usp=sharing",
                 deskripsi: "Tekanan hidrostatis, Hukum Archimedes, Pascal, dan Asas Bernoulli.",
                 subMateri: {
                     "Tutor AI dan Media": [
                         { nama: "Media & Tutor AI: Fluida Statis & Dinamis", url: "./media/media-fluida.html" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulator Tekanan & Aliran Fluida", url: "./simulasi/sim-fluida.html" }
+                        { nama: "Simulator Fluida dan Massa Jenis", url: "./simulasi/fluida/fluida-dan-massa-jenis.html" }
+                        { nama: "Simulator Tekanan Hidrostatis", url: "./simulasi/fluida/tekanan-hidrostatis.html" }
+                        { nama: "Simulator Hukum Pascal", url: "./simulasi/fluida/hukum-pascal.html" }
+                        { nama: "Simulator Prinsip Archimedes", url: "./simulasi/fluida/prinsip-archimedes.html" }
+                        { nama: "Simulator Asas Kontinyuitas", url: "./simulasi/fluida/asas-kontinyuitas.html" }
+                        { nama: "Simulator Prinsip Bernoulli", url: "./simulasi/fluida/prinsip-bernoulli.html" }
                     ],
                     "Lembar Kerja": [
                         { nama: "LKPD: Gaya Apung & Asas Bernoulli", url: "./lkpd/lkpd-fluida.html", simUrl: "./simulasi/sim-fluida.html" }
@@ -492,7 +503,7 @@
                 judul: "Getaran dan Gelombang",
                 kelas: "XI",
                 icon: "🔊",
-                sheetId: "GANTI_DENGAN_SHEET_ID_GELOMBANG",
+                sheetId: "1iZAkwXCxeqxHcmhlpCo1pwREIxTQqvTJqA3UP28JeDI",
                 aiUrl: "https://gemini.google.com/gem/1unsUNRTJlFwSe5NkwfPvd3onRzKBNmn7?usp=sharing",
                 deskripsi: "Elastisitas, getaran harmonik, gelombang mekanik, bunyi, dan cahaya.",
                 subMateri: {
@@ -503,7 +514,12 @@
                         { nama: "Gelombang Cahaya & Optika Geometri", url: "./media/media-gelombang.html?sub=optika-geometri" }
                     ],
                     "Eksplorasi Konsep": [
-                        { nama: "Simulasi Gelombang pada Tali", url: "./simulasi/sim-gelombang.html" }
+                        { nama: "Simulasi Elastisitas", url: "./simulasi/getaran-gelombang/elastisitas.html" }
+                        { nama: "Simulasi Getaran Harmonis Sederhana", url: "./simulasi/getaran-gelombang/Getaran-Harmonis-Sederhana.html" }
+                        { nama: "Simulasi Gelombang", url: "./simulasi/getaran-gelombang/gelombang.html" }
+                        { nama: "Simulasi Gelombang Bunyi", url: "./simulasi/getaran-gelombang/Gelombang-Bunyi.html" }
+                        { nama: "Simulasi Gelombang Cahaya", url: "./simulasi/getaran-gelombang/Gelombang-Cahaya.html" }
+                        { nama: "Simulasi Optika Geometri", url: "./simulasi/getaran-gelombang/Optika-Geometri.html" }
                     ],
                     "Lembar Kerja": [
                         { nama: "LKPD: Penyelidikan Frekuensi & Panjang Gelombang", url: "./lkpd/lkpd-gelombang.html", simUrl: "./simulasi/sim-gelombang.html" }
