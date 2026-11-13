@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Power Plant Simulator</title>
+    
+    <!-- MathJax for Physics Equations -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Eco-Industrial Modern Theme Variables */
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --border-color: #333333;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            
+            /* Energy Colors */
+            --color-thermal: #ff5722; /* Orange */
+            --color-hydro: #2196f3;   /* Blue */
+            --color-wind: #00bcd4;    /* Cyan */
+            --color-wave: #3f51b5;    /* Indigo */
+            --color-solar: #ffeb3b;   /* Yellow */
+            --color-eco: #4caf50;     /* Green */
+            --color-danger: #f44336;  /* Red */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-bottom: 3rem;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+
+        /* Global Header & Energy Mix Dashboard */
+        header { text-align: center; margin-bottom: 1.5rem; }
+        h1 { color: #fff; font-size: 2.2rem; letter-spacing: 1px; text-transform: uppercase; }
+        .subtitle { color: var(--color-eco); font-weight: 500; letter-spacing: 2px; }
+
+        .dashboard {
+            background: #1a1a1a;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .dash-stat { display: flex; flex-direction: column; }
+        .dash-label { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; }
+        .dash-value { font-size: 2.5rem; font-family: monospace; font-weight: bold; line-height: 1.1; }
+        
+        .progress-container { width: 100%; background: #333; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 10px; position: relative; }
+        .progress-bar { height: 100%; width: 0%; background: var(--color-thermal); transition: width 0.3s, background 0.3s; }
+        .progress-target { position: absolute; left: 100%; top: 0; height: 100%; width: 2px; background: #fff; transform: translateX(-1px); }
+
+        .status-badge {
+            display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; margin-top: 10px;
+            background: #333; color: #fff;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); overflow-x: auto; }
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted); padding: 12px 20px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; white-space: nowrap; border-radius: 8px 8px 0 0;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .nav-btn.active[data-target="mod-termal"] { color: var(--color-thermal); box-shadow: inset 0 -3px 0 var(--color-thermal); }
+        .nav-btn.active[data-target="mod-mekanik"] { color: var(--color-wind); box-shadow: inset 0 -3px 0 var(--color-wind); }
+        .nav-btn.active[data-target="mod-surya"] { color: var(--color-solar); box-shadow: inset 0 -3px 0 var(--color-solar); }
+
+        /* Sub-Navigation for Mekanik */
+        .sub-nav { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+        .sub-btn { background: #2a2a2a; border: 1px solid #444; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; }
+        .sub-btn.active { background: #444; color: #fff; border-color: var(--color-wind); }
+
+        /* Modules */
+        .module { display: none; animation: fadeIn 0.3s; }
+        .module.active { display: block; }
+        .sub-module { display: none; }
+        .sub-module.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-layout { display: grid; grid-template-columns: 1fr 350px; gap: 1.5rem; }
+        @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        /* Canvas & Visuals */
+        .canvas-panel {
+            background: #050505; border: 1px solid var(--border-color); border-radius: 12px;
+            height: 450px; position: relative; overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.9);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls Panel */
+        .controls-panel { background: var(--bg-panel); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
+        .control-group { margin-bottom: 1.2rem; }
+        .control-header { display: flex; justify-content: space-between; font-size: 0.9rem; color: #aaa; margin-bottom: 0.5rem; }
+        .control-val { font-family: monospace; font-weight: bold; color: #fff; font-size: 1.1rem; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: #333; border-radius: 3px; outline: none; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+        }
+        .slider-thermal::-webkit-slider-thumb { background: var(--color-thermal); box-shadow: 0 0 10px var(--color-thermal); }
+        .slider-hydro::-webkit-slider-thumb { background: var(--color-hydro); box-shadow: 0 0 10px var(--color-hydro); }
+        .slider-wind::-webkit-slider-thumb { background: var(--color-wind); box-shadow: 0 0 10px var(--color-wind); }
+        .slider-wave::-webkit-slider-thumb { background: var(--color-wave); box-shadow: 0 0 10px var(--color-wave); }
+        .slider-solar::-webkit-slider-thumb { background: var(--color-solar); box-shadow: 0 0 10px var(--color-solar); }
+
+        .result-box {
+            background: #111; padding: 1rem; border-radius: 8px; margin-top: 1rem;
+            border-left: 4px solid var(--color-eco); font-family: monospace;
+        }
+
+        /* Theory Section */
+        .theory-section { margin-top: 3rem; background: var(--bg-panel); padding: 2rem; border-radius: 12px; border: 1px solid var(--border-color); }
+        .theory-section h2 { color: var(--color-eco); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 1.5rem; }
+        .theory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .theory-card { background: #121212; padding: 1.5rem; border-radius: 8px; border: 1px solid #222; }
+        .theory-card h3 { color: #fff; margin-bottom: 10px; font-size: 1.1rem; }
+        .theory-card p, .theory-card ul { font-size: 0.95rem; color: #bbb; }
+        .theory-card ul { margin-left: 1.5rem; margin-top: 0.5rem; }
+        
+        table.theory-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        table.theory-table th, table.theory-table td { border: 1px solid #333; padding: 8px; text-align: left; }
+        table.theory-table th { background: #1a1a1a; color: var(--color-wind); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulator Pembangkit Energi Nasional</h1>
+        <div class="subtitle">Dari Alam ke Listrik - Memenuhi Target 1000 MW</div>
+    </header>
+
+    <!-- Global Dashboard (Energy Mix Goal) -->
+    <div class="dashboard">
+        <div class="dash-stat">
+            <div class="dash-label">Total Daya Dibangkitkan (Target: 1000 MW)</div>
+            <div class="dash-value" id="dash-power" style="color: var(--color-eco);">0.0 <span style="font-size:1.2rem; color:#aaa;">MW</span></div>
+            <div class="progress-container">
+                <div class="progress-bar" id="power-bar"></div>
+                <div class="progress-target" style="left: 100%;"></div>
+            </div>
+            <div class="status-badge" id="status-power">Membutuhkan Daya</div>
+        </div>
+        <div class="dash-stat">
+            <div class="dash-label">Emisi Karbon (Jejak Lingkungan)</div>
+            <div class="dash-value" id="dash-co2" style="color: var(--color-danger);">0.0 <span style="font-size:1.2rem; color:#aaa;">kg CO₂/s</span></div>
+            <div style="font-size: 0.85rem; color:#aaa; margin-top:10px;">Goal: Capai 1000 MW dengan emisi serendah mungkin!</div>
+            <div class="status-badge" id="status-eco" style="background:var(--color-eco);">Bebas Karbon</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <button class="nav-btn active" data-target="mod-termal">Pembangkit Termal</button>
+        <button class="nav-btn" data-target="mod-mekanik">Pembangkit Mekanik</button>
+        <button class="nav-btn" data-target="mod-surya">Pembangkit Langsung (Surya)</button>
+    </nav>
+
+    <!-- MODUL 1: TERMAL -->
+    <div id="mod-termal" class="module active">
+        <div class="grid-layout">
+            <div class="canvas-panel">
+                <canvas id="cvs-termal"></canvas>
+            </div>
+            <div class="controls-panel">
+                <h3 style="color: var(--color-thermal); margin-bottom: 1rem;">PLTU (Batubara)</h3>
+                <p style="font-size:0.9rem; color:#aaa; margin-bottom:1rem;">Energi termal dari pembakaran memanaskan air (boiler) menjadi uap bertekanan tinggi untuk memutar turbin.</p>
+                
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Laju Bahan Bakar ($m_{fuel}$)</span>
+                        <span class="control-val" id="val-termal-fuel">0 kg/s</span>
+                    </div>
+                    <input type="range" class="slider-thermal" id="sl-termal-fuel" min="0" max="150" step="1" value="0">
+                </div>
+
+                <div class="result-box" style="border-left-color: var(--color-thermal);">
+                    <div>Input Panas ($P_{in}$): <span id="res-termal-pin">0.0</span> MW</div>
+                    <div style="margin:5px 0; color:#777; font-size:0.85rem;">Efisiensi Sistem ($\eta$) = 35%</div>
+                    <div style="color:var(--color-thermal); font-weight:bold;">Output Listrik ($P_{out}$): <span id="res-termal-pout">0.0</span> MW</div>
+                </div>
+                
+                <div style="margin-top:1.5rem; font-size:0.9rem; color:var(--color-danger);">
+                    $\approx$ <span id="res-termal-co2">0.0</span> kg $CO_2$ per detik
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 2: MEKANIK -->
+    <div id="mod-mekanik" class="module">
+        <div class="sub-nav">
+            <button class="sub-btn active" data-sub="air">Air (Hidro)</button>
+            <button class="sub-btn" data-sub="angin">Angin</button>
+            <button class="sub-btn" data-sub="ombak">Ombak Samudra</button>
+        </div>
+
+        <div class="grid-layout">
+            <div class="canvas-panel">
+                <canvas id="cvs-mekanik"></canvas>
+            </div>
+            <div class="controls-panel">
+                
+                <!-- Controls Air (Hidro) -->
+                <div id="ctrl-air" class="sub-module active">
+                    <h3 style="color: var(--color-hydro); margin-bottom: 1rem;">PLTA (Hidro)</h3>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Debit Air ($Q$)</span>
+                            <span class="control-val" id="val-hydro-q">0 m³/s</span>
+                        </div>
+                        <input type="range" class="slider-hydro" id="sl-hydro-q" min="0" max="500" step="10" value="0">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Ketinggian Jatuh / Head ($h$)</span>
+                            <span class="control-val" id="val-hydro-h">100 m</span>
+                        </div>
+                        <input type="range" class="slider-hydro" id="sl-hydro-h" min="10" max="200" step="5" value="100">
+                    </div>
+                    <div class="result-box" style="border-left-color: var(--color-hydro);">
+                        <div style="margin-bottom:5px; color:#777; font-size:0.85rem;">Efisiensi ($\eta$) = 90% | $\rho = 1000$ kg/m³</div>
+                        <div style="color:var(--color-hydro); font-weight:bold;">Output Listrik ($P_{out}$): <span id="res-hydro-pout">0.0</span> MW</div>
+                    </div>
+                </div>
+
+                <!-- Controls Angin -->
+                <div id="ctrl-angin" class="sub-module">
+                    <h3 style="color: var(--color-wind); margin-bottom: 1rem;">PLTB (Angin)</h3>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Kecepatan Angin ($v$)</span>
+                            <span class="control-val" id="val-wind-v">0 m/s</span>
+                        </div>
+                        <input type="range" class="slider-wind" id="sl-wind-v" min="0" max="25" step="0.5" value="0">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Luas Sapuan Baling ($A$)</span>
+                            <span class="control-val" id="val-wind-a">10000 m²</span>
+                        </div>
+                        <input type="range" class="slider-wind" id="sl-wind-a" min="1000" max="100000" step="1000" value="10000">
+                    </div>
+                    <div class="result-box" style="border-left-color: var(--color-wind);">
+                        <div style="margin-bottom:5px; color:#777; font-size:0.85rem;">Efisiensi ($\eta$) = 40% (Batas Betz) | $\rho_{udara} = 1.225$</div>
+                        <div style="color:var(--color-wind); font-weight:bold;">Output Listrik ($P_{out}$): <span id="res-wind-pout">0.0</span> MW</div>
+                    </div>
+                </div>
+
+                <!-- Controls Ombak -->
+                <div id="ctrl-ombak" class="sub-module">
+                    <h3 style="color: var(--color-wave); margin-bottom: 1rem;">PLT Ombak Laut</h3>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Tinggi Gelombang ($H$)</span>
+                            <span class="control-val" id="val-wave-h">0.0 m</span>
+                        </div>
+                        <input type="range" class="slider-wave" id="sl-wave-h" min="0" max="5" step="0.1" value="0">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Periode Gelombang ($T$)</span>
+                            <span class="control-val" id="val-wave-t">8 s</span>
+                        </div>
+                        <input type="range" class="slider-wave" id="sl-wave-t" min="4" max="15" step="1" value="8">
+                    </div>
+                    <div class="result-box" style="border-left-color: var(--color-wave);">
+                        <div style="margin-bottom:5px; color:#777; font-size:0.85rem;">Array Pesisir = 2000m | Efisiensi = 30%</div>
+                        <div style="color:var(--color-wave); font-weight:bold;">Output Listrik ($P_{out}$): <span id="res-wave-pout">0.0</span> MW</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODUL 3: SURYA (LANGSUNG) -->
+    <div id="mod-surya" class="module">
+        <div class="grid-layout">
+            <div class="canvas-panel">
+                <canvas id="cvs-surya"></canvas>
+            </div>
+            <div class="controls-panel">
+                <h3 style="color: var(--color-solar); margin-bottom: 1rem;">PLTS (Fotovoltaik)</h3>
+                <p style="font-size:0.9rem; color:#aaa; margin-bottom:1rem;">Foton cahaya matahari merangsang elektron bebas pada semikonduktor silikon untuk mengalir sebagai arus listrik searah (DC).</p>
+                
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Intensitas Cahaya / Irradiance ($G$)</span>
+                        <span class="control-val" id="val-solar-g">0 W/m²</span>
+                    </div>
+                    <input type="range" class="slider-solar" id="sl-solar-g" min="0" max="1000" step="10" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="control-header">
+                        <span>Luas Total Panel ($A$)</span>
+                        <span class="control-val" id="val-solar-a">10000 m²</span>
+                    </div>
+                    <input type="range" class="slider-solar" id="sl-solar-a" min="1000" max="5000000" step="10000" value="10000">
+                </div>
+
+                <div class="result-box" style="border-left-color: var(--color-solar);">
+                    <div style="margin-bottom:5px; color:#777; font-size:0.85rem;">Efisiensi Panel ($\eta$) = 20%</div>
+                    <div style="color:var(--color-solar); font-weight:bold;">Output Listrik ($P_{out}$): <span id="res-solar-pout">0.0</span> MW</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- THEORY SECTION -->
+    <div class="theory-section">
+        <h2>Pojok Konsep Fisika Energi</h2>
+        <div class="theory-grid">
+            <div class="theory-card">
+                <h3>1. Hukum Kekekalan Energi</h3>
+                <p>Energi tidak dapat diciptakan atau dimusnahkan, hanya dapat berubah bentuk. Di seluruh pembangkit listrik, prinsip dasarnya adalah mengubah <strong>Energi Mekanik/Termal/Radiasi</strong> menjadi <strong>Energi Listrik</strong> melalui perantara turbin dan generator (kecuali PLTS yang bersifat langsung mengubah radiasi menjadi elektron mengalir).</p>
+            </div>
+            <div class="theory-card">
+                <h3>2. Konsep Efisiensi ($\eta$)</h3>
+                <p>Menurut Hukum II Termodinamika, tidak ada mesin konversi energi yang sempurna. Sebagian energi input akan selalu terdisipasi menjadi panas yang terbuang ke lingkungan.</p>
+                $$P_{listrik} = \eta \cdot P_{input\_alam}$$
+                <p>Nilai $\eta$ selalu $< 1$ (atau $< 100\%$).</p>
+            </div>
+            <div class="theory-card">
+                <h3>3. Persamaan Daya Pembangkit Dasar</h3>
+                <table class="theory-table">
+                    <tr><th>Sumber</th><th>Persamaan Daya ($P$)</th></tr>
+                    <tr><td>Hidro (Air)</td><td>$P = \rho \cdot Q \cdot g \cdot h \cdot \eta$</td></tr>
+                    <tr><td>Angin</td><td>$P = \frac{1}{2} \rho \cdot A \cdot v^3 \cdot \eta$</td></tr>
+                    <tr><td>Ombak</td><td>$P_{in} \approx 0.5 \text{ kW/m} \cdot H^2 \cdot T$</td></tr>
+                    <tr><td>Surya (Solar)</td><td>$P = A \cdot G \cdot \eta$</td></tr>
+                </table>
+            </div>
+            <div class="theory-card">
+                <h3>4. Emisi Karbon & Dampak Lingkungan</h3>
+                <p>Pembakaran bahan bakar fosil (seperti batu bara) menghasilkan gas rumah kaca ($CO_2$) yang berkontribusi kuat pada pemanasan global.</p>
+                <ul>
+                    <li><strong>Batubara:</strong> $\approx 1$ kg $CO_2$ per kWh listrik yang dibangkitkan.</li>
+                    <li><strong>Energi Terbarukan (Air/Angin/Surya):</strong> Nyaris $0$ kg $CO_2$ selama operasional sehari-hari.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* ==========================================
+       STATE MANAGEMENT & PHYSICS CALCULATIONS
+       ========================================== */
+    const State = {
+        targetMW: 1000,
+        powers: { termal: 0, hydro: 0, wind: 0, wave: 0, solar: 0 },
+        co2: { termal: 0 },
+        anim: {
+            fuelRate: 0,
+            waterQ: 0, hydroH: 100,
+            windV: 0, windA: 10000,
+            waveH: 0, waveT: 8,
+            solarG: 0, solarA: 10000
+        }
+    };
+
+    function updateGlobalDashboard() {
+        let totalP = Object.values(State.powers).reduce((a, b) => a + b, 0);
+        let totalCO2 = Object.values(State.co2).reduce((a, b) => a + b, 0);
+
+        document.getElementById('dash-power').innerHTML = `${totalP.toFixed(1)} <span style="font-size:1.2rem; color:#aaa;">MW</span>`;
+        document.getElementById('dash-co2').innerHTML = `${totalCO2.toFixed(1)} <span style="font-size:1.2rem; color:#aaa;">kg CO₂/s</span>`;
+
+        let pBar = document.getElementById('power-bar');
+        let percentage = Math.min((totalP / State.targetMW) * 100, 100);
+        pBar.style.width = percentage + "%";
+
+        let stPower = document.getElementById('status-power');
+        let stEco = document.getElementById('status-eco');
+
+        let ecoRatio = (totalP > 0) ? (totalP - State.powers.termal) / totalP : 1;
+        
+        if (totalP >= State.targetMW) {
+            stPower.innerText = "TARGET TERPENUHI!";
+            stPower.style.background = "var(--color-eco)";
+            
+            if (ecoRatio > 0.8) {
+                pBar.style.background = "var(--color-eco)";
+                stEco.innerText = "EXCELLENT ECO-MIX!";
+                stEco.style.background = "var(--color-eco)";
+            } else {
+                pBar.style.background = "var(--color-thermal)";
+                stEco.innerText = "EMISI TERLALU TINGGI!";
+                stEco.style.background = "var(--color-danger)";
+            }
+        } else {
+            stPower.innerText = "Membutuhkan Daya...";
+            stPower.style.background = "#333";
+            pBar.style.background = (ecoRatio > 0.5) ? "var(--color-eco)" : "var(--color-thermal)";
+            
+            if(totalCO2 > 50) {
+                stEco.innerText = "Peringatan Emisi";
+                stEco.style.background = "var(--color-thermal)";
+            } else {
+                stEco.innerText = "Emisi Terjaga";
+                stEco.style.background = "var(--color-eco)";
+            }
+        }
+    }
+
+    // Calculators
+    function calcTermal() {
+        let fuel = parseFloat(document.getElementById('sl-termal-fuel').value);
+        State.anim.fuelRate = fuel;
+        document.getElementById('val-termal-fuel').innerText = `${fuel} kg/s`;
+        
+        let Pin = fuel * 24; // MW (asumsi heating value 24 MJ/kg)
+        let Pout = Pin * 0.35; // 35% efficiency
+        let co2 = fuel * 2.4;  // approx 2.4 kg CO2 per kg coal
+
+        State.powers.termal = Pout;
+        State.co2.termal = co2;
+
+        document.getElementById('res-termal-pin').innerText = Pin.toFixed(1);
+        document.getElementById('res-termal-pout').innerText = Pout.toFixed(1);
+        document.getElementById('res-termal-co2').innerText = co2.toFixed(1);
+        updateGlobalDashboard();
+    }
+
+    function calcHydro() {
+        let Q = parseFloat(document.getElementById('sl-hydro-q').value);
+        let h = parseFloat(document.getElementById('sl-hydro-h').value);
+        State.anim.waterQ = Q;
+        State.anim.hydroH = h;
+        document.getElementById('val-hydro-q').innerText = `${Q} m³/s`;
+        document.getElementById('val-hydro-h').innerText = `${h} m`;
+
+        let P_watts = 1000 * Q * 9.8 * h * 0.9;
+        let Pout = P_watts / 1e6; // to MW
+
+        State.powers.hydro = Pout;
+        document.getElementById('res-hydro-pout').innerText = Pout.toFixed(1);
+        updateGlobalDashboard();
+    }
+
+    function calcWind() {
+        let v = parseFloat(document.getElementById('sl-wind-v').value);
+        let A = parseFloat(document.getElementById('sl-wind-a').value);
+        State.anim.windV = v;
+        State.anim.windA = A;
+        document.getElementById('val-wind-v').innerText = `${v.toFixed(1)} m/s`;
+        document.getElementById('val-wind-a').innerText = `${A} m²`;
+
+        let P_watts = 0.5 * 1.225 * A * Math.pow(v, 3) * 0.4;
+        let Pout = P_watts / 1e6;
+
+        State.powers.wind = Pout;
+        document.getElementById('res-wind-pout').innerText = Pout.toFixed(1);
+        updateGlobalDashboard();
+    }
+
+    function calcWave() {
+        let H = parseFloat(document.getElementById('sl-wave-h').value);
+        let T = parseFloat(document.getElementById('sl-wave-t').value);
+        State.anim.waveH = H;
+        State.anim.waveT = T;
+        document.getElementById('val-wave-h').innerText = `${H.toFixed(1)} m`;
+        document.getElementById('val-wave-t').innerText = `${T} s`;
+
+        let P_kw_per_m = 0.5 * Math.pow(H, 2) * T;
+        let Pout = (P_kw_per_m * 2000 * 0.3) / 1000; // array len 2000m, eff 30%, kW to MW
+
+        State.powers.wave = Pout;
+        document.getElementById('res-wave-pout').innerText = Pout.toFixed(1);
+        updateGlobalDashboard();
+    }
+
+    function calcSolar() {
+        let G = parseFloat(document.getElementById('sl-solar-g').value);
+        let A = parseFloat(document.getElementById('sl-solar-a').value);
+        State.anim.solarG = G;
+        State.anim.solarA = A;
+        document.getElementById('val-solar-g').innerText = `${G} W/m²`;
+        document.getElementById('val-solar-a').innerText = `${A} m²`;
+
+        let Pout = (A * G * 0.2) / 1e6; // MW
+
+        State.powers.solar = Pout;
+        document.getElementById('res-solar-pout').innerText = Pout.toFixed(1);
+        updateGlobalDashboard();
+    }
+
+    // Event Listeners for Sliders
+    document.getElementById('sl-termal-fuel').addEventListener('input', calcTermal);
+    document.getElementById('sl-hydro-q').addEventListener('input', calcHydro);
+    document.getElementById('sl-hydro-h').addEventListener('input', calcHydro);
+    document.getElementById('sl-wind-v').addEventListener('input', calcWind);
+    document.getElementById('sl-wind-a').addEventListener('input', calcWind);
+    document.getElementById('sl-wave-h').addEventListener('input', calcWave);
+    document.getElementById('sl-wave-t').addEventListener('input', calcWave);
+    document.getElementById('sl-solar-g').addEventListener('input', calcSolar);
+    document.getElementById('sl-solar-a').addEventListener('input', calcSolar);
+
+    /* ==========================================
+       UI NAVIGATION LOGIC
+       ========================================== */
+    let currentMainTab = 'mod-termal';
+    let currentSubTab = 'air';
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+            
+            btn.classList.add('active');
+            let target = btn.getAttribute('data-target');
+            document.getElementById(target).classList.add('active');
+            currentMainTab = target;
+            
+            // Memperbarui ukuran canvas saat tab baru ditampilkan agar tidak 0x0
+            resizeCanvases();
+        });
+    });
+
+    document.querySelectorAll('.sub-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sub-module').forEach(m => m.classList.remove('active'));
+            
+            btn.classList.add('active');
+            let target = btn.getAttribute('data-sub');
+            document.getElementById('ctrl-' + target).classList.add('active');
+            currentSubTab = target;
+        });
+    });
+
+    /* ==========================================
+       CANVAS ANIMATIONS (HIGH FIDELITY)
+       ========================================== */
+    const ctxTermal = document.getElementById('cvs-termal').getContext('2d');
+    const ctxMekanik = document.getElementById('cvs-mekanik').getContext('2d');
+    const ctxSurya = document.getElementById('cvs-surya').getContext('2d');
+    
+    let time = 0;
+    let termalAngle = 0;
+    let hydroAngle = 0;
+    let windAngle = 0;
+
+    function resizeCanvases() {
+        ['cvs-termal', 'cvs-mekanik', 'cvs-surya'].forEach(id => {
+            let cvs = document.getElementById(id);
+            cvs.width = cvs.clientWidth;
+            cvs.height = cvs.clientHeight;
+        });
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // General Turbine Drawer
+    function drawTurbine(ctx, cx, cy, radius, angle, blades, color, isWind = false) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius*0.15, 0, Math.PI*2);
+        ctx.fill();
+        
+        for(let i=0; i<blades; i++) {
+            ctx.rotate((Math.PI*2)/blades);
+            ctx.beginPath();
+            if(isWind) {
+                // Aerodynamic blade shape
+                ctx.moveTo(0, -radius*0.05);
+                ctx.quadraticCurveTo(radius*0.5, -radius*0.15, radius, 0);
+                ctx.quadraticCurveTo(radius*0.5, radius*0.1, 0, radius*0.05);
+            } else {
+                ctx.moveTo(0, -radius*0.1);
+                ctx.lineTo(radius, 0);
+                ctx.lineTo(0, radius*0.1);
+            }
+            ctx.fill();
+        }
+        // Center cap
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius*0.08, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Helper: Draw Transmission Tower
+    function drawTower(ctx, x, y, scale) {
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 2 * scale;
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x + 10*scale, y - 50*scale);
+        ctx.lineTo(x - 10*scale, y - 50*scale); ctx.lineTo(x, y);
+        ctx.moveTo(x - 20*scale, y - 40*scale); ctx.lineTo(x + 20*scale, y - 40*scale);
+        ctx.stroke();
+    }
+
+    // Helper: Draw Text Label with Background
+    function drawLabel(ctx, text, x, y, align='center') {
+        ctx.save();
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = align;
+        ctx.textBaseline = "middle";
+        let metrics = ctx.measureText(text);
+        let pad = 6;
+        let bgX = x - (align === 'center' ? metrics.width/2 : (align === 'right' ? metrics.width : 0)) - pad;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(bgX, y - 10, metrics.width + pad*2, 20);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(text, x, y);
+        ctx.restore();
+    }
+
+    function renderTermal(ctx, w, h) {
+        ctx.clearRect(0, 0, w, h);
+        let fireIntensity = State.anim.fuelRate / 150;
+        
+        // 1. Chimney & Smoke
+        let chimneyGrad = ctx.createLinearGradient(w*0.15, 0, w*0.15 + 40, 0);
+        chimneyGrad.addColorStop(0, '#555'); chimneyGrad.addColorStop(1, '#222');
+        ctx.fillStyle = chimneyGrad;
+        ctx.beginPath();
+        ctx.moveTo(w*0.13, h*0.6); ctx.lineTo(w*0.16, h*0.1);
+        ctx.lineTo(w*0.21, h*0.1); ctx.lineTo(w*0.24, h*0.6); ctx.fill();
+
+        // Realistic Smoke
+        if(fireIntensity > 0) {
+            ctx.fillStyle = `rgba(80, 80, 80, ${fireIntensity*0.6})`;
+            for(let i=0; i<25; i++) {
+                let p = (time*1.5 + i) % 25; 
+                ctx.beginPath();
+                ctx.arc(w*0.18 + Math.sin(time*2+i)*20, h*0.1 - p*12, 10 + p*3, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
+        // 1b. Coal Conveyor Belt & Hopper
+        ctx.fillStyle = '#3a3a3a';
+        ctx.fillRect(0, h*0.7, w*0.08, 12);
+        ctx.fillStyle = '#111'; // Coal chunks
+        if(fireIntensity > 0) {
+            for(let i=0; i<w*0.08; i+=15) ctx.fillRect(i + (time*25 % 15), h*0.7 - 6, 10, 6);
+        }
+        // Hopper
+        ctx.fillStyle = '#555';
+        ctx.beginPath(); ctx.moveTo(w*0.07, h*0.7); ctx.lineTo(w*0.12, h*0.7); 
+        ctx.lineTo(w*0.1, h*0.8); ctx.lineTo(w*0.09, h*0.8); ctx.fill();
+        
+        // 2. Boiler Furnace (Realistic interior)
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(w*0.08, h*0.5, w*0.34, h*0.4);
+        // Water wall tubes inside boiler
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 4;
+        for(let i=w*0.09; i<w*0.4; i+=15) {
+            ctx.beginPath(); ctx.moveTo(i, h*0.52); ctx.lineTo(i, h*0.88); ctx.stroke();
+        }
+        
+        // Boiling water pool
+        let waterGrad = ctx.createLinearGradient(0, h*0.75, 0, h*0.9);
+        waterGrad.addColorStop(0, '#29b6f6'); waterGrad.addColorStop(1, '#0277bd');
+        ctx.fillStyle = waterGrad;
+        ctx.fillRect(w*0.09, h*0.75, w*0.32, h*0.15);
+        
+        // Fire Combustion (Realistic glow)
+        if(fireIntensity > 0) {
+            ctx.globalCompositeOperation = 'lighter';
+            for(let i=0; i<50 * fireIntensity; i++) {
+                let fx = w*0.12 + Math.random()*w*0.26;
+                let fy = h*0.88 - Math.random()*h*0.15;
+                let r = Math.random()*15 + 5;
+                let fGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+                fGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                fGrad.addColorStop(0.2, 'rgba(255, 150, 0, 0.8)');
+                fGrad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = fGrad;
+                ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // 3. Steam Pipes (High Pressure to Turbine)
+        ctx.strokeStyle = '#9e9e9e'; ctx.lineWidth = 14; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(w*0.25, h*0.5); ctx.lineTo(w*0.25, h*0.35); 
+        ctx.lineTo(w*0.55, h*0.35); ctx.lineTo(w*0.55, h*0.45); 
+        ctx.stroke();
+        // Pipe details (joints)
+        ctx.fillStyle = '#777';
+        ctx.fillRect(w*0.25-10, h*0.4, 20, 8); ctx.fillRect(w*0.4, h*0.35-10, 8, 20);
+
+        // Condensed water returning
+        ctx.strokeStyle = '#424242'; ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(w*0.55, h*0.65); ctx.lineTo(w*0.55, h*0.85); ctx.lineTo(w*0.4, h*0.85); ctx.stroke();
+        
+        // Condenser unit
+        ctx.fillStyle = '#333'; ctx.fillRect(w*0.48, h*0.8, 80, 40);
+        ctx.fillStyle = '#1976d2'; ctx.fillRect(w*0.48, h*0.86, 80, 20); // cooling water loop
+
+        // 4. Multi-stage Steam Turbine (Realistic Conical Shape)
+        termalAngle += fireIntensity * 0.5;
+        let tGrad = ctx.createLinearGradient(w*0.5, h*0.45, w*0.6, h*0.65);
+        tGrad.addColorStop(0, '#999'); tGrad.addColorStop(1, '#444');
+        ctx.fillStyle = tGrad; 
+        ctx.beginPath(); // Conical housing (expanding steam)
+        ctx.moveTo(w*0.48, h*0.5); ctx.lineTo(w*0.62, h*0.42);
+        ctx.lineTo(w*0.62, h*0.68); ctx.lineTo(w*0.48, h*0.6); ctx.fill();
+        
+        drawTurbine(ctx, w*0.55, h*0.55, 45, termalAngle, 16, '#ddd');
+        
+        // 5. Generator & Transformer
+        // Generator
+        ctx.fillStyle = '#e64a19'; ctx.fillRect(w*0.63, h*0.45, 60, 60);
+        ctx.fillStyle = '#333'; for(let i=h*0.47; i<h*0.63; i+=6) ctx.fillRect(w*0.63, i, 60, 2); // cooling fins
+        ctx.fillStyle = '#fff'; ctx.font = "bold 14px sans-serif"; ctx.fillText("GEN", w*0.63 + 15, h*0.45 + 35);
+        
+        // Shaft
+        ctx.lineWidth = 8; ctx.strokeStyle = '#aaa';
+        ctx.beginPath(); ctx.moveTo(w*0.55, h*0.55); ctx.lineTo(w*0.63, h*0.55); ctx.stroke();
+
+        // Transformer
+        ctx.fillStyle = '#455a64'; ctx.fillRect(w*0.72, h*0.5, 30, 40);
+        ctx.fillStyle = '#90a4ae'; ctx.fillRect(w*0.73, h*0.45, 8, 10); ctx.fillRect(w*0.79, h*0.45, 8, 10); // Bushings
+
+        // Power Lines
+        if(fireIntensity > 0) {
+            ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 2;
+            ctx.setLineDash([10, 5]); ctx.lineDashOffset = -time*20;
+            ctx.beginPath(); ctx.moveTo(w*0.75, h*0.45); ctx.lineTo(w*0.82, h*0.3); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        drawTower(ctx, w*0.82, h*0.85, 1); // Grounded tower
+
+        // 6. Cooling Tower (Hyperboloid shape)
+        let ctGrad = ctx.createLinearGradient(w*0.85, 0, w*0.98, 0);
+        ctGrad.addColorStop(0, '#666'); ctGrad.addColorStop(1, '#333');
+        ctx.fillStyle = ctGrad;
+        ctx.beginPath();
+        ctx.moveTo(w*0.85, h*0.9);
+        ctx.quadraticCurveTo(w*0.89, h*0.5, w*0.85, h*0.2);
+        ctx.lineTo(w*0.98, h*0.2);
+        ctx.quadraticCurveTo(w*0.94, h*0.5, w*0.98, h*0.9);
+        ctx.fill();
+        
+        // Cooling steam
+        if(fireIntensity > 0) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${fireIntensity*0.3})`;
+            for(let i=0; i<12; i++) {
+                let p = (time*1 + i) % 15; 
+                ctx.beginPath();
+                ctx.arc(w*0.91 + Math.sin(time+i)*15, h*0.2 - p*15, 20 + p*3, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // --- LABELS ---
+        drawLabel(ctx, "Cerobong Asap", w*0.18, h*0.3);
+        drawLabel(ctx, "Boiler (Tungku)", w*0.25, h*0.65);
+        drawLabel(ctx, "Pipa Uap", w*0.4, h*0.32);
+        drawLabel(ctx, "Turbin Uap", w*0.55, h*0.42);
+        drawLabel(ctx, "Kondensor", w*0.52, h*0.82);
+        drawLabel(ctx, "Trafo Step-Up", w*0.75, h*0.48);
+        drawLabel(ctx, "Menara Pendingin", w*0.91, h*0.7);
+    }
+
+    function renderMekanik(ctx, w, h) {
+        ctx.clearRect(0, 0, w, h);
+        
+        if(currentSubTab === 'air') {
+            let flow = State.anim.waterQ / 500;
+            hydroAngle += flow * 0.4;
+            let hRatio = State.anim.hydroH / 200; 
+            let waterLevelY = h*0.8 - (h*0.65 * hRatio); 
+            
+            // 1. Reservoir (Deep water gradient & Terrain)
+            // Mountain terrain background
+            ctx.fillStyle = '#1b3a1b'; 
+            ctx.beginPath(); ctx.moveTo(0, waterLevelY-20); ctx.lineTo(w*0.2, waterLevelY); ctx.lineTo(0, h); ctx.fill();
+
+            let resGrad = ctx.createLinearGradient(0, waterLevelY, 0, h*0.9);
+            resGrad.addColorStop(0, '#29b6f6'); resGrad.addColorStop(1, '#01579b');
+            ctx.fillStyle = resGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, waterLevelY); ctx.lineTo(w*0.3, waterLevelY);
+            ctx.lineTo(w*0.3, h*0.9); ctx.lineTo(0, h*0.9); ctx.fill();
+            
+            // Water surface details
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            for(let i=0; i<5; i++) {
+                ctx.beginPath(); ctx.moveTo(10, waterLevelY + i*15); ctx.lineTo(w*0.25, waterLevelY + i*15); ctx.stroke();
+            }
+
+            // 2. Concrete Gravity Dam
+            let damGrad = ctx.createLinearGradient(w*0.3, 0, w*0.4, 0);
+            damGrad.addColorStop(0, '#777'); damGrad.addColorStop(1, '#444');
+            ctx.fillStyle = damGrad;
+            ctx.beginPath(); // Sloped face dam
+            ctx.moveTo(w*0.3, h*0.1); ctx.lineTo(w*0.35, h*0.1); 
+            ctx.lineTo(w*0.45, h*0.9); ctx.lineTo(w*0.3, h*0.9); ctx.fill();
+            
+            // Intake structure
+            ctx.fillStyle = '#222'; ctx.fillRect(w*0.3, h*0.72, 8, 30);
+            ctx.strokeStyle = '#999'; ctx.lineWidth = 2; // Trash rack
+            for(let i=0; i<30; i+=6) { ctx.beginPath(); ctx.moveTo(w*0.3, h*0.72+i); ctx.lineTo(w*0.3+8, h*0.72+i); ctx.stroke(); }
+
+            // 3. Penstock (Pipe angled down)
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 24; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(w*0.34, h*0.78); ctx.lineTo(w*0.55, h*0.78); ctx.stroke();
+
+            if(flow > 0) {
+                // Flowing water
+                ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 16;
+                ctx.setLineDash([25, 15]); ctx.lineDashOffset = -time * 80 * flow;
+                ctx.beginPath(); ctx.moveTo(w*0.34, h*0.78); ctx.lineTo(w*0.55, h*0.78); ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Tailrace river
+                let tailGrad = ctx.createLinearGradient(w*0.55, h*0.85, w, h*0.85);
+                tailGrad.addColorStop(0, '#81d4fa'); tailGrad.addColorStop(1, '#0288d1');
+                ctx.fillStyle = tailGrad;
+                ctx.beginPath(); ctx.moveTo(w*0.55, h*0.85);
+                for(let x=w*0.55; x<=w; x+=10) ctx.lineTo(x, h*0.82 + Math.sin(x*0.1 - time*15)*8*flow);
+                ctx.lineTo(w, h); ctx.lineTo(w*0.55, h); ctx.fill();
+                
+                // Rapids splash
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                for(let i=0; i<30*flow; i++) {
+                    ctx.beginPath(); ctx.arc(w*0.55 + Math.random()*50, h*0.82 + Math.random()*25, 2+Math.random()*4, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            // 4. Francis Turbine & Spiral Casing
+            ctx.fillStyle = '#424242';
+            ctx.beginPath(); ctx.ellipse(w*0.55, h*0.78, 55, 35, 0, 0, Math.PI*2); ctx.fill(); // Spiral casing outer
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.arc(w*0.55, h*0.78, 40, 0, Math.PI*2); ctx.fill(); // Inner hollow
+            drawTurbine(ctx, w*0.55, h*0.78, 38, hydroAngle, 14, '#b0bec5'); // Runner
+            
+            // Vertical Shaft
+            ctx.strokeStyle = '#bdbdbd'; ctx.lineWidth = 12;
+            ctx.beginPath(); ctx.moveTo(w*0.55, h*0.78); ctx.lineTo(w*0.55, h*0.35+35); ctx.stroke();
+
+            // 5. Generator Room (Cutaway)
+            ctx.fillStyle = '#263238'; ctx.fillRect(w*0.48, h*0.3, 84, 80); // Housing
+            ctx.fillStyle = '#1565c0'; ctx.fillRect(w*0.5, h*0.35, 80, 75); // Stator casing
+            ctx.fillStyle = '#0d47a1'; ctx.fillRect(w*0.5+15, h*0.35+10, 50, 65); // Inside stator
+            
+            // Spinning Rotor Coils
+            ctx.save();
+            ctx.translate(w*0.55, h*0.35+45);
+            ctx.rotate(hydroAngle);
+            ctx.fillStyle = '#ffb300'; // Copper
+            for(let i=0; i<6; i++) {
+                ctx.rotate(Math.PI/3);
+                ctx.fillRect(-15, -25, 30, 15);
+                ctx.fillStyle = '#ef6c00'; ctx.fillRect(-15, -25, 30, 5); // Coil detail
+            }
+            ctx.restore();
+
+            ctx.fillStyle = '#fff'; ctx.font = "bold 14px sans-serif";
+            ctx.fillText("GEN", w*0.5 + 25, h*0.35 - 10);
+            
+            // Transformer & Transmission
+            ctx.fillStyle = '#546e7a'; ctx.fillRect(w*0.65, h*0.45, 35, 45);
+            if(flow > 0) {
+                ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 2;
+                ctx.setLineDash([10, 5]); ctx.lineDashOffset = -time*20;
+                ctx.beginPath(); ctx.moveTo(w*0.68, h*0.45); ctx.lineTo(w*0.8, h*0.25); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            drawTower(ctx, w*0.8, h*0.75, 1.2);
+
+            // --- LABELS ---
+            drawLabel(ctx, "Waduk (Energi Potensial)", w*0.15, waterLevelY + 30);
+            drawLabel(ctx, "Bendungan", w*0.32, h*0.4);
+            drawLabel(ctx, "Katup (Intake)", w*0.25, h*0.72);
+            drawLabel(ctx, "Pipa Pesat (Penstock)", w*0.45, h*0.74);
+            drawLabel(ctx, "Turbin Air (Francis)", w*0.55, h*0.86);
+            drawLabel(ctx, "Generator", w*0.45, h*0.35);
+            drawLabel(ctx, "Trafo", w*0.66, h*0.42);
+
+        } else if (currentSubTab === 'angin') {
+            let windSpd = State.anim.windV / 25;
+            windAngle += windSpd * 0.4;
+            let R = Math.sqrt(State.anim.windA / Math.PI);
+            let visualR = 50 + (R / 180) * 110; 
+
+            // Environment: Sky & Parallax Hills
+            let skyGrad = ctx.createLinearGradient(0,0, 0, h*0.8);
+            skyGrad.addColorStop(0, '#1a237e'); skyGrad.addColorStop(1, '#4db6ac');
+            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, h*0.8);
+            
+            // Distant mountains
+            ctx.fillStyle = '#2e7d32';
+            ctx.beginPath(); ctx.arc(w*0.1, h, h*0.4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(w*0.6, h*1.1, h*0.5, 0, Math.PI*2); ctx.fill();
+            // Foreground hills
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath(); ctx.arc(w*0.8, h, h*0.3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(w*0.3, h*1.05, h*0.35, 0, Math.PI*2); ctx.fill();
+            // Ground
+            ctx.fillStyle = '#142b14'; ctx.fillRect(0, h*0.85, w, h*0.15); 
+            // Tiny Pine Trees for scale
+            ctx.fillStyle = '#0a1f0a';
+            for(let i=0; i<w; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, h*0.85); ctx.lineTo(i+5, h*0.85-20); ctx.lineTo(i+10, h*0.85); ctx.fill();
+            }
+
+            // Clouds moving
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            for(let i=0; i<4; i++) {
+                let cx = (time * 30 * (windSpd+0.2) + i*250) % (w+200) - 100;
+                let cy = h*0.1 + i*30;
+                ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2);
+                ctx.arc(cx+35, cy-15, 40, 0, Math.PI*2);
+                ctx.arc(cx+70, cy, 30, 0, Math.PI*2); ctx.fill();
+            }
+
+            // Visible Wind Flow (Streamlines)
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+            for(let i=0; i<12; i++) {
+                let wx = (time * 200 * (windSpd+0.1) + i*100) % w;
+                let wy = h*0.05 + (i*45) % (h*0.7);
+                ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx+60+(windSpd*120), wy); ctx.stroke();
+            }
+
+            // Tapered Tower
+            let tGrad = ctx.createLinearGradient(w*0.5 - 15, 0, w*0.5 + 15, 0);
+            tGrad.addColorStop(0, '#e0e0e0'); tGrad.addColorStop(1, '#9e9e9e');
+            ctx.fillStyle = tGrad;
+            ctx.beginPath();
+            ctx.moveTo(w*0.5 - 18, h*0.85); ctx.lineTo(w*0.5 + 18, h*0.85);
+            ctx.lineTo(w*0.5 + 6, h*0.35); ctx.lineTo(w*0.5 - 6, h*0.35); ctx.fill();
+
+            // Aerodynamic Nacelle & Anemometer
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.roundRect(w*0.5 - 35, h*0.35 - 20, 80, 35, 15); ctx.fill();
+            ctx.fillStyle = '#333'; ctx.fillText("GEN", w*0.5, h*0.35 + 5);
+            // Anemometer
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(w*0.5+30, h*0.35-20); ctx.lineTo(w*0.5+30, h*0.35-30); ctx.stroke();
+
+            // Blades (Sleek aerodynamic profile)
+            drawTurbine(ctx, w*0.5 - 20, h*0.35 - 2, visualR, windAngle, 3, '#fafafa', true);
+
+            // --- LABELS ---
+            drawLabel(ctx, "Bilah Turbin (Rotor)", w*0.35, h*0.35);
+            drawLabel(ctx, "Nacelle (Generator & Gearbox)", w*0.5, h*0.3);
+            drawLabel(ctx, "Menara Penyangga", w*0.5, h*0.65);
+            drawLabel(ctx, "Anemometer", w*0.58, h*0.3);
+
+        } else if (currentSubTab === 'ombak') {
+            let H = State.anim.waveH * 15; 
+            let T = Math.max(State.anim.waveT, 1);
+            let omega = (2 * Math.PI) / T;
+            let k = 0.04; // Wavenumber
+            let speed = omega * 5; 
+            
+            // Sky & Seabed
+            let skyGrad = ctx.createLinearGradient(0,0, 0,h*0.5);
+            skyGrad.addColorStop(0, '#000000'); skyGrad.addColorStop(1, '#1a237e');
+            ctx.fillStyle = skyGrad; ctx.fillRect(0,0,w,h);
+            ctx.fillStyle = '#1e1a13'; ctx.fillRect(0, h*0.9, w, h*0.1);
+
+            // Superposition of waves for realism
+            function getWaveY(x, t) {
+                // Primary wave + secondary smaller wave for chop
+                return h*0.6 + H * Math.sin(x*k - t) + (H*0.2) * Math.sin(x*k*2.5 - t*1.5);
+            }
+
+            // 1. Back Wave (Parallax)
+            ctx.fillStyle = 'rgba(40, 53, 147, 0.6)';
+            ctx.beginPath(); ctx.moveTo(0, h);
+            for(let x=0; x<=w; x+=10) ctx.lineTo(x, getWaveY(x, time*speed*0.7) - 20);
+            ctx.lineTo(w, h); ctx.fill();
+
+            // 2. Front Wave
+            let frontWaveGrad = ctx.createLinearGradient(0, h*0.4, 0, h);
+            frontWaveGrad.addColorStop(0, 'rgba(63, 81, 181, 0.95)');
+            frontWaveGrad.addColorStop(1, 'rgba(26, 35, 126, 0.95)');
+            ctx.fillStyle = frontWaveGrad;
+            ctx.beginPath(); ctx.moveTo(0, h);
+            for(let x=0; x<=w; x+=5) ctx.lineTo(x, getWaveY(x, time*speed));
+            ctx.lineTo(w, h); ctx.fill();
+
+            // 3. Point Absorber Buoy
+            let bx = w*0.4;
+            let by = getWaveY(bx, time*speed);
+            
+            // Central guiding shaft (anchored to seabed)
+            ctx.strokeStyle = '#555'; ctx.lineWidth = 12;
+            ctx.beginPath(); ctx.moveTo(bx, h*0.2); ctx.lineTo(bx, h*0.9); ctx.stroke();
+
+            // Buoy body (Industrial metallic look)
+            let buoyGrad = ctx.createLinearGradient(bx-30, 0, bx+30, 0);
+            buoyGrad.addColorStop(0, '#ff9800'); buoyGrad.addColorStop(0.5, '#ffe082'); buoyGrad.addColorStop(1, '#ef6c00');
+            ctx.fillStyle = buoyGrad;
+            ctx.beginPath(); ctx.ellipse(bx, by, 30, 20, 0, 0, Math.PI*2); ctx.fill();
+            // Buoy top structural ribs
+            ctx.fillStyle = '#444';
+            ctx.fillRect(bx-15, by-25, 30, 15); ctx.fillRect(bx-5, by-35, 10, 10);
+
+            // 4. Platform & Linear Generator
+            ctx.fillStyle = '#333'; ctx.fillRect(w*0.15, h*0.15, w*0.6, 25); // Deck
+            // Support pillars
+            ctx.fillStyle = '#222'; 
+            ctx.fillRect(w*0.2, h*0.15, 12, h*0.75); ctx.fillRect(w*0.7, h*0.15, 12, h*0.75);
+            
+            // Linear Generator Stator (Cutaway)
+            ctx.fillStyle = '#1a237e'; ctx.fillRect(bx - 40, h*0.02, 80, 80);
+            // Heavy Copper Coils
+            ctx.strokeStyle = '#ffb300'; ctx.lineWidth = 4;
+            for(let i=h*0.05; i<h*0.02+70; i+=8) {
+                ctx.beginPath(); ctx.moveTo(bx-35, i); ctx.lineTo(bx-18, i); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(bx+18, i); ctx.lineTo(bx+35, i); ctx.stroke();
+            }
+
+            // Magnetic Translator (Moving up and down with buoy)
+            // Synchronize internal magnet with buoy position exactly
+            let offsetY = (by - h*0.6); // Raw pixel offset from neutral
+            // Clamp it visually so it doesn't leave generator housing
+            offsetY = Math.max(-30, Math.min(30, offsetY * 0.5)); 
+            
+            let magY = h*0.15 + offsetY - 10;
+            ctx.fillStyle = '#f44336'; // Magnet North
+            ctx.fillRect(bx - 15, magY - 20, 30, 20);
+            ctx.fillStyle = '#2196f3'; // Magnet South
+            ctx.fillRect(bx - 15, magY, 30, 20);
+            // Polarity labels
+            ctx.fillStyle = '#fff'; ctx.font = "bold 12px sans-serif";
+            ctx.fillText("N", bx - 4, magY - 5); ctx.fillText("S", bx - 4, magY + 15);
+
+            ctx.fillStyle = '#fff'; ctx.font = "bold 14px sans-serif";
+            ctx.fillText("GEN", bx - 14, h*0.02 - 5);
+
+            // --- LABELS ---
+            drawLabel(ctx, "Pelampung (Buoy)", bx, by - 35);
+            drawLabel(ctx, "Tiang Pemandu", bx + 35, h*0.4);
+            drawLabel(ctx, "Stator (Kumparan Tembaga)", bx - 50, h*0.1);
+            drawLabel(ctx, "Mover (Magnet Permanen)", bx + 45, magY + 5);
+        }
+    }
+
+    function renderSurya(ctx, w, h) {
+        ctx.clearRect(0, 0, w, h);
+        let irr = State.anim.solarG / 1000;
+        let areaScale = Math.sqrt(State.anim.solarA / 5000000); 
+
+        // 1. Atmosphere Gradient
+        let skyGrad = ctx.createLinearGradient(0,0, 0,h);
+        skyGrad.addColorStop(0, '#000000');
+        skyGrad.addColorStop(1, '#0d47a1');
+        ctx.fillStyle = skyGrad; ctx.fillRect(0,0,w,h);
+
+        // 2. Realistic Sun with Corona
+        let sunX = w*0.15; let sunY = h*0.2;
+        let sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 80 + (irr*40));
+        sunGrad.addColorStop(0, '#ffffff');
+        sunGrad.addColorStop(0.1, '#fff59d');
+        sunGrad.addColorStop(0.3, 'rgba(255, 235, 59, 0.5)');
+        sunGrad.addColorStop(1, 'rgba(255, 235, 59, 0)');
+        ctx.fillStyle = sunGrad;
+        ctx.globalAlpha = 0.2 + (irr * 0.8); 
+        ctx.beginPath(); ctx.arc(sunX, sunY, 120, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // 3. Photons hitting the panel
+        if(irr > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            for(let i=0; i<50 * irr; i++) {
+                let p = (time*2.5 + i*0.03) % 1;
+                let px = sunX + p * (w*0.35);
+                let py = sunY + p * (h*0.45);
+                // Photon tail
+                ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px - 10, py - 12); ctx.stroke();
+            }
+        }
+
+        // 4. High-Fidelity Solar Panel
+        ctx.save();
+        ctx.translate(w*0.4, h*0.5);
+        ctx.transform(1, 0.4, -0.6, 1, 0, 0); 
+        
+        let pW = 150 + (areaScale * 140); 
+        let pH = 100 + (areaScale * 100);
+        
+        // Aluminum Frame
+        ctx.fillStyle = '#b0bec5'; ctx.fillRect(-5, -5, pW+10, pH+10);
+        
+        // Base Silicon Wafer
+        ctx.fillStyle = '#0a2458'; ctx.fillRect(0, 0, pW, pH);
+        
+        // Photovoltaic Cells (Grid) and Busbars
+        ctx.strokeStyle = '#42a5f5'; ctx.lineWidth = 1.5;
+        for(let i=0; i<=pW; i+=30) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, pH); ctx.stroke(); }
+        for(let j=0; j<=pH; j+=30) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(pW, j); ctx.stroke(); }
+        
+        // Silver Busbars (thin conductors)
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 0.5;
+        for(let i=10; i<pW; i+=30) {
+            for(let b=0; b<3; b++) { ctx.beginPath(); ctx.moveTo(i+b*5, 0); ctx.lineTo(i+b*5, pH); ctx.stroke(); }
+        }
+
+        // Glass Reflection
+        let gloss = ctx.createLinearGradient(0,0, pW, pH);
+        gloss.addColorStop(0, 'rgba(255,255,255,0.3)');
+        gloss.addColorStop(0.4, 'rgba(255,255,255,0.0)');
+        ctx.fillStyle = gloss; ctx.fillRect(0,0, pW, pH);
+
+        // Highlight active absorption
+        if(irr > 0) {
+            ctx.fillStyle = `rgba(255, 235, 59, ${irr*0.2})`;
+            ctx.fillRect(0,0, pW, pH);
+        }
+        ctx.restore();
+
+        // Stanchion (Pole)
+        ctx.fillStyle = '#546e7a';
+        ctx.beginPath(); ctx.moveTo(w*0.5, h*0.7); ctx.lineTo(w*0.53, h*0.7); 
+        ctx.lineTo(w*0.53, h); ctx.lineTo(w*0.5, h); ctx.fill();
+
+        // 5. Electrons flow (DC current cable)
+        let currentFlow = irr * areaScale;
+        if(currentFlow > 0) {
+            ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 5;
+            ctx.setLineDash([12, 12]); ctx.lineDashOffset = -time * 50 * (currentFlow+0.2);
+            ctx.beginPath();
+            ctx.moveTo(w*0.45, h*0.8); ctx.lineTo(w*0.75, h*0.8); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 6. Realistic Inverter & Battery Bank
+        ctx.fillStyle = '#eceff1'; ctx.fillRect(w*0.75, h*0.55, 80, 110);
+        ctx.fillStyle = '#b0bec5'; ctx.fillRect(w*0.75, h*0.55, 80, 20); // heat sink cap
+        ctx.fillStyle = '#333'; for(let i=0; i<80; i+=6) ctx.fillRect(w*0.75+i, h*0.55, 2, 20); // fins
+        
+        // Digital Screen
+        ctx.fillStyle = '#000'; ctx.fillRect(w*0.75 + 15, h*0.55 + 30, 50, 30);
+        ctx.fillStyle = '#00ffcc'; ctx.font = "bold 12px monospace";
+        ctx.fillText((irr*areaScale*100).toFixed(1)+"%", w*0.75+20, h*0.55+48);
+        
+        // Battery status LED
+        let batLevel = currentFlow; 
+        ctx.fillStyle = '#333'; ctx.fillRect(w*0.75 + 15, h*0.55 + 75, 50, 15);
+        ctx.fillStyle = (batLevel > 0.5) ? '#4caf50' : (batLevel > 0.2 ? '#ffeb3b' : '#f44336');
+        ctx.fillRect(w*0.75 + 17, h*0.55 + 77, 46 * batLevel, 11);
+        
+        ctx.fillStyle = '#000'; ctx.font = "bold 14px sans-serif";
+        ctx.fillText("INV", w*0.75 + 28, h*0.55 + 105);
+        
+        // AC Power Lines to Grid
+        if(currentFlow > 0) {
+            ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]); ctx.lineDashOffset = -time * 25;
+            ctx.beginPath(); ctx.moveTo(w*0.75 + 80, h*0.8); ctx.lineTo(w*0.75 + 130, h*0.8); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#fff'; ctx.font = "12px sans-serif";
+            ctx.fillText("AC to Grid", w*0.75 + 90, h*0.8 - 10);
+        }
+
+        // --- LABELS ---
+        drawLabel(ctx, "Radiasi Foton (Surya)", w*0.25, h*0.35);
+        drawLabel(ctx, "Modul Fotovoltaik", w*0.4, h*0.65);
+        drawLabel(ctx, "Arus Searah (DC)", w*0.6, h*0.72);
+        drawLabel(ctx, "Inverter & Baterai", w*0.8, h*0.52);
+    }
+
+    function animate() {
+        time += 0.05;
+        
+        if (currentMainTab === 'mod-termal') {
+            let cvs = document.getElementById('cvs-termal');
+            renderTermal(ctxTermal, cvs.width, cvs.height);
+        } else if (currentMainTab === 'mod-mekanik') {
+            let cvs = document.getElementById('cvs-mekanik');
+            renderMekanik(ctxMekanik, cvs.width, cvs.height);
+        } else if (currentMainTab === 'mod-surya') {
+            let cvs = document.getElementById('cvs-surya');
+            renderSurya(ctxSurya, cvs.width, cvs.height);
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resizeCanvases();
+    setTimeout(() => {
+        calcTermal(); calcHydro(); calcWind(); calcWave(); calcSolar();
+        animate();
+    }, 100);
+
+</script>
+</body>
+</html>
