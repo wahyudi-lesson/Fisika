@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Unit Lab: Eksplorasi Besaran & Dimensi</title>
+    <style>
+        /* ========================================================
+           TEMA DESAIN: SCIENTIFIC PRECISION / DARK LAB SYSTEM
+           ======================================================== */
+        :root {
+            --bg-main: #0f172a;       /* Slate 900 */
+            --bg-panel: #1e293b;      /* Slate 800 */
+            --bg-card: #0b1120;       /* Darker background for cards */
+            --accent-green: #39ff14;  /* Neon Green (Besaran Pokok) */
+            --accent-blue: #00e5ff;   /* Electric Blue (Besaran Turunan) */
+            --accent-gold: #ffd700;   /* Gold (Analisis Dimensi) */
+            --accent-red: #ff3366;    /* Red for errors/alerts */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --grid-line: rgba(57, 255, 20, 0.05);
+            --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* HEADER & SYSTEM TOGGLE */
+        header {
+            background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-main) 100%);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-top: 4px solid var(--accent-blue);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header h1 {
+            color: var(--accent-blue);
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+            margin-bottom: 8px;
+        }
+
+        header p { color: var(--text-muted); font-size: 1rem; }
+
+        .system-toggle-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: inline-flex;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--text-muted);
+            padding: 8px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-blue);
+            color: #000;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+        }
+
+        /* PANELS */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            border-radius: 12px 12px 0 0;
+        }
+        .panel.green::before { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
+        .panel.blue::before { background: var(--accent-blue); box-shadow: 0 0 10px var(--accent-blue); }
+        .panel.gold::before { background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold); }
+
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .green .panel-title { color: var(--accent-green); }
+        .blue .panel-title { color: var(--accent-blue); }
+        .gold .panel-title { color: var(--accent-gold); }
+
+        .info-text {
+            background: rgba(0,0,0,0.2);
+            padding: 12px 16px;
+            border-left: 3px solid var(--text-muted);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        .info-text strong { color: var(--text-main); }
+
+        /* MODUL 1: 7 PILLARS */
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .pillar-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pillar-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-green);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.2);
+        }
+
+        .pillar-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.8; }
+        .pillar-name { font-weight: bold; font-size: 1rem; color: var(--text-main); margin-bottom: 5px; }
+        .pillar-symbol { font-family: var(--font-mono); color: var(--accent-green); font-size: 1.2rem; }
+        
+        .pillar-details {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(255,255,255,0.1);
+            font-size: 0.85rem;
+            display: none;
+            color: var(--text-muted);
+        }
+        .pillar-card.active .pillar-details { display: block; animation: fadeIn 0.3s ease; }
+        .pillar-card.active { border-color: var(--accent-green); background: rgba(57, 255, 20, 0.05); }
+
+        /* MODUL 2: GENERATOR BESARAN TURUNAN */
+        .generator-container {
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .gen-controls {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+        }
+
+        .gen-result {
+            flex: 1.5;
+            min-width: 300px;
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px dashed var(--accent-blue);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--accent-blue); }
+        
+        select, input[type="number"] {
+            width: 100%; padding: 10px; background: var(--bg-panel); color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; font-family: var(--font-sans);
+            outline: none; transition: 0.3s;
+        }
+        select:focus, input[type="number"]:focus { border-color: var(--accent-blue); box-shadow: 0 0 8px rgba(0, 229, 255, 0.4); }
+
+        .result-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: var(--text-muted); font-size: 0.9rem; }
+        .result-value { font-family: var(--font-mono); font-size: 1.1rem; color: var(--accent-blue); text-shadow: 0 0 5px rgba(0,229,255,0.3); }
+        .result-formula { font-size: 1.2rem; color: var(--accent-green); text-align: center; margin-bottom: 15px; font-family: var(--font-mono); }
+
+        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
+        input[type="range"] { flex: 1; accent-color: var(--accent-blue); }
+
+        /* MODUL 3: CONVERTER METRIKS */
+        .converter-flex { display: flex; gap: 20px; flex-wrap: wrap; }
+        .converter-input { flex: 1; min-width: 250px; }
+        .converter-ladder { flex: 2; min-width: 300px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        
+        .ladder-step {
+            background: rgba(0,0,0,0.4); border: 1px solid #334; border-radius: 6px; padding: 10px;
+            text-align: center; display: flex; flex-direction: column; justify-content: center;
+        }
+        .ladder-step .prefix { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+        .ladder-step .val { font-family: var(--font-mono); font-size: 1rem; color: var(--accent-gold); margin-top: 5px; word-break: break-all; }
+        .ladder-step.active { border-color: var(--accent-gold); background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+
+        /* MODUL 4: DIMENSIONAL ANALYSIS & CHALLENGE */
+        .challenge-box {
+            background: linear-gradient(45deg, #000 0%, #1a1a00 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .dim-target { font-family: var(--font-mono); font-size: 2.5rem; color: var(--accent-gold); text-shadow: 0 0 15px rgba(255,215,0,0.5); letter-spacing: 3px; margin: 15px 0; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 500px; margin: 0 auto; }
+        .btn-option {
+            background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--text-muted);
+            padding: 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: 0.2s;
+        }
+        .btn-option:hover { background: rgba(255,215,0,0.1); border-color: var(--accent-gold); }
+        .btn-option.correct { background: var(--accent-green); color: #000; border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
+        .btn-option.wrong { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+
+        /* TABLE INFO */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; background: #000; }
+        th, td { border: 1px solid #334; padding: 10px; text-align: left; }
+        th { background: rgba(255,255,255,0.05); color: var(--accent-blue); }
+
+        sup { font-size: 0.7em; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HEADER -->
+        <header>
+            <h1>The Unit Lab</h1>
+            <p>Eksplorasi Interaktif: Besaran, Satuan, dan Analisis Dimensi Fisika</p>
+            <div class="system-toggle-container">
+                <span style="font-size: 0.9rem; color: var(--text-muted);">Sistem Satuan:</span>
+                <button class="toggle-btn active" id="btn-si" onclick="setSystem('SI')">MKS (SI)</button>
+                <button class="toggle-btn" id="btn-cgs" onclick="setSystem('CGS')">CGS</button>
+            </div>
+        </header>
+
+        <!-- MODUL 1: BESARAN POKOK -->
+        <div class="panel green">
+            <h2 class="panel-title">⬡ Modul 1: The 7 Pillars (Besaran Pokok)</h2>
+            <div class="info-text">
+                <strong>Fondasi Fisika:</strong> 7 Besaran Pokok adalah fondasi mutlak. Semua rumus fisika di alam semesta diturunkan dari ketujuh besaran ini. <i>Klik kartu untuk melihat Detail & Dimensinya!</i>
+            </div>
+            <div class="pillars-grid" id="pillars-container">
+                <!-- Cards generated by JS -->
+            </div>
+        </div>
+
+        <!-- MODUL 2: BESARAN TURUNAN -->
+        <div class="panel blue">
+            <h2 class="panel-title">🧬 Modul 2: Generator Besaran Turunan (DNA Fisika)</h2>
+            <div class="info-text">
+                <strong>Analogi DNA:</strong> Besaran turunan dibentuk dengan mengalikan atau membagi besaran pokok.
+                Perhatikan perubahan konversi ekstrem: <strong>1 Newton = 10<sup>5</sup> Dyne</strong> dan <strong>1 Joule = 10<sup>7</sup> Erg</strong>.
+            </div>
+            
+            <div class="generator-container">
+                <div class="gen-controls">
+                    <div class="form-group">
+                        <label>Pilih Besaran Turunan Target:</label>
+                        <select id="sel-derived" onchange="updateGenerator()">
+                            <option value="luas">Luas (Area)</option>
+                            <option value="volume">Volume</option>
+                            <option value="kecepatan">Kecepatan (Velocity)</option>
+                            <option value="percepatan">Percepatan (Acceleration)</option>
+                            <option value="gaya">Gaya (Force)</option>
+                            <option value="usaha">Usaha / Energi (Work/Energy)</option>
+                            <option value="tekanan">Tekanan (Pressure)</option>
+                            <option value="massajenis">Massa Jenis (Density)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Atur Nilai (Magnitude):</label>
+                        <div class="slider-container">
+                            <input type="range" id="slide-val" min="1" max="100" value="1" oninput="updateGenerator()">
+                            <span id="slide-display" style="font-family: monospace; font-size:1.1rem; color: var(--accent-blue); min-width: 40px; text-align:right;">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gen-result">
+                    <div class="result-formula" id="gen-formula">[M] × [L] / [T]²</div>
+                    <div class="result-row">
+                        <span class="result-label">Dimensi Pembentuk:</span>
+                        <span class="result-value" id="gen-dim">[M][L][T]<sup>-2</sup></span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Sistem SI (MKS):</span>
+                        <span class="result-value" id="gen-si" style="color: var(--accent-green);">1 kg·m/s² (Newton)</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Sistem CGS:</span>
+                        <span class="result-value" id="gen-cgs" style="color: var(--text-muted);">100000 g·cm/s² (Dyne)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 3: CONVERTER METRIKS -->
+        <div class="panel gold">
+            <h2 class="panel-title">📏 Modul 3: Prefix Explorer (Tangga Metriks)</h2>
+            <div class="info-text" style="border-color: var(--accent-gold);">
+                Fisika menggunakan <strong>Awalan (Prefix)</strong> berbasis 10<sup>n</sup> untuk menyingkat angka yang sangat besar atau sangat kecil.
+            </div>
+
+            <div class="converter-flex">
+                <div class="converter-input">
+                    <div class="form-group">
+                        <label style="color: var(--accent-gold);">Masukkan Nilai:</label>
+                        <input type="number" id="conv-val" value="1" step="any" oninput="updateConverter()">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: var(--accent-gold);">Pilih Satuan Dasar:</label>
+                        <select id="conv-unit" onchange="updateConverter()">
+                            <option value="m">Meter (Panjang)</option>
+                            <option value="g">Gram (Massa)</option>
+                            <option value="s">Sekon (Waktu)</option>
+                            <option value="A">Ampere (Arus)</option>
+                            <option value="J">Joule (Energi)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: var(--accent-gold);">Berada di Tingkat:</label>
+                        <select id="conv-base-prefix" onchange="updateConverter()">
+                            <option value="0">Satuan Dasar (Tanpa Awalan)</option>
+                            <option value="3">Kilo (k) [10³]</option>
+                            <option value="-2">Centi (c) [10⁻²]</option>
+                            <option value="-3">Mili (m) [10⁻³]</option>
+                            <option value="-6">Mikro (µ) [10⁻⁶]</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="converter-ladder" id="ladder-container">
+                    <!-- Steps generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- MODUL 4: DIMENSION CHALLENGE -->
+        <div class="panel gold">
+            <h2 class="panel-title">🧠 Modul 4: Analisis Dimensi & Challenge</h2>
+            <div class="info-text" style="border-color: var(--accent-gold);">
+                <strong>Mengapa Dimensi Penting?</strong> Jika Anda lupa rumus, analisis dimensi dapat membuktikan apakah sebuah persamaan fisika secara logika benar atau salah (ruas kiri = ruas kanan).
+            </div>
+            
+            <div class="challenge-box">
+                <h3 style="color: var(--text-main); font-weight:normal;">Dimension Challenge! Besaran apakah ini?</h3>
+                <div class="dim-target" id="chal-dim">[M][L]<sup>-1</sup>[T]<sup>-2</sup></div>
+                
+                <div class="options-grid" id="chal-options">
+                    <!-- Buttons generated by JS -->
+                </div>
+
+                <div id="chal-feedback" style="margin-top: 15px; font-weight: bold; min-height: 24px; color: var(--accent-green);"></div>
+                <button onclick="newChallenge()" style="margin-top: 15px; background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 8px 16px; border-radius: 4px; cursor: pointer;">Muat Soal Baru</button>
+            </div>
+            
+            <h3 style="color: var(--accent-gold); margin-top: 30px; margin-bottom:10px;">Contoh Kesetaraan Dimensi:</h3>
+            <table>
+                <tr>
+                    <th>Persamaan</th>
+                    <th>Ruas Kiri (Dimensi)</th>
+                    <th>Ruas Kanan (Bongkar Dimensi)</th>
+                    <th>Status</th>
+                </tr>
+                <tr>
+                    <td>Energi Kinetik = ½ m v²</td>
+                    <td>E<sub>k</sub> = [M][L]²[T]⁻²</td>
+                    <td>[M] × ([L][T]⁻¹)² = [M][L]²[T]⁻²</td>
+                    <td style="color: var(--accent-green);">✔ Setara</td>
+                </tr>
+                <tr>
+                    <td>Gaya = m × a</td>
+                    <td>F = [M][L][T]⁻²</td>
+                    <td>[M] × ([L][T]⁻²) = [M][L][T]⁻²</td>
+                    <td style="color: var(--accent-green);">✔ Setara</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 1. DATA STATE & REFERENSI
+        // ==========================================
+        let systemMode = 'SI'; // 'SI' or 'CGS'
+
+        // Data 7 Besaran Pokok
+        const baseQuantities = [
+            { id: 'l', name: 'Panjang', icon: '📏', dim: '[L]', unitSI: 'meter (m)', unitCGS: 'centimeter (cm)' },
+            { id: 'm', name: 'Massa', icon: '⚖️', dim: '[M]', unitSI: 'kilogram (kg)', unitCGS: 'gram (g)' },
+            { id: 't', name: 'Waktu', icon: '⏱️', dim: '[T]', unitSI: 'sekon (s)', unitCGS: 'sekon (s)' },
+            { id: 'T', name: 'Suhu', icon: '🌡️', dim: '[θ]', unitSI: 'Kelvin (K)', unitCGS: 'Kelvin (K)' },
+            { id: 'I', name: 'Kuat Arus', icon: '⚡', dim: '[I]', unitSI: 'Ampere (A)', unitCGS: 'Biot (Bi)' },
+            { id: 'Iv', name: 'Int. Cahaya', icon: '💡', dim: '[J]', unitSI: 'Kandela (cd)', unitCGS: 'Kandela (cd)' },
+            { id: 'n', name: 'Jumlah Zat', icon: '🧪', dim: '[N]', unitSI: 'Mol (mol)', unitCGS: 'Mol (mol)' }
+        ];
+
+        // Data Besaran Turunan (Generator)
+        const derivedQuantities = {
+            'luas': { 
+                name: 'Luas', formula: 'Panjang × Panjang', dim: '[L]<sup>2</sup>', 
+                si_name: 'm²', cgs_name: 'cm²', factor: 1e4 // 1 m2 = 10^4 cm2
+            },
+            'volume': { 
+                name: 'Volume', formula: 'Luas × Panjang', dim: '[L]<sup>3</sup>', 
+                si_name: 'm³', cgs_name: 'cm³', factor: 1e6 // 1 m3 = 10^6 cm3
+            },
+            'kecepatan': { 
+                name: 'Kecepatan', formula: 'Panjang / Waktu', dim: '[L][T]<sup>-1</sup>', 
+                si_name: 'm/s', cgs_name: 'cm/s', factor: 1e2 // 1 m/s = 100 cm/s
+            },
+            'percepatan': { 
+                name: 'Percepatan', formula: 'Kecepatan / Waktu', dim: '[L][T]<sup>-2</sup>', 
+                si_name: 'm/s²', cgs_name: 'cm/s²', factor: 1e2 
+            },
+            'gaya': { 
+                name: 'Gaya', formula: 'Massa × Percepatan', dim: '[M][L][T]<sup>-2</sup>', 
+                si_name: 'Newton (kg·m/s²)', cgs_name: 'Dyne (g·cm/s²)', factor: 1e5 // 1 N = 10^5 Dyne
+            },
+            'usaha': { 
+                name: 'Usaha / Energi', formula: 'Gaya × Perpindahan (P)', dim: '[M][L]<sup>2</sup>[T]<sup>-2</sup>', 
+                si_name: 'Joule (N·m)', cgs_name: 'Erg (dyne·cm)', factor: 1e7 // 1 J = 10^7 Erg
+            },
+            'tekanan': { 
+                name: 'Tekanan', formula: 'Gaya / Luas', dim: '[M][L]<sup>-1</sup>[T]<sup>-2</sup>', 
+                si_name: 'Pascal (N/m²)', cgs_name: 'Barye (dyne/cm²)', factor: 10 // 1 Pa = 10 Ba
+            },
+            'massajenis': { 
+                name: 'Massa Jenis', formula: 'Massa / Volume', dim: '[M][L]<sup>-3</sup>', 
+                si_name: 'kg/m³', cgs_name: 'g/cm³', factor: 1e-3 // 1 kg/m3 = 10^-3 g/cm3
+            }
+        };
+
+        // Data Tangga Metriks
+        const prefixes = [
+            { name: 'Tera', sym: 'T', pwr: 12 },
+            { name: 'Giga', sym: 'G', pwr: 9 },
+            { name: 'Mega', sym: 'M', pwr: 6 },
+            { name: 'Kilo', sym: 'k', pwr: 3 },
+            { name: 'Hekto', sym: 'h', pwr: 2 },
+            { name: 'Deka', sym: 'da', pwr: 1 },
+            { name: '(Dasar)', sym: '', pwr: 0, isBase: true },
+            { name: 'Desi', sym: 'd', pwr: -1 },
+            { name: 'Centi', sym: 'c', pwr: -2 },
+            { name: 'Mili', sym: 'm', pwr: -3 },
+            { name: 'Mikro', sym: 'µ', pwr: -6 },
+            { name: 'Nano', sym: 'n', pwr: -9 },
+            { name: 'Piko', sym: 'p', pwr: -12 }
+        ];
+
+        // ==========================================
+        // 2. FUNGSI RENDER & INTERAKSI
+        // ==========================================
+
+        // Modul 1: The 7 Pillars
+        function renderPillars() {
+            const container = document.getElementById('pillars-container');
+            container.innerHTML = '';
+            
+            baseQuantities.forEach(q => {
+                const unit = systemMode === 'SI' ? q.unitSI : q.unitCGS;
+                const card = document.createElement('div');
+                card.className = 'pillar-card';
+                card.innerHTML = `
+                    <div class="pillar-icon">${q.icon}</div>
+                    <div class="pillar-name">${q.name}</div>
+                    <div class="pillar-details">
+                        <div>Satuan: <b style="color:var(--text-main)">${unit}</b></div>
+                        <div>Dimensi: <span class="pillar-symbol">${q.dim}</span></div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    // Toggle active class
+                    const isActive = card.classList.contains('active');
+                    document.querySelectorAll('.pillar-card').forEach(c => c.classList.remove('active'));
+                    if (!isActive) card.classList.add('active');
+                });
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Toggle System SI/CGS
+        function setSystem(mode) {
+            systemMode = mode;
+            document.getElementById('btn-si').classList.toggle('active', mode === 'SI');
+            document.getElementById('btn-cgs').classList.toggle('active', mode === 'CGS');
+            
+            renderPillars(); // Re-render modul 1 agar satuan berubah
+            updateGenerator(); // Re-render modul 2 agar display utamanya menonjolkan sistem yg dipilih
+        }
+
+        // Modul 2: Generator Turunan
+        function updateGenerator() {
+            const selKey = document.getElementById('sel-derived').value;
+            const val = parseFloat(document.getElementById('slide-val').value);
+            document.getElementById('slide-display').innerText = val;
+            
+            const q = derivedQuantities[selKey];
+            
+            document.getElementById('gen-formula').innerHTML = q.formula;
+            document.getElementById('gen-dim').innerHTML = q.dim;
+            
+            const siVal = val;
+            const cgsVal = val * q.factor;
+            
+            // Format scientific jika terlalu besar/kecil
+            const formatNum = (num) => {
+                if (num === 0) return 0;
+                if (Math.abs(num) >= 1e5 || Math.abs(num) < 1e-3) return num.toExponential(2).replace('e+', ' × 10<sup>').replace('e-', ' × 10<sup>-') + '</sup>';
+                return num.toLocaleString('id-ID');
+            };
+
+            const elSi = document.getElementById('gen-si');
+            const elCgs = document.getElementById('gen-cgs');
+
+            elSi.innerHTML = `${formatNum(siVal)} ${q.si_name}`;
+            elCgs.innerHTML = `${formatNum(cgsVal)} ${q.cgs_name}`;
+
+            // Highlight berdasarkan sistem yang aktif
+            if (systemMode === 'SI') {
+                elSi.style.color = 'var(--accent-green)';
+                elCgs.style.color = 'var(--text-muted)';
+            } else {
+                elSi.style.color = 'var(--text-muted)';
+                elCgs.style.color = 'var(--accent-green)';
+            }
+        }
+
+        // Modul 3: Converter Metriks
+        function updateConverter() {
+            const val = parseFloat(document.getElementById('conv-val').value) || 0;
+            const unitBase = document.getElementById('conv-unit').value;
+            const originPwr = parseInt(document.getElementById('conv-base-prefix').value);
+            
+            const container = document.getElementById('ladder-container');
+            container.innerHTML = '';
+
+            // Menghitung Nilai Dasar (ke pangkat 0)
+            // Misal: input 5, origin Kilo (3) -> Nilai Dasar = 5 * 10^3
+            const baseValueInScientific = val * Math.pow(10, originPwr);
+
+            prefixes.forEach(p => {
+                // Konversi dari Nilai Dasar ke tingkat target
+                // Misal: Dasar 5*10^3, mau ke Centi (-2) -> (5*10^3) / 10^-2 = 5 * 10^5
+                const diffPwr = originPwr - p.pwr;
+                const finalPwr = diffPwr; // Pangkat 10 nya
+                
+                let displayVal = "";
+                if (val === 0) {
+                    displayVal = "0";
+                } else if (finalPwr === 0) {
+                    displayVal = val.toString();
+                } else {
+                    displayVal = `${val} × 10<sup>${finalPwr}</sup>`;
+                }
+
+                const step = document.createElement('div');
+                step.className = `ladder-step ${p.pwr === originPwr ? 'active' : ''}`;
+                
+                const symStr = p.isBase ? unitBase : p.sym + unitBase;
+                
+                step.innerHTML = `
+                    <div class="prefix">${p.name} [10<sup>${p.pwr}</sup>]</div>
+                    <div class="val">${displayVal} ${symStr}</div>
+                `;
+                container.appendChild(step);
+            });
+        }
+
+        // Modul 4: Dimension Challenge
+        const challengeDB = [
+            { dim: '[M][L]<sup>-1</sup>[T]<sup>-2</sup>', ans: 'Tekanan', options: ['Gaya', 'Usaha', 'Tekanan', 'Massa Jenis'] },
+            { dim: '[M][L][T]<sup>-2</sup>', ans: 'Gaya', options: ['Gaya', 'Percepatan', 'Tekanan', 'Kecepatan'] },
+            { dim: '[M][L]<sup>2</sup>[T]<sup>-2</sup>', ans: 'Energi / Usaha', options: ['Gaya', 'Energi / Usaha', 'Daya', 'Momentum'] },
+            { dim: '[L][T]<sup>-1</sup>', ans: 'Kecepatan', options: ['Percepatan', 'Kecepatan', 'Jarak', 'Gaya'] },
+            { dim: '[M][L]<sup>-3</sup>', ans: 'Massa Jenis', options: ['Volume', 'Berat Jenis', 'Massa Jenis', 'Tekanan'] },
+            { dim: '[M][L]<sup>2</sup>[T]<sup>-3</sup>', ans: 'Daya', options: ['Energi', 'Gaya', 'Tekanan', 'Daya'] }
+        ];
+
+        let currentChallenge = null;
+
+        function newChallenge() {
+            // Pick random challenge
+            const idx = Math.floor(Math.random() * challengeDB.length);
+            currentChallenge = challengeDB[idx];
+            
+            document.getElementById('chal-dim').innerHTML = currentChallenge.dim;
+            document.getElementById('chal-feedback').innerText = '';
+            
+            const optContainer = document.getElementById('chal-options');
+            optContainer.innerHTML = '';
+            
+            // Shuffle options
+            const shuffledOpts = [...currentChallenge.options].sort(() => Math.random() - 0.5);
+            
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = opt;
+                btn.onclick = () => checkChallenge(btn, opt);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function checkChallenge(btn, selectedOpt) {
+            const feedback = document.getElementById('chal-feedback');
+            // Reset all buttons color
+            document.querySelectorAll('.btn-option').forEach(b => {
+                b.classList.remove('correct'); b.classList.remove('wrong');
+                b.disabled = true; // Disable after answering
+            });
+
+            if (selectedOpt === currentChallenge.ans) {
+                btn.classList.add('correct');
+                feedback.style.color = 'var(--accent-green)';
+                feedback.innerText = '✔ TEPAT SEKALI! Analisis dimensi Anda luar biasa.';
+            } else {
+                btn.classList.add('wrong');
+                feedback.style.color = 'var(--accent-red)';
+                feedback.innerHTML = `✖ KELIRU. Jawaban yang benar adalah <b>${currentChallenge.ans}</b>.`;
+                
+                // Highlight correct answer
+                document.querySelectorAll('.btn-option').forEach(b => {
+                    if(b.innerText === currentChallenge.ans) b.classList.add('correct');
+                });
+            }
+        }
+
+        // ==========================================
+        // 3. INISIALISASI
+        // ==========================================
+        window.onload = () => {
+            renderPillars();
+            updateGenerator();
+            updateConverter();
+            newChallenge();
+            
+            // Buka card pertama sebagai instruksi visual
+            setTimeout(() => {
+                const firstCard = document.querySelector('.pillar-card');
+                if(firstCard) firstCard.classList.add('active');
+            }, 500);
+        };
+
+    </script>
+</body>
+</html>
