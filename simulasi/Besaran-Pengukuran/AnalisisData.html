@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Scientist Fisika: Dari Tabel ke Teori</title>
+
+    <!-- MathJax untuk Rendering Persamaan Matematis LaTeX -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: DIGITAL LABORATORY / CLEAN DARK GRID
+           ======================================================== */
+        :root {
+            --bg-main: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-input: #2a2a2a;
+            --grid-line: rgba(255, 255, 255, 0.05);
+            --neon-blue: #00d8ff;    /* Garis Grafik & Aksen */
+            --emerald-green: #00ff66; /* Data Point Valid */
+            --danger-red: #ff3366;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --font-sans: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            padding: 20px;
+            line-height: 1.6;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 25px 25px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(180deg, #1a1a1a 0%, var(--bg-main) 100%);
+            border: 1px solid #333;
+            border-top: 4px solid var(--neon-blue);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            color: var(--neon-blue);
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 216, 255, 0.3);
+            margin-bottom: 10px;
+        }
+
+        header p { color: var(--text-muted); font-size: 1rem; max-width: 800px; margin: 0 auto; }
+
+        /* PRESET SELECTOR */
+        .preset-selector {
+            display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap;
+        }
+        .btn-preset {
+            background: var(--bg-panel); color: var(--text-muted); border: 1px solid #444;
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; font-family: var(--font-mono);
+            transition: 0.3s; font-size: 0.9rem;
+        }
+        .btn-preset:hover { background: #333; color: var(--text-main); }
+        .btn-preset.active {
+            background: rgba(0, 216, 255, 0.1); color: var(--neon-blue);
+            border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0,216,255,0.3);
+        }
+
+        /* MAIN LAYOUT */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        @media (max-width: 850px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--bg-panel); border: 1px solid #333; border-radius: 8px;
+            padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .panel-title {
+            font-size: 1.2rem; color: #fff; margin-bottom: 5px; padding-bottom: 10px;
+            border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* DATA TABLE */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-family: var(--font-mono); }
+        th, td { border: 1px solid #444; padding: 8px; text-align: center; }
+        th { background: #222; color: var(--neon-blue); font-size: 0.9rem; }
+        td input {
+            width: 100%; background: transparent; border: none; color: var(--emerald-green);
+            text-align: center; font-family: var(--font-mono); font-size: 1rem; outline: none;
+        }
+        td input:focus { background: rgba(0, 255, 102, 0.1); }
+        
+        .btn-row {
+            display: flex; gap: 10px;
+        }
+        .btn {
+            flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer;
+            font-weight: bold; font-family: var(--font-sans); transition: 0.2s;
+        }
+        .btn-add { background: #2c3e50; color: #fff; } .btn-add:hover { background: #34495e; }
+        .btn-del { background: #4a192c; color: #fff; } .btn-del:hover { background: #5c1e36; }
+        .btn-action { background: var(--neon-blue); color: #000; font-size: 1rem; margin-top: 10px;}
+        .btn-action:hover { box-shadow: 0 0 15px rgba(0,216,255,0.4); }
+
+        /* CANVAS GRAPH */
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #444; border-radius: 6px;
+            overflow: hidden; position: relative; box-shadow: inset 0 0 20px #000;
+        }
+        canvas { display: block; width: 100%; height: 400px; }
+
+        /* ANALYSIS DASHBOARD */
+        .analysis-dashboard {
+            background: #0a0a0a; border: 1px dashed var(--emerald-green);
+            padding: 15px; border-radius: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+        }
+        .analysis-box { text-align: center; }
+        .analysis-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .analysis-value { font-family: var(--font-mono); font-size: 1.5rem; color: var(--emerald-green); text-shadow: 0 0 5px rgba(0,255,102,0.4); }
+        .analysis-equation { grid-column: span 2; text-align: center; font-size: 1.3rem; color: var(--neon-blue); margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
+
+        /* PREDICTION TEST */
+        .prediction-box {
+            background: linear-gradient(45deg, #111, #1a2a3a); border: 1px solid var(--neon-blue);
+            padding: 15px; border-radius: 6px; margin-top: 15px;
+        }
+        .pred-input-group { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+        .pred-input-group input {
+            flex: 1; background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue);
+            padding: 8px; border-radius: 4px; font-family: var(--font-mono); text-align: center; outline: none;
+        }
+        .pred-result { font-family: var(--font-mono); font-size: 1.2rem; color: var(--emerald-green); font-weight: bold; min-width: 80px; text-align: center; }
+
+        /* EDUCATIONAL INFO */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .info-card { background: rgba(255,255,255,0.02); border-left: 3px solid var(--neon-blue); padding: 15px; font-size: 0.9rem; color: var(--text-muted); }
+        .info-card h3 { color: var(--text-main); margin-bottom: 10px; font-size: 1.05rem; }
+        
+        table.info-table { width: 100%; border: none; font-family: var(--font-sans); font-size: 0.85rem; margin-top: 10px; }
+        table.info-table th { background: transparent; border-bottom: 1px solid #444; color: var(--text-main); text-align: left; padding: 5px; }
+        table.info-table td { border: none; border-bottom: 1px solid #222; text-align: left; padding: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Data Scientist Fisika</h1>
+            <p>Laboratorium Pengolahan Data: Mengubah Tabel Observasi Menjadi Persamaan Teori Linear.</p>
+            
+            <div class="preset-selector">
+                <span style="color: var(--text-muted); font-size:0.9rem; align-self:center;">Eksperimen:</span>
+                <button class="btn-preset active" onclick="loadPreset('ohm')" id="btn-ohm">Hukum Ohm (V vs I)</button>
+                <button class="btn-preset" onclick="loadPreset('glb')" id="btn-glb">Gerak Lurus (s vs t)</button>
+                <button class="btn-preset" onclick="loadPreset('hooke')" id="btn-hooke">Hukum Hooke (F vs Δx)</button>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- KIRI: TABEL DATA & PREDIKSI -->
+            <div class="left-panel" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="panel">
+                    <h2 class="panel-title">📋 Data Observasi</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                        Sumbu X (Abdis) adalah <b>Variabel Bebas</b>. Sumbu Y (Ordinat) adalah <b>Variabel Terikat</b>.
+                    </p>
+                    
+                    <table id="data-table">
+                        <thead>
+                            <tr>
+                                <th id="th-x">X</th>
+                                <th id="th-y">Y</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+
+                    <div class="btn-row">
+                        <button class="btn btn-add" onclick="addRow()">+ Tambah Data</button>
+                        <button class="btn btn-del" onclick="removeRow()">- Hapus Data</button>
+                    </div>
+
+                    <button class="btn btn-action" id="btn-fit" onclick="toggleBestFit()">Tarik Garis Terbaik (Best Fit Line)</button>
+                </div>
+
+                <div class="prediction-box">
+                    <h3 style="color: var(--neon-blue); font-size: 1.1rem; margin-bottom: 5px;">🔮 Uji Prediksi (Ekstrapolasi)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Berapa nilai Y jika X bernilai tertentu berdasarkan grafik yang terbentuk?</p>
+                    <div class="pred-input-group">
+                        <span style="color: var(--text-main);">X =</span>
+                        <input type="number" id="pred-x" value="0" step="any" oninput="calculatePrediction()">
+                        <span style="color: var(--text-main);">➔ Y =</span>
+                        <span class="pred-result" id="pred-y">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KANAN: GRAFIK & ANALISIS -->
+            <div class="panel">
+                <h2 class="panel-title">📈 Generator Grafik Cartesian</h2>
+                <div class="canvas-container" id="cvs-container">
+                    <canvas id="graphCanvas"></canvas>
+                </div>
+
+                <h2 class="panel-title" style="margin-top: 15px;">🔬 Analisis Matematis</h2>
+                <div class="analysis-dashboard">
+                    <div class="analysis-box">
+                        <div class="analysis-label">Gradien Garis (m)</div>
+                        <div class="analysis-value" id="out-grad">0.00</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;" id="out-interp">Mewakili: -</div>
+                    </div>
+                    <div class="analysis-box">
+                        <div class="analysis-label">Titik Potong Y (c)</div>
+                        <div class="analysis-value" id="out-inter">0.00</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">(Kesalahan Sistemik / Offset)</div>
+                    </div>
+                    <div class="analysis-equation" id="out-eq">
+                        $$y = mx + c$$
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDUKASI & INFORMASI -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--emerald-green);">📚 Konsep Pengolahan Data Fisika</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>1. Persamaan Garis Linear</h3>
+                    Hampir semua eksperimen fisika dasar dirancang untuk membuktikan hubungan linear (berbanding lurus). Jika data di-plot ke grafik X-Y dan ditarik garis lurus, persamaan matematisnya adalah:
+                    <div style="text-align: center; font-size: 1.2rem; color: var(--emerald-green); margin: 10px 0; font-family: var(--font-mono);">y = mx + c</div>
+                    Di mana <b>m</b> adalah kemiringan/gradien ($\Delta y / \Delta x$), dan <b>c</b> adalah titik potong di sumbu Y (menunjukkan ralat alat/offset).
+                </div>
+                
+                <div class="info-card">
+                    <h3>2. Makna Fisis Gradien (m)</h3>
+                    Angka kemiringan grafik bukanlah sekadar angka matematika kosong. Ia mewakili <b>Besaran Fisis</b> tertentu yang dicari dalam eksperimen.
+                    <table class="info-table">
+                        <tr><th>Eksperimen</th><th>Sumbu Y</th><th>Sumbu X</th><th>Gradien (m) Mewakili</th></tr>
+                        <tr><td>Hukum Ohm</td><td>Tegangan (V)</td><td>Arus (I)</td><td style="color:var(--neon-blue)">Hambatan (R)</td></tr>
+                        <tr><td>Gerak (GLB)</td><td>Jarak (s)</td><td>Waktu (t)</td><td style="color:var(--neon-blue)">Kecepatan (v)</td></tr>
+                        <tr><td>Hukum Hooke</td><td>Gaya (F)</td><td>Panjang (Δx)</td><td style="color:var(--neon-blue)">Konst. Pegas (k)</td></tr>
+                    </table>
+                </div>
+
+                <div class="info-card">
+                    <h3>3. Kesalahan Penulisan (Miskonsepsi)</h3>
+                    Siswa seringkali menghubungkan titik-titik data seperti <i>"menggambar rasi bintang"</i> (garis patah-patah). Ini <b>SALAH</b>.<br><br>
+                    Dalam fisika, kita harus menarik <b>Garis Terbaik (Best Fit Line)</b> lurus yang mewakili tren umum data. Titik data yang tidak tepat berada di atas garis lurus menunjukkan adanya <b>Ketidakpastian (Error)</b> selama eksperimen. Semakin menyebar titiknya, semakin rendah presisi pengukurannya.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 1. DATA PRESETS & STATE MANAGEMENT
+        // ==========================================
+        const presets = {
+            ohm: {
+                id: 'ohm',
+                xLabel: "Arus (I) [Ampere]", yLabel: "Tegangan (V) [Volt]",
+                xSym: "I", ySym: "V",
+                gradMeaning: "Hambatan (R)", gradUnit: "\\Omega",
+                formula: "V = R \\cdot I",
+                data: [{x: 0.1, y: 1.1}, {x: 0.2, y: 2.1}, {x: 0.3, y: 2.8}, {x: 0.4, y: 4.2}, {x: 0.5, y: 4.9}]
+            },
+            glb: {
+                id: 'glb',
+                xLabel: "Waktu (t) [sekon]", yLabel: "Jarak (s) [meter]",
+                xSym: "t", ySym: "s",
+                gradMeaning: "Kecepatan (v)", gradUnit: "m/s",
+                formula: "s = v \\cdot t",
+                data: [{x: 1, y: 2.1}, {x: 2, y: 3.9}, {x: 3, y: 6.2}, {x: 4, y: 8.0}, {x: 5, y: 9.8}]
+            },
+            hooke: {
+                id: 'hooke',
+                xLabel: "Pertambahan Pjg (Δx) [m]", yLabel: "Gaya (F) [Newton]",
+                xSym: "\\Delta x", ySym: "F",
+                gradMeaning: "Konstanta Pegas (k)", gradUnit: "N/m",
+                formula: "F = k \\cdot \\Delta x",
+                data: [{x: 0.02, y: 1.0}, {x: 0.04, y: 2.1}, {x: 0.06, y: 2.9}, {x: 0.08, y: 4.2}, {x: 0.10, y: 4.8}]
+            }
+        };
+
+        let state = {
+            currentPreset: 'ohm',
+            data: [],
+            showBestFit: false,
+            m: 0, c: 0
+        };
+
+        // Canvas Setup
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const cvsContainer = document.getElementById('cvs-container');
+
+        function resizeCanvas() {
+            canvas.width = cvsContainer.clientWidth;
+            canvas.height = 400; // Fixed height
+            drawGraph();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // MathJax Renderer
+        let mathJaxTimeout;
+        function renderMath() {
+            if(window.MathJax) {
+                clearTimeout(mathJaxTimeout);
+                mathJaxTimeout = setTimeout(() => {
+                    MathJax.typesetPromise().catch((err) => console.log('MathJax error: ', err.message));
+                }, 50);
+            }
+        }
+
+        // ==========================================
+        // 2. TABLE LOGIC & REGRESSION
+        // ==========================================
+        function loadPreset(presetId) {
+            state.currentPreset = presetId;
+            let preset = presets[presetId];
+            
+            // Clone data to avoid reference mutation
+            state.data = preset.data.map(p => ({...p})); 
+            state.showBestFit = false;
+
+            // UI Updates
+            document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + presetId).classList.add('active');
+            
+            document.getElementById('th-x').innerText = preset.xLabel;
+            document.getElementById('th-y').innerText = preset.yLabel;
+            
+            let btnFit = document.getElementById('btn-fit');
+            btnFit.innerText = "Tarik Garis Terbaik (Best Fit Line)";
+            btnFit.style.background = "var(--neon-blue)";
+            btnFit.style.color = "#000";
+
+            renderTable();
+            processData();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            state.data.forEach((point, idx) => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="number" step="any" value="${point.x}" oninput="updateData(${idx}, 'x', this.value)"></td>
+                    <td><input type="number" step="any" value="${point.y}" oninput="updateData(${idx}, 'y', this.value)"></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateData(idx, axis, val) {
+            let num = parseFloat(val);
+            state.data[idx][axis] = isNaN(num) ? 0 : num;
+            processData();
+        }
+
+        function addRow() {
+            let lastX = state.data.length > 0 ? state.data[state.data.length-1].x : 0;
+            state.data.push({x: lastX + 1, y: 0});
+            renderTable();
+            processData();
+        }
+
+        function removeRow() {
+            if(state.data.length > 1) {
+                state.data.pop();
+                renderTable();
+                processData();
+            }
+        }
+
+        function toggleBestFit() {
+            state.showBestFit = !state.showBestFit;
+            let btn = document.getElementById('btn-fit');
+            if(state.showBestFit) {
+                btn.innerText = "Sembunyikan Garis Terbaik";
+                btn.style.background = "transparent";
+                btn.style.border = "1px solid var(--neon-blue)";
+                btn.style.color = "var(--neon-blue)";
+            } else {
+                btn.innerText = "Tarik Garis Terbaik (Best Fit Line)";
+                btn.style.background = "var(--neon-blue)";
+                btn.style.border = "none";
+                btn.style.color = "#000";
+            }
+            drawGraph();
+        }
+
+        // Method of Least Squares
+        function calculateRegression() {
+            let n = state.data.length;
+            if (n < 2) return {m: 0, c: 0};
+            
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            state.data.forEach(p => {
+                sumX += p.x; sumY += p.y;
+                sumXY += p.x * p.y; sumXX += p.x * p.x;
+            });
+
+            let denominator = (n * sumXX) - (sumX * sumX);
+            if (denominator === 0) return {m: 0, c: 0};
+
+            let m = ((n * sumXY) - (sumX * sumY)) / denominator;
+            let c = (sumY - m * sumX) / n;
+            return {m, c};
+        }
+
+        function processData() {
+            let reg = calculateRegression();
+            state.m = reg.m;
+            state.c = reg.c;
+            
+            updateDashboard();
+            calculatePrediction();
+            drawGraph();
+        }
+
+        function updateDashboard() {
+            let p = presets[state.currentPreset];
+            document.getElementById('out-grad').innerText = state.m.toFixed(3);
+            document.getElementById('out-inter').innerText = state.c.toFixed(3);
+            document.getElementById('out-interp').innerText = `Mewakili: ${p.gradMeaning} (${p.gradUnit})`;
+
+            // Format Equation
+            let sign = state.c >= 0 ? '+' : '-';
+            let eqStr = `$$y = ${state.m.toFixed(2)}x ${sign} ${Math.abs(state.c).toFixed(2)}$$`;
+            
+            // Sub in physics symbols
+            let physEq = `$$${p.ySym} = ${state.m.toFixed(2)} \\cdot ${p.xSym} ${sign} ${Math.abs(state.c).toFixed(2)}$$`;
+            
+            document.getElementById('out-eq').innerHTML = `${physEq} <br> <span style="font-size:0.9rem; color:var(--text-muted);">(Teori: ${p.formula})</span>`;
+            renderMath();
+        }
+
+        function calculatePrediction() {
+            let px = parseFloat(document.getElementById('pred-x').value);
+            if(isNaN(px)) {
+                document.getElementById('pred-y').innerText = "-";
+                return;
+            }
+            let py = state.m * px + state.c;
+            document.getElementById('pred-y').innerText = py.toFixed(3);
+        }
+
+        // ==========================================
+        // 3. CANVAS GRAPHING LOGIC
+        // ==========================================
+        function drawGraph() {
+            let w = canvas.width; let h = canvas.height;
+            if(w === 0 || h === 0) return;
+            ctx.clearRect(0, 0, w, h);
+
+            // Auto-scale logic
+            let padding = 40;
+            let maxX = 0, maxY = 0, minX = 0, minY = 0;
+            
+            state.data.forEach(p => {
+                if(p.x > maxX) maxX = p.x; if(p.x < minX) minX = p.x;
+                if(p.y > maxY) maxY = p.y; if(p.y < minY) minY = p.y;
+            });
+            
+            // Add buffer 20%
+            if(maxX === 0) maxX = 10; if(maxY === 0) maxY = 10;
+            maxX *= 1.2; maxY *= 1.2;
+            // Always start at 0 for these physics experiments
+            minX = 0; minY = 0; 
+
+            let mapX = (x) => padding + ((x - minX) / (maxX - minX)) * (w - padding * 2);
+            let mapY = (y) => (h - padding) - ((y - minY) / (maxY - minY)) * (h - padding * 2);
+
+            // Draw Background Grid
+            ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+            for(let i=0; i<=5; i++) {
+                // Vertical lines (X ticks)
+                let px = mapX(maxX * (i/5));
+                ctx.beginPath(); ctx.moveTo(px, padding); ctx.lineTo(px, h - padding); ctx.stroke();
+                // Horizontal lines (Y ticks)
+                let py = mapY(maxY * (i/5));
+                ctx.beginPath(); ctx.moveTo(padding, py); ctx.lineTo(w - padding, py); ctx.stroke();
+            }
+
+            // Draw Axes
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+            ctx.beginPath(); 
+            ctx.moveTo(padding, padding); ctx.lineTo(padding, h - padding); // Y axis
+            ctx.lineTo(w - padding, h - padding); // X axis
+            ctx.stroke();
+
+            // Axis Labels
+            ctx.fillStyle = '#9ca3af'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+            for(let i=0; i<=5; i++) {
+                let vx = maxX * (i/5); let px = mapX(vx);
+                ctx.fillText(vx.toFixed(1), px, h - padding + 15);
+                
+                let vy = maxY * (i/5); let py = mapY(vy);
+                ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                ctx.fillText(vy.toFixed(1), padding - 10, py);
+            }
+            
+            let p = presets[state.currentPreset];
+            ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+            ctx.fillText(p.xLabel, w/2, h - 5);
+            
+            ctx.save();
+            ctx.translate(15, h/2); ctx.rotate(-Math.PI/2);
+            ctx.fillText(p.yLabel, 0, 0);
+            ctx.restore();
+
+            // Draw Best Fit Line
+            if(state.showBestFit && state.data.length > 1) {
+                ctx.strokeStyle = 'var(--neon-blue)';
+                ctx.lineWidth = 3;
+                
+                let x1 = 0; let y1 = state.m * x1 + state.c;
+                let x2 = maxX; let y2 = state.m * x2 + state.c;
+                
+                ctx.beginPath();
+                ctx.moveTo(mapX(x1), mapY(y1));
+                ctx.lineTo(mapX(x2), mapY(y2));
+                ctx.stroke();
+            }
+
+            // Draw Data Points
+            state.data.forEach(pt => {
+                let cx = mapX(pt.x); let cy = mapY(pt.y);
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, 2*Math.PI);
+                ctx.fillStyle = '#000'; ctx.fill(); // Outer black border
+                ctx.lineWidth = 2; ctx.strokeStyle = 'var(--emerald-green)'; ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3, 0, 2*Math.PI);
+                ctx.fillStyle = 'var(--emerald-green)'; ctx.fill(); // Inner dot
+            });
+        }
+
+        // ==========================================
+        // INIT APPLICATION
+        // ==========================================
+        window.onload = () => {
+            resizeCanvas(); // Set initial size
+            loadPreset('ohm'); // Loads data and draws everything
+        };
+
+    </script>
+</body>
+</html>
