@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Physics Lab: Elastisitas & Modulus Material</title>
+    <style>
+        /* ========================================================
+           TEMA DESAIN: INDUSTRIAL LABORATORY / ENGINEERING BLUEPRINT
+           ======================================================== */
+        :root {
+            --bg-color: #0d0d0d;
+            --panel-bg: #1a1a1a;
+            --blueprint-grid: rgba(57, 255, 20, 0.12);
+            --neon-green: #39ff14;
+            --neon-orange: #ffaa00;
+            --neon-red: #ff1744;
+            --neon-blue: #00e5ff;
+            --neon-purple: #d500f9;
+            --metallic: #ffffff;
+            --text-main: #ffffff;
+            --text-muted: #b3b3b3;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* HEADER */
+        header {
+            text-align: center; padding: 20px; background-color: var(--panel-bg);
+            border: 1px solid #333; border-radius: 8px; border-bottom: 3px solid var(--neon-green);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        header h1 { color: var(--neon-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-size: 1.8rem; }
+        header p { color: var(--text-muted); font-size: 1rem; }
+
+        .section-title {
+            text-align: center; color: var(--metallic); font-size: 1.5rem; margin: 40px 0 10px 0;
+            text-transform: uppercase; border-bottom: 2px dashed #444; padding-bottom: 10px;
+        }
+
+        /* DIGITAL DASHBOARD */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .dash-card {
+            background-color: var(--panel-bg); border: 1px solid #444; border-radius: 8px;
+            padding: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); transition: all 0.3s ease;
+        }
+        .dash-card h3 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+        .dash-card .value { font-family: var(--font-mono); font-size: 1.6rem; color: var(--neon-green); font-weight: bold; text-shadow: 0 0 5px var(--neon-green); }
+        .dash-card.status-plastic .value { color: var(--neon-orange); text-shadow: 0 0 5px var(--neon-orange); }
+        .dash-card.status-broken .value { color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red); }
+
+        /* MAIN WORKSPACE */
+        .workspace { display: flex; flex-wrap: wrap; gap: 20px; }
+        .panel {
+            background-color: var(--panel-bg); border: 1px solid #333; border-radius: 8px;
+            padding: 15px; flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .panel h2 { font-size: 1.2rem; margin-bottom: 15px; color: var(--metallic); width: 100%; border-bottom: 1px solid #444; padding-bottom: 5px; text-align: center; }
+        
+        canvas { background-color: #000000; border: 2px solid #555; border-radius: 4px; max-width: 100%; cursor: grab; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        canvas:active { cursor: grabbing; }
+
+        /* CONTROLS */
+        .controls { width: 100%; margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .control-group { display: flex; flex-direction: column; }
+        .control-group label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-main); }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: #333; height: 6px; border-radius: 3px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--neon-green); cursor: pointer; box-shadow: 0 0 5px var(--neon-green); }
+
+        .slider-wrapper { display: flex; align-items: center; gap: 8px; width: 100%; }
+        .slider-wrapper input[type=range] { flex: 1; }
+        
+        .select-style { background-color: #333; color: var(--neon-green); border: 1px solid #555; padding: 8px; border-radius: 4px; font-family: var(--font-main); outline: none; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-reset { background-color: transparent; color: var(--neon-red); border: 1px solid var(--neon-red); padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s; margin-top: 10px; }
+        .btn-reset:hover { background-color: var(--neon-red); color: white; box-shadow: 0 0 10px var(--neon-red); }
+
+        /* MODULUS LAB GRID */
+        .modulus-lab { display: flex; flex-direction: row; gap: 20px; align-items: flex-start; margin-bottom: 20px; width: 100%;}
+        .modulus-controls { flex: 1; display: flex; flex-direction: column; gap: 10px;}
+        .modulus-canvas-container { flex: 1; display: flex; justify-content: center; align-items: center;}
+        
+        .mini-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .mini-dash-card { background: #000000; border: 1px solid #555; padding: 10px; border-radius: 5px; text-align: center; box-shadow: inset 0 0 8px #000;}
+        .mini-dash-card span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;}
+        .mini-dash-card strong { font-family: var(--font-mono); font-size: 1.1rem; color: var(--neon-blue); text-shadow: 0 0 3px rgba(0, 229, 255, 0.4);}
+
+        .instruction { font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 10px; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .workspace, .modulus-lab { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Virtual Physics Lab</h1>
+            <p>Eksperimen Interaktif Hukum Hooke & Modulus Elastisitas Material</p>
+        </header>
+
+        <!-- ==========================================
+             BAGIAN 1: EKSPERIMEN PEGAS (HUKUM HOOKE)
+             ========================================== -->
+        <h2 class="section-title">Bagian I: Hukum Hooke & Susunan Pegas</h2>
+        <div class="dashboard">
+            <div class="dash-card" id="cardStatus"><h3 >Kondisi Material</h3><div class="value" id="dispStatus">ELASTIS</div></div>
+            <div class="dash-card"><h3>Gaya Tarik (F)</h3><div class="value" id="dispForce">0.00 N</div></div>
+            <div class="dash-card"><h3>Total Regangan (Δx)</h3><div class="value" id="dispDeltaX">0.00 m</div></div>
+            <div class="dash-card" id="cardK"><h3>Konstanta Efektif (k)</h3><div class="value" id="dispK">200 N/m</div></div>
+            <div class="dash-card" id="cardEp"><h3>Energi Potensial</h3><div class="value" id="dispEp">0.00 J</div></div>
+        </div>
+
+        <div class="workspace">
+            <div class="panel">
+                <h2>Laboratorium Pegas</h2>
+                <canvas id="springCanvas" width="350" height="400"></canvas>
+                <p class="instruction">💡 Tarik beban perlahan untuk mengamati fase Elastis -> Plastis -> Putus.</p>
+                <div class="controls">
+                    <div class="control-group">
+                        <label><span>Susunan Pegas</span></label>
+                        <select id="selArrangement" class="select-style">
+                            <option value="single">Tunggal (1 Pegas)</option>
+                            <option value="series">Seri (2 Pegas)</option>
+                            <option value="parallel">Paralel (2 Pegas)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><span>Gantungkan Objek</span></label>
+                        <select id="selObject" class="select-style">
+                            <option value="0">Tanpa Beban (0 kg)</option>
+                            <option value="2">🍏 Apel (2 kg)</option>
+                            <option value="10">⚖️ Timbangan Lab (10 kg)</option>
+                            <option value="25">🏋️ Barbel (25 kg)</option>
+                            <option value="50">🧰 Brankas Baja (50 kg)</option>
+                            <option value="custom" hidden>Beban Kustom</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><span>Massa Beban (m)</span><span id="lblMass">0 kg</span></label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="sliderMass" min="0" max="50" step="0.5" value="0">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label><span id="labelK1" style="color: #4FC3F7">Konstanta Pegas 1 (k₁) ■</span><span id="lblK1">200 N/m</span></label>
+                        <input type="range" id="sliderK1" min="100" max="1000" step="10" value="200">
+                    </div>
+                    <div class="control-group" id="groupK2" style="display: none;">
+                        <label><span id="labelK2" style="color: #BA68C8">Konstanta Pegas 2 (k₂) ■</span><span id="lblK2">200 N/m</span></label>
+                        <input type="range" id="sliderK2" min="100" max="1000" step="10" value="200">
+                    </div>
+                    <button class="btn-reset" id="btnReset">GANTI PEGAS BARU (RESET)</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Kurva Tegangan-Regangan</h2>
+                <canvas id="graphCanvas" width="400" height="400"></canvas>
+                <p class="instruction" style="text-align:left;">
+                    <span style="color:#39ff14;">■</span> <b>Elastis:</b> Kembali semula.<br>
+                    <span style="color:#ffaa00;">■</span> <b>Plastis:</b> Mulur permanen.<br>
+                    <span style="color:#ff3333;">■</span> <b>Patah:</b> Pegas putus.
+                </p>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             BAGIAN 2: LABORATORIUM MODULUS
+             ========================================== -->
+        <h2 class="section-title">Bagian II: Modulus Elastisitas Material</h2>
+
+        <!-- MODULUS YOUNG -->
+        <div class="panel">
+            <h2 style="color: var(--neon-blue);">1. Modulus Young (Tarik / Regang)</h2>
+            <div class="modulus-lab">
+                <div class="modulus-controls">
+                    <p class="instruction" style="text-align:left;">Rumus: <b>E = (F / A) / (ΔL / L₀)</b><br>Mengukur ketahanan material padat terhadap regangan.</p>
+                    
+                    <div class="control-group">
+                        <label><span>Material Kawat</span><span id="lblYoungMat" style="color:var(--neon-blue);">Baja (200 GPa)</span></label>
+                        <select id="selYoungMat" class="select-style" style="color:var(--neon-blue); border-color:var(--neon-blue);">
+                            <option value="200e9">Baja (200 GPa)</option>
+                            <option value="110e9">Tembaga (110 GPa)</option>
+                            <option value="69e9">Aluminium (69 GPa)</option>
+                            <option value="0.05e9">Karet Keras (0.05 GPa)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><span>Gaya Tarik (F)</span><span id="lblYoungF">0 kN</span></label>
+                        <input type="range" id="sliderYoungF" min="0" max="100" step="1" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label><span>Luas Penampang (A)</span><span id="lblYoungA">10 mm²</span></label>
+                        <input type="range" id="sliderYoungA" min="1" max="50" step="1" value="10">
+                    </div>
+                    
+                    <div class="mini-dashboard">
+                        <div class="mini-dash-card"><span>Tegangan (σ)</span><strong id="outYoungStress">0 MPa</strong></div>
+                        <div class="mini-dash-card"><span>Pertambahan (ΔL)</span><strong id="outYoungDelta">0.00 mm</strong></div>
+                    </div>
+                    <p style="font-size:0.7rem; color:#888; text-align:center;">*Visualisasi diperbesar untuk kejelasan</p>
+                </div>
+                <div class="modulus-canvas-container">
+                    <canvas id="canvasYoung" width="250" height="300" style="background:#0a0a0a; border:1px solid #333; border-radius:5px; box-shadow:inset 0 0 10px #000;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULUS BULK -->
+        <div class="panel">
+            <h2 style="color: var(--neon-purple);">2. Modulus Bulk (Kompresi Volume)</h2>
+            <div class="modulus-lab">
+                <div class="modulus-controls">
+                    <p class="instruction" style="text-align:left;">Rumus: <b>K = -V₀ (ΔP / ΔV)</b><br>Mengukur ketahanan zat terhadap perubahan volume.</p>
+                    
+                    <div class="control-group">
+                        <label><span>Material Objek</span><span id="lblBulkMat" style="color:var(--neon-purple);">Air (2.2 GPa)</span></label>
+                        <select id="selBulkMat" class="select-style" style="color:var(--neon-purple); border-color:var(--neon-purple);">
+                            <option value="2.2e9">Air (2.2 GPa)</option>
+                            <option value="160e9">Bola Baja (160 GPa)</option>
+                            <option value="40e9">Bola Kaca (40 GPa)</option>
+                            <option value="1.5e9">Minyak (1.5 GPa)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><span>Tekanan Hidrolik (ΔP)</span><span id="lblBulkP">0 MPa</span></label>
+                        <input type="range" id="sliderBulkP" min="0" max="500" step="10" value="0">
+                    </div>
+                    
+                    <div class="mini-dashboard">
+                        <div class="mini-dash-card"><span>Volume Awal (V₀)</span><strong style="color:var(--neon-purple);">1.000 m³</strong></div>
+                        <div class="mini-dash-card"><span>Penyusutan (ΔV)</span><strong id="outBulkDelta" style="color:var(--neon-purple);">0.00 L</strong></div>
+                    </div>
+                    <p style="font-size:0.7rem; color:#888; text-align:center;">*Visualisasi penyusutan diperbesar</p>
+                </div>
+                <div class="modulus-canvas-container">
+                    <canvas id="canvasBulk" width="250" height="250" style="background:#0a0a0a; border:1px solid #333; border-radius:5px; box-shadow:inset 0 0 10px #000;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULUS GESER -->
+        <div class="panel">
+            <h2 style="color: var(--neon-orange);">3. Modulus Geser (Puntir / Geser)</h2>
+            <div class="modulus-lab">
+                <div class="modulus-controls">
+                    <p class="instruction" style="text-align:left;">Rumus: <b>G = (F / A) / (Δx / h)</b><br>Mengukur ketahanan bentuk terhadap gaya tangensial.</p>
+                    
+                    <div class="control-group">
+                        <label><span>Material Balok</span><span id="lblShearMat" style="color:var(--neon-orange);">Karet (0.6 MPa)</span></label>
+                        <select id="selShearMat" class="select-style" style="color:var(--neon-orange); border-color:var(--neon-orange);">
+                            <option value="6e5">Karet Keras (0.6 MPa)</option>
+                            <option value="1e4">Agar-agar (0.01 MPa)</option>
+                            <option value="25e9">Aluminium (25 GPa)</option>
+                            <option value="79e9">Baja (79 GPa)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><span>Gaya Tangensial (F)</span><span id="lblShearF">0 N</span></label>
+                        <input type="range" id="sliderShearF" min="0" max="1000" step="10" value="0">
+                    </div>
+                    
+                    <div class="mini-dashboard">
+                        <div class="mini-dash-card"><span>Sudut Geser (γ)</span><strong id="outShearStrain" style="color:var(--neon-orange);">0.000 rad</strong></div>
+                        <div class="mini-dash-card"><span>Pergeseran (Δx)</span><strong id="outShearDelta" style="color:var(--neon-orange);">0.00 mm</strong></div>
+                    </div>
+                </div>
+                <div class="modulus-canvas-container">
+                    <canvas id="canvasShear" width="250" height="220" style="background:#0a0a0a; border:1px solid #333; border-radius:5px; box-shadow:inset 0 0 10px #000;"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ============================================================================
+        // UTILITY: MENGGAMBAR GRID LATAR BELAKANG CANVAS
+        // ============================================================================
+        function drawCanvasGrid(ctx, w, h) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let x=0; x<=w; x+=25) { ctx.moveTo(x,0); ctx.lineTo(x,h); }
+            for(let y=0; y<=h; y+=25) { ctx.moveTo(0,y); ctx.lineTo(w,y); }
+            ctx.stroke();
+        }
+
+        // ============================================================================
+        // BAGIAN 1: SISTEM PEGAS HUKUM HOOKE (VISUAL & LOGIKA DIPERBAIKI)
+        // ============================================================================
+        const GRAVITY = 9.8, PIXEL_PER_METER = 50, LIMIT_PLASTIC = 1.4, LIMIT_BREAK = 2.4;
+        let arrangement = 'single'; // single, series, parallel
+        let spring = { k1: 200, k2: 200, k: 200, mass: 0, originalRestY: 50, y: 50, v: 0, isDeformed: false, isBroken: false, damping: 1.5, restY: 50 };
+        let isDragging = false, graphTrace = [], maxRecordedX = 0;
+
+        const canvasSim = document.getElementById('springCanvas'), ctxSim = canvasSim.getContext('2d');
+        const canvasGraph = document.getElementById('graphCanvas'), ctxGraph = canvasGraph.getContext('2d');
+        const sliderMass = document.getElementById('sliderMass'), selObject = document.getElementById('selObject');
+        
+        function updateEffectiveK() {
+            if(arrangement === 'single') spring.k = spring.k1;
+            else if(arrangement === 'series') spring.k = (spring.k1 * spring.k2) / (spring.k1 + spring.k2);
+            else if(arrangement === 'parallel') spring.k = spring.k1 + spring.k2;
+        }
+
+        function updatePhysicsSpring() {
+            let totalExtMeters = (spring.y - spring.originalRestY) / PIXEL_PER_METER;
+            let theoreticalDelta = (spring.mass * GRAVITY) / spring.k;
+
+            if ((totalExtMeters >= LIMIT_BREAK || theoreticalDelta >= LIMIT_BREAK) && !spring.isBroken) {
+                spring.isBroken = true; spring.isDeformed = true; spring.v = 0; isDragging = false;
+                if (maxRecordedX < LIMIT_BREAK) graphTrace.push({ x: LIMIT_BREAK, f: spring.k * LIMIT_PLASTIC, status: 'plastic' });
+                graphTrace.push({ x: LIMIT_BREAK, f: 0, status: 'broken' }); maxRecordedX = LIMIT_BREAK;
+            }
+            if (totalExtMeters >= LIMIT_PLASTIC && !spring.isBroken) {
+                spring.isDeformed = true;
+                let excessMeters = totalExtMeters - LIMIT_PLASTIC;
+                let targetRestY = spring.originalRestY + (excessMeters * PIXEL_PER_METER);
+                if (targetRestY > spring.restY) spring.restY = targetRestY;
+            }
+            let forceSpring = 0;
+            if (!spring.isBroken) { forceSpring = -spring.k * ((spring.y - spring.restY) / PIXEL_PER_METER); }
+
+            if (!spring.isBroken) {
+                let statusTrace = spring.isDeformed ? 'plastic' : 'elastic';
+                if (totalExtMeters > maxRecordedX) { graphTrace.push({ x: totalExtMeters, f: Math.abs(forceSpring), status: statusTrace }); maxRecordedX = totalExtMeters; }
+            }
+
+            if (isDragging && !spring.isBroken) { spring.v = 0; } 
+            else {
+                let forceGravity = (spring.mass + 0.5) * GRAVITY, forceDamping = -spring.damping * spring.v;
+                let acceleration = (forceSpring + forceGravity + forceDamping) / Math.max(spring.mass + 0.5, 0.1);
+                spring.v += acceleration * 0.03; spring.y += (spring.v * PIXEL_PER_METER) * 0.03;
+            }
+        }
+
+        function drawEnhancedSpring(ctx, cx, startY, endY, coils, width, color) {
+            let seg = (endY - startY) / coils;
+            ctx.beginPath(); ctx.moveTo(cx, startY);
+            for(let i=0; i<=coils; i++) {
+                let x = cx + (i%2!==0 ? width : (i!==0&&i!==coils ? -width : 0));
+                ctx.lineTo(x, startY + i*seg);
+            }
+            // Shadow for 3D effect
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 6; ctx.stroke();
+            // Main Color
+            ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+        }
+
+        function drawSpringCanvas() {
+            ctxSim.clearRect(0, 0, canvasSim.width, canvasSim.height);
+            drawCanvasGrid(ctxSim, canvasSim.width, canvasSim.height);
+            
+            const cx = canvasSim.width / 2;
+            
+            // Atap Mounting
+            let mountGrd = ctxSim.createLinearGradient(cx-60, 0, cx-60, 25);
+            mountGrd.addColorStop(0, '#777'); mountGrd.addColorStop(1, '#333');
+            ctxSim.fillStyle = mountGrd; 
+            ctxSim.fillRect(cx - 70, 0, 140, 25);
+            
+            ctxSim.fillStyle = '#222';
+            for(let i=0; i<=140; i+=15) { ctxSim.fillRect(cx-70+i, 0, 2, 25); } // baut mounting
+
+            let c1 = spring.isBroken ? '#ff1744' : (spring.isDeformed ? '#ffaa00' : '#00e5ff'); // Neon Biru Terang
+            let c2 = spring.isBroken ? '#ff1744' : (spring.isDeformed ? '#ffaa00' : '#d500f9'); // Neon Ungu Terang
+            
+            let startY = 25;
+            let endY = spring.isBroken ? spring.restY + 50 : spring.y;
+            let coils = 12, sW = 25;
+
+            // DRAWING ARRANGEMENTS
+            if(arrangement === 'single') {
+                drawEnhancedSpring(ctxSim, cx, startY, endY, coils, sW, c1);
+                if(spring.isBroken) {
+                    drawEnhancedSpring(ctxSim, cx, spring.y-30, spring.y, 3, sW, '#ff3333');
+                }
+            } 
+            else if (arrangement === 'parallel') {
+                // Palang atas
+                ctxSim.fillStyle = '#999'; ctxSim.fillRect(cx-50, startY, 100, 8);
+                // 2 Pegas
+                drawEnhancedSpring(ctxSim, cx-30, startY+8, endY-8, coils, sW*0.6, c1);
+                drawEnhancedSpring(ctxSim, cx+30, startY+8, endY-8, coils, sW*0.6, c2);
+                // Palang bawah
+                ctxSim.fillStyle = '#999'; ctxSim.fillRect(cx-50, endY-8, 100, 8);
+                
+                if(spring.isBroken) {
+                    drawEnhancedSpring(ctxSim, cx-30, spring.y-30, spring.y-8, 3, sW*0.6, '#ff3333');
+                    drawEnhancedSpring(ctxSim, cx+30, spring.y-30, spring.y-8, 3, sW*0.6, '#ff3333');
+                    ctxSim.fillRect(cx-50, spring.y-8, 100, 8);
+                }
+            }
+            else if (arrangement === 'series') {
+                // Cari titik tengah (distribusi regangan proporsional thd 1/k)
+                let ratio = (1/spring.k1) / ((1/spring.k1)+(1/spring.k2));
+                let midY = startY + (endY - startY) * ratio;
+                
+                drawEnhancedSpring(ctxSim, cx, startY, midY, coils/2, sW, c1);
+                // Cincin penyambung
+                ctxSim.beginPath(); ctxSim.arc(cx, midY, 6, 0, Math.PI*2); ctxSim.fillStyle='#ccc'; ctxSim.fill(); ctxSim.stroke();
+                drawEnhancedSpring(ctxSim, cx, midY, endY, coils/2, sW, c2);
+
+                if(spring.isBroken) {
+                    drawEnhancedSpring(ctxSim, cx, spring.y-30, spring.y, 3, sW, '#ff3333');
+                }
+            }
+
+            // Gambar Beban Besi Industrial
+            if (spring.mass > 0) {
+                let sc = 0.8 + (spring.mass/40);
+                let bw=50*sc, bH=45*sc;
+                
+                let bY = spring.y;
+                // Hook
+                ctxSim.beginPath(); ctxSim.arc(cx, bY+5, 6, Math.PI, 0); ctxSim.strokeStyle='#bbb'; ctxSim.lineWidth=3; ctxSim.stroke();
+                
+                let grd = ctxSim.createLinearGradient(cx-bw/2, bY+10, cx+bw/2, bY+10);
+                grd.addColorStop(0,'#444'); grd.addColorStop(0.5,'#e0e0e0'); grd.addColorStop(1,'#444');
+                
+                ctxSim.fillStyle = grd;
+                ctxSim.beginPath(); ctxSim.roundRect(cx-bw/2, bY+10, bw, bH, 5); ctxSim.fill(); 
+                ctxSim.strokeStyle='#000'; ctxSim.lineWidth=3; ctxSim.stroke();
+                
+                // Teks Berat
+                ctxSim.fillStyle='#000'; ctxSim.font=`bold ${13*sc}px Consolas`; ctxSim.textAlign='center';
+                ctxSim.fillText(`${spring.mass} kg`, cx, bY+10+bH/2 + 4);
+            } else {
+                // Hook kecil
+                ctxSim.beginPath(); ctxSim.arc(cx, spring.y, 5, 0, Math.PI*2); ctxSim.strokeStyle='#fff'; ctxSim.lineWidth=2; ctxSim.stroke();
+            }
+        }
+
+        function drawGraphCanvas() {
+            ctxGraph.clearRect(0, 0, canvasGraph.width, canvasGraph.height);
+            const w = canvasGraph.width, h = canvasGraph.height, p = 45;
+            let getX = (m) => p + (m/3.0)*(w-p*1.5);
+            let getY = (f) => (h-p) - (f/600)*(h-p*1.5);
+
+            // Sumbu & Grid
+            ctxGraph.strokeStyle='#555'; ctxGraph.lineWidth=1; ctxGraph.beginPath();
+            for(let i=0;i<=6;i++){ ctxGraph.moveTo(p,getY(i*100)); ctxGraph.lineTo(w-20,getY(i*100)); ctxGraph.moveTo(getX(i*0.5),h-p); ctxGraph.lineTo(getX(i*0.5),20); } ctxGraph.stroke();
+            ctxGraph.strokeStyle='#fff'; ctxGraph.lineWidth=3; ctxGraph.strokeRect(p,20,w-p-20,h-p-20);
+            
+            // Label
+            ctxGraph.fillStyle='#fff'; ctxGraph.font='bold 12px sans-serif'; ctxGraph.textAlign='center';
+            ctxGraph.fillText('Total Regangan (m)', w/2, h-10);
+            ctxGraph.save(); ctxGraph.translate(15, h/2); ctxGraph.rotate(-Math.PI/2); ctxGraph.fillText('Gaya F (N)', 0,0); ctxGraph.restore();
+
+            // Batas Wilayah
+            ctxGraph.setLineDash([4,4]); 
+            ctxGraph.beginPath(); ctxGraph.moveTo(getX(LIMIT_PLASTIC),h-p); ctxGraph.lineTo(getX(LIMIT_PLASTIC),20); ctxGraph.strokeStyle='#ffaa00'; ctxGraph.lineWidth=2; ctxGraph.stroke();
+            ctxGraph.beginPath(); ctxGraph.moveTo(getX(LIMIT_BREAK),h-p); ctxGraph.lineTo(getX(LIMIT_BREAK),20); ctxGraph.strokeStyle='#ff1744'; ctxGraph.lineWidth=2; ctxGraph.stroke(); 
+            ctxGraph.setLineDash([]);
+
+            // Fill Area EP (Jika tidak putus)
+            let curX = Math.max(0,(spring.y-50)/50);
+            let activeExt = Math.max(0, (spring.y-spring.restY)/50);
+            let curF = spring.isBroken?0:Math.abs(spring.k*activeExt);
+
+            if (!spring.isBroken && activeExt > 0) {
+                let plasticExt = (spring.restY - 50) / 50;
+                ctxGraph.beginPath(); ctxGraph.moveTo(getX(plasticExt), h-p); 
+                ctxGraph.lineTo(getX(plasticExt + activeExt), getY(curF));
+                ctxGraph.lineTo(getX(plasticExt + activeExt), h-p);
+                ctxGraph.fillStyle = spring.isDeformed ? 'rgba(255, 170, 0, 0.2)' : 'rgba(57, 255, 20, 0.2)';
+                ctxGraph.fill();
+            }
+
+            // Garis Rekam Jejak
+            if (graphTrace.length > 0) {
+                ctxGraph.beginPath(); ctxGraph.moveTo(p, h-p);
+                graphTrace.forEach(pt => ctxGraph.lineTo(getX(pt.x), getY(pt.f)));
+                
+                if (curX < maxRecordedX && !spring.isBroken) ctxGraph.lineTo(getX(curX), getY(curF));
+                
+                ctxGraph.strokeStyle = spring.isBroken?'#ff3333':(spring.isDeformed?'#ffaa00':'#39ff14'); ctxGraph.lineWidth=3; ctxGraph.stroke();
+                
+                // Titik Ujung
+                let dotX = spring.isBroken?LIMIT_BREAK:curX;
+                ctxGraph.beginPath(); ctxGraph.arc(getX(dotX), getY(curF), 6, 0, Math.PI*2); 
+                ctxGraph.fillStyle = ctxGraph.strokeStyle; ctxGraph.fill();
+                
+                // Teks Koordinat
+                ctxGraph.fillStyle='#fff'; ctxGraph.textAlign='left';
+                ctxGraph.fillText(`(${dotX.toFixed(2)}m, ${curF.toFixed(0)}N)`, getX(dotX)+10, getY(curF)-10);
+            }
+        }
+
+        // ============================================================================
+        // BAGIAN 2: LOGIKA MODULUS ELASTISITAS LENGKAP & VISUAL UPGRADE
+        // ============================================================================
+        
+        // 1. Modulus Young
+        const cy = document.getElementById('canvasYoung').getContext('2d');
+        let yE = 200e9, yF = 0, yA = 10e-6, yL0 = 1; 
+        
+        document.getElementById('selYoungMat').addEventListener('change', e => {
+            yE = parseFloat(e.target.value); 
+            document.getElementById('lblYoungMat').innerText = e.target.options[e.target.selectedIndex].text;
+        });
+        document.getElementById('sliderYoungF').addEventListener('input', e => {
+            yF = parseFloat(e.target.value) * 1000;
+            document.getElementById('lblYoungF').innerText = e.target.value + " kN";
+        });
+        document.getElementById('sliderYoungA').addEventListener('input', e => {
+            yA = parseFloat(e.target.value) * 1e-6; 
+            document.getElementById('lblYoungA').innerText = e.target.value + " mm²";
+        });
+
+        function updateYoung() {
+            let stress = yF / yA; 
+            let deltaL = (yF * yL0) / (yA * yE); 
+            document.getElementById('outYoungStress').innerText = (stress / 1e6).toFixed(1) + " MPa";
+            document.getElementById('outYoungDelta').innerText = (deltaL * 1000).toFixed(3) + " mm";
+
+            cy.clearRect(0, 0, 250, 300);
+            drawCanvasGrid(cy, 250, 300);
+            
+            // Penggaris Skala (Kiri)
+            cy.strokeStyle = '#aaa'; cy.lineWidth = 2;
+            cy.beginPath(); cy.moveTo(40, 20); cy.lineTo(40, 280); cy.stroke();
+            for(let i=20; i<=280; i+=10) {
+                cy.beginPath(); cy.moveTo(30, i); cy.lineTo(40, i); cy.stroke();
+            }
+
+            // Atap Clamp
+            let clampGrd = cy.createLinearGradient(0,0,0,20);
+            clampGrd.addColorStop(0,'#888'); clampGrd.addColorStop(1,'#222');
+            cy.fillStyle = clampGrd; cy.fillRect(80, 0, 90, 20);
+            cy.fillStyle = '#000'; cy.fillRect(100, 20, 50, 5); // Penjepit
+            
+            // Batang Kawat 3D Silinder
+            let w = Math.max(8, (yA * 1e6)); // visual width
+            let visualDeltaL = (deltaL * 1000) * 15; 
+            let h = 150 + visualDeltaL;
+
+            let cMat1 = yE==110e9?'#ffb74d':(yE==69e9?'#ffffff':(yE==200e9?'#b0bec5':'#757575'));
+            let cMat2 = yE==110e9?'#e65100':(yE==69e9?'#9e9e9e':(yE==200e9?'#455a64':'#212121'));
+            
+            let rodGrd = cy.createLinearGradient(125 - w/2, 0, 125 + w/2, 0);
+            rodGrd.addColorStop(0, cMat2); rodGrd.addColorStop(0.5, cMat1); rodGrd.addColorStop(1, cMat2);
+            
+            cy.fillStyle = rodGrd;
+            cy.fillRect(125 - w/2, 25, w, h);
+            
+            // Indikator Pertambahan Panjang (Garis Putus)
+            cy.strokeStyle = 'var(--neon-blue)'; cy.setLineDash([4,2]);
+            cy.beginPath(); cy.moveTo(125 + w/2, 25+150); cy.lineTo(190, 25+150); cy.stroke(); // Original
+            cy.beginPath(); cy.moveTo(125 + w/2, 25+h); cy.lineTo(190, 25+h); cy.stroke(); // New
+            cy.setLineDash([]);
+            
+            if(yF > 0) {
+                // Bracket Bawah
+                cy.fillStyle = '#222'; cy.fillRect(125 - w/2 - 10, 25+h, w+20, 10);
+                // Panah Gaya
+                cy.strokeStyle = 'var(--neon-blue)'; cy.lineWidth = 3;
+                cy.beginPath(); cy.moveTo(125, 35+h); cy.lineTo(125, 70+h);
+                cy.lineTo(120, 60+h); cy.moveTo(125, 70+h); cy.lineTo(130, 60+h); cy.stroke();
+                cy.fillStyle = 'var(--neon-blue)'; cy.font = "bold 14px Arial"; cy.fillText("F", 135, 60+h);
+                
+                // Text Delta L
+                cy.font = "12px Arial"; cy.fillText("ΔL", 195, 25+150 + visualDeltaL/2 + 5);
+            }
+        }
+
+        // 2. Modulus Bulk
+        const cb = document.getElementById('canvasBulk').getContext('2d');
+        let bK = 2.2e9, bP = 0, bV0 = 1; 
+        
+        document.getElementById('selBulkMat').addEventListener('change', e => {
+            bK = parseFloat(e.target.value); 
+            document.getElementById('lblBulkMat').innerText = e.target.options[e.target.selectedIndex].text;
+        });
+        document.getElementById('sliderBulkP').addEventListener('input', e => {
+            bP = parseFloat(e.target.value) * 1e6; 
+            document.getElementById('lblBulkP').innerText = e.target.value + " MPa";
+        });
+
+        function updateBulk() {
+            let deltaV = (bV0 * bP) / bK; 
+            document.getElementById('outBulkDelta').innerText = "-" + (deltaV * 1000).toFixed(2) + " L"; 
+            
+            cb.clearRect(0, 0, 250, 250);
+            
+            // Tabung Hidrolik Baja
+            cb.fillStyle = '#111'; cb.fillRect(20, 50, 210, 180);
+            cb.fillStyle = 'rgba(0, 229, 255, 0.15)'; cb.fillRect(30, 60, 190, 160); // Liquid Brighter
+            cb.strokeStyle = '#777'; cb.lineWidth = 10; cb.strokeRect(25, 55, 200, 170);
+
+            // Piston Atas
+            let pMove = (bP / 500e6) * 30; 
+            cb.fillStyle = '#aaa'; cb.fillRect(30, 10, 190, 50 + pMove);
+            cb.fillStyle = '#888'; cb.fillRect(115, 0, 20, 10 + pMove); // Shaft
+
+            // Bola ditengah
+            let cx = 125, cy = 145 + (pMove/4);
+            let r0 = 50;
+            let visualDeltaV = deltaV * 10; 
+            if(visualDeltaV > bV0 * 0.8) visualDeltaV = bV0 * 0.8; 
+            let newR = r0 * Math.cbrt(1 - visualDeltaV);
+
+            // Shadow/Original Size indicator
+            cb.beginPath(); cb.arc(cx, cy, r0, 0, Math.PI*2);
+            cb.strokeStyle = 'rgba(255,255,255,0.4)'; cb.setLineDash([5,5]); cb.lineWidth=2; cb.stroke(); cb.setLineDash([]);
+
+            // Actual Ball with gradient
+            let colorMap = {
+                2.2e9: ['#84ffff', '#00b0ff'], 160e9: ['#ffffff', '#78909c'], 
+                40e9: ['rgba(255,255,255,0.9)', 'rgba(150,150,150,0.9)'], 1.5e9: ['#ffff00', '#ff8f00']
+            };
+            let cCol = colorMap[bK] || ['#fff','#000'];
+            let bGrd = cb.createRadialGradient(cx-10, cy-10, 5, cx, cy, newR);
+            bGrd.addColorStop(0, cCol[0]); bGrd.addColorStop(1, cCol[1]);
+
+            cb.beginPath(); cb.arc(cx, cy, newR, 0, Math.PI*2);
+            cb.fillStyle = bGrd; cb.fill(); cb.strokeStyle = '#000'; cb.lineWidth=2; cb.stroke();
+
+            // Pressure Gauge Analog (Meteran Tekanan)
+            cb.beginPath(); cb.arc(50, 40, 25, 0, Math.PI*2); cb.fillStyle='#fff'; cb.fill(); cb.strokeStyle='#555'; cb.lineWidth=4; cb.stroke();
+            // Gauge ticks
+            for(let i=0; i<=4; i++) {
+                let ang = Math.PI + (i/4)*Math.PI;
+                cb.beginPath(); cb.moveTo(50 + 15*Math.cos(ang), 40 + 15*Math.sin(ang)); cb.lineTo(50 + 22*Math.cos(ang), 40 + 22*Math.sin(ang));
+                cb.strokeStyle='#000'; cb.lineWidth=3; cb.stroke();
+            }
+            // Gauge Needle
+            let needleAng = Math.PI + (bP / 500e6) * Math.PI;
+            cb.beginPath(); cb.moveTo(50, 40); cb.lineTo(50 + 18*Math.cos(needleAng), 40 + 18*Math.sin(needleAng));
+            cb.strokeStyle='#ff1744'; cb.lineWidth=3; cb.stroke();
+            cb.beginPath(); cb.arc(50, 40, 5, 0, Math.PI*2); cb.fillStyle='#000'; cb.fill();
+
+            // Tanda Panah Tekanan Inward (Mengecilkan)
+            if(bP > 0) {
+                cb.fillStyle = 'var(--neon-purple)'; cb.font="bold 16px Arial";
+                cb.fillText("↓ P", cx-10, cy-newR-10);
+                cb.fillText("↑ P", cx-10, cy+newR+25);
+                cb.fillText("→", cx-newR-30, cy+5);
+                cb.fillText("←", cx+newR+10, cy+5);
+            }
+        }
+
+        // 3. Modulus Geser
+        const cs = document.getElementById('canvasShear').getContext('2d');
+        let sG = 6e5, sF = 0, sA = 0.01, sH = 0.1; 
+        
+        document.getElementById('selShearMat').addEventListener('change', e => {
+            sG = parseFloat(e.target.value); 
+            document.getElementById('lblShearMat').innerText = e.target.options[e.target.selectedIndex].text;
+            
+            let sl = document.getElementById('sliderShearF');
+            if(sG > 1e9) { sl.max = 1000000; sl.step = 10000; } 
+            else { sl.max = 1000; sl.step = 10; } 
+            sl.value = 0; sF = 0; document.getElementById('lblShearF').innerText = "0 N";
+        });
+        document.getElementById('sliderShearF').addEventListener('input', e => {
+            sF = parseFloat(e.target.value);
+            let unit = sF >= 10000 ? (sF/1000)+" kN" : sF + " N";
+            document.getElementById('lblShearF').innerText = unit;
+        });
+
+        function updateShear() {
+            let stress = sF / sA; 
+            let strain = stress / sG; 
+            let deltaX = strain * sH; 
+
+            document.getElementById('outShearStrain').innerText = strain.toFixed(5) + " rad";
+            document.getElementById('outShearDelta').innerText = (deltaX * 1000).toFixed(3) + " mm";
+
+            cs.clearRect(0, 0, 250, 220);
+            drawCanvasGrid(cs, 250, 220);
+            
+            // Lantai Solid Clamp
+            let floorGrd = cs.createLinearGradient(0, 180, 0, 220);
+            floorGrd.addColorStop(0, '#777'); floorGrd.addColorStop(1, '#222');
+            cs.fillStyle = floorGrd; cs.fillRect(20, 180, 210, 30);
+            // Baut lantai
+            cs.fillStyle = '#ccc'; cs.beginPath(); cs.arc(40, 195, 5, 0, Math.PI*2); cs.fill(); cs.beginPath(); cs.arc(210, 195, 5, 0, Math.PI*2); cs.fill();
+
+            // Balok awal (garis bayangan)
+            cs.strokeStyle = 'rgba(255,255,255,0.5)'; cs.setLineDash([6,4]); cs.lineWidth=2;
+            cs.strokeRect(60, 60, 120, 120); cs.setLineDash([]);
+
+            let visualShift = (deltaX * 1000) * 10; 
+            if(visualShift > 100) visualShift = 100; 
+
+            // Balok Geser (Isometrik 2D)
+            cs.beginPath();
+            cs.moveTo(60 + visualShift, 60); 
+            cs.lineTo(180 + visualShift, 60); 
+            cs.lineTo(180, 180); 
+            cs.lineTo(60, 180); 
+            cs.closePath();
+            
+            let colorMap = {
+                1e4: ['#ff4081', '#c51162'], // Jelly
+                6e5: ['#607d8b', '#263238'], // Karet
+                25e9: ['#ffffff', '#9e9e9e'], // Alum
+                79e9: ['#90a4ae', '#37474f'] // Baja
+            };
+            let cCol = colorMap[sG];
+            let blkGrd = cs.createLinearGradient(60, 60, 180, 180);
+            blkGrd.addColorStop(0, cCol[0]); blkGrd.addColorStop(1, cCol[1]);
+            
+            cs.fillStyle = blkGrd; cs.fill(); 
+            cs.strokeStyle = '#fff'; cs.lineWidth=2; cs.lineJoin='round'; cs.stroke();
+
+            // Plat atas yang didorong
+            cs.fillStyle = '#444';
+            cs.fillRect(50 + visualShift, 50, 140, 10);
+
+            // Visualisasi Sudut Geser (Gamma Arc)
+            if(sF > 0) {
+                cs.beginPath();
+                cs.arc(60, 180, 30, 1.5*Math.PI, 1.5*Math.PI + Math.atan(visualShift/120));
+                cs.strokeStyle = 'var(--neon-orange)'; cs.lineWidth=2; cs.stroke();
+                cs.fillStyle = 'var(--neon-orange)'; cs.font="12px Arial";
+                cs.fillText("γ", 70, 150);
+
+                // Panah Gaya Utama
+                cs.strokeStyle = 'var(--neon-orange)'; cs.lineWidth = 4;
+                cs.beginPath(); cs.moveTo(190 + visualShift, 55); cs.lineTo(230 + visualShift, 55);
+                cs.lineTo(220 + visualShift, 48); cs.moveTo(230 + visualShift, 55); cs.lineTo(220 + visualShift, 62);
+                cs.stroke();
+                cs.font="bold 14px Arial"; cs.fillText("F", 210 + visualShift, 45);
+            }
+        }
+
+        // ============================================================================
+        // MAIN LOOP & EVENT LISTENERS
+        // ============================================================================
+        function mainLoop() {
+            // Hukum Hooke
+            updatePhysicsSpring(); drawSpringCanvas(); drawGraphCanvas();
+            document.getElementById('dispForce').innerText = (spring.isBroken?0:Math.abs(-spring.k * ((spring.y - spring.restY) / PIXEL_PER_METER))).toFixed(2) + ' N';
+            document.getElementById('dispDeltaX').innerText = (spring.isBroken?LIMIT_BREAK:Math.max(0,(spring.y-spring.originalRestY)/50)).toFixed(2) + ' m';
+            document.getElementById('dispStatus').innerText = spring.isBroken ? "PATAH" : (spring.isDeformed ? "PLASTIS / MULUR" : "ELASTIS");
+            document.getElementById('dispK').innerText = spring.isBroken ? "0 N/m" : (spring.isDeformed ? "Yield" : spring.k.toFixed(1) + " N/m");
+            document.getElementById('dispEp').innerText = (spring.isBroken?0: 0.5 * Math.abs(-spring.k * ((spring.y - spring.restY) / PIXEL_PER_METER)) * Math.max(0,(spring.y-spring.restY)/50)).toFixed(2) + ' J';
+
+            let cardStat = document.getElementById('cardStatus');
+            cardStat.className = 'dash-card';
+            if(spring.isBroken) cardStat.classList.add('status-broken');
+            else if(spring.isDeformed) cardStat.classList.add('status-plastic');
+            
+            // Modulus Labs
+            updateYoung();
+            updateBulk();
+            updateShear();
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        // Logic Slider Pegas
+        document.getElementById('selArrangement').addEventListener('change', e => {
+            arrangement = e.target.value;
+            let gK2 = document.getElementById('groupK2');
+            let lK1 = document.getElementById('labelK1');
+            if(arrangement === 'single') {
+                gK2.style.display = 'none'; lK1.innerHTML = 'Konstanta Pegas (k) <span style="color:#4FC3F7">■</span>';
+            } else {
+                gK2.style.display = 'flex'; lK1.innerHTML = 'Konstanta Pegas 1 (k₁) <span style="color:#4FC3F7">■</span>';
+            }
+            updateEffectiveK(); document.getElementById('btnReset').click();
+        });
+
+        selObject.addEventListener('change', e => { if(e.target.value!=='custom') { sliderMass.value=e.target.value; sliderMass.dispatchEvent(new Event('input')); }});
+        sliderMass.addEventListener('input', e => { 
+            spring.mass = parseFloat(e.target.value); document.getElementById('lblMass').innerText = spring.mass + ' kg';
+            let th = (spring.mass * GRAVITY) / spring.k;
+            if(!spring.isBroken) { spring.y = 50 + (th * 50); maxRecordedX = Math.max(maxRecordedX, th); }
+            selObject.value = "custom";
+        });
+        
+        document.getElementById('sliderK1').addEventListener('input', e => { spring.k1 = parseInt(e.target.value); document.getElementById('lblK1').innerText = spring.k1 + " N/m"; updateEffectiveK(); });
+        document.getElementById('sliderK2').addEventListener('input', e => { spring.k2 = parseInt(e.target.value); document.getElementById('lblK2').innerText = spring.k2 + " N/m"; updateEffectiveK(); });
+        
+        document.getElementById('btnReset').addEventListener('click', () => { 
+            spring.isBroken=spring.isDeformed=false; spring.restY=spring.y=50; spring.mass=0; sliderMass.value=0; maxRecordedX=0; graphTrace=[]; selObject.value="0"; document.getElementById('lblMass').innerText='0 kg'
+        });
+
+        canvasSim.addEventListener('mousedown', e => { if (!spring.isBroken) { isDragging = true; spring.v = 0; } });
+        canvasSim.addEventListener('mousemove', e => { if (isDragging && !spring.isBroken) { spring.y = Math.max(40, e.offsetY); } });
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        updateEffectiveK(); // Init K
+        mainLoop();
+    </script>
+</body>
+</html>
