@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momentum Matrix: Kekekalan Momentum & Aksi-Reaksi</title>
+    
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* ========================================================
+           TEMA DESAIN: PREMIUM SPACE TELEMETRY DARK MODE
+           ======================================================== */
+        :root {
+            --bg-base: #03050a;
+            --bg-panel: rgba(10, 14, 23, 0.85);
+            --bg-card: rgba(18, 24, 38, 0.9);
+            --cyan-neon: #00f0ff;
+            --magenta-neon: #ff0055;
+            --amber-neon: #ffaa00;
+            --emerald-green: #00ff66;
+            --crimson-red: #ff3333;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-glow: rgba(0, 240, 255, 0.3);
+            --font-main: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-mono: 'Fira Code', 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 0, 85, 0.05), transparent 25%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+            background-attachment: fixed;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+        header {
+            text-align: center; padding: 40px 20px; 
+            background: var(--bg-panel);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 16px; 
+            border-bottom: 4px solid var(--cyan-neon);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 0 20px rgba(0, 240, 255, 0.05);
+        }
+        header h1 { 
+            color: #fff; font-size: 2.8rem; text-transform: uppercase; letter-spacing: 3px; 
+            text-shadow: 0 0 10px var(--cyan-neon), 0 0 20px var(--cyan-neon); 
+            margin-bottom: 10px; font-weight: 800;
+        }
+        header p { color: var(--text-muted); font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase;}
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
+        
+        .panel {
+            background: var(--bg-panel); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .panel:hover {
+            box-shadow: 0 10px 40px rgba(0, 240, 255, 0.1);
+        }
+        
+        .panel-title { 
+            font-size: 1.4rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; 
+            text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
+        }
+        
+        .info-box { 
+            background: rgba(255,255,255,0.02); border-left: 4px solid var(--cyan-neon); 
+            padding: 15px; font-size: 0.95rem; color: var(--text-muted); 
+            margin-bottom: 20px; border-radius: 0 8px 8px 0; line-height: 1.7;
+        }
+        .info-box strong { color: var(--text-main); }
+
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 20px; 
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+        }
+        .canvas-container::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px; pointer-events: none; z-index: 0;
+        }
+        canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 1; }
+
+        .btn {
+            width: 100%; padding: 14px; background: rgba(255,255,255,0.05); color: var(--text-main); 
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: all 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1.5px;
+        }
+        .btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn-amber { border-color: var(--amber-neon); color: var(--amber-neon); background: rgba(255, 170, 0, 0.05); }
+        .btn-amber:hover { background: rgba(255, 170, 0, 0.15); box-shadow: 0 0 20px rgba(255, 170, 0, 0.4); text-shadow: 0 0 8px var(--amber-neon);}
+        
+        .btn-cyan { border-color: var(--cyan-neon); color: var(--cyan-neon); background: rgba(0, 240, 255, 0.05); }
+        .btn-cyan:hover { background: rgba(0, 240, 255, 0.15); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); text-shadow: 0 0 8px var(--cyan-neon);}
+
+        .slider-box { 
+            background: var(--bg-card); padding: 15px; border-radius: 8px; 
+            border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; 
+        }
+        .slider-label { 
+            display: flex; justify-content: space-between; font-size: 0.85rem; 
+            margin-bottom: 12px; color: var(--text-muted); font-family: var(--font-mono); 
+        }
+        .slider-val { font-weight: bold; color: var(--text-main); font-size: 0.95rem; }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; 
+            background: var(--text-main); cursor: pointer; border: 2px solid #000;
+            transition: 0.2s;
+        }
+        .s-cyan::-webkit-slider-thumb { background: var(--cyan-neon); box-shadow: 0 0 10px var(--cyan-neon); }
+        .s-magenta::-webkit-slider-thumb { background: var(--magenta-neon); box-shadow: 0 0 10px var(--magenta-neon); }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .toggle-container { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: var(--bg-card); padding: 15px; border-radius: 8px; 
+            border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; 
+        }
+        .toggle-label { font-weight: bold; font-family: var(--font-mono); font-size: 0.9rem; }
+        .switch { position: relative; display: inline-block; width: 54px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-sw { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 28px; border: 1px solid rgba(255,255,255,0.2); }
+        .slider-sw:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: var(--emerald-green); transition: .4s; border-radius: 50%; box-shadow: 0 0 10px var(--emerald-green); }
+        input:checked + .slider-sw { background-color: rgba(255, 51, 51, 0.2); border-color: var(--crimson-red); }
+        input:checked + .slider-sw:before { transform: translateX(26px); background-color: var(--crimson-red); box-shadow: 0 0 10px var(--crimson-red);}
+        
+        .status-badge { padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .status-isolated { background: rgba(0, 255, 102, 0.1); color: var(--emerald-green); border: 1px solid var(--emerald-green); box-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+        .status-friction { background: rgba(255, 51, 51, 0.1); color: var(--crimson-red); border: 1px solid var(--crimson-red); box-shadow: 0 0 10px rgba(255, 51, 51, 0.2); }
+
+        .telemetry-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: rgba(0,0,0,0.5); border: 1px dashed rgba(255,255,255,0.2); 
+            padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; font-family: var(--font-mono); 
+        }
+        .tel-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .tel-val { font-size: 1.1rem; font-weight: bold; }
+
+        .c-cyan { color: var(--cyan-neon); text-shadow: 0 0 8px rgba(0,240,255,0.5); }
+        .c-magenta { color: var(--magenta-neon); text-shadow: 0 0 8px rgba(255,0,85,0.5); }
+        .c-amber { color: var(--amber-neon); text-shadow: 0 0 8px rgba(255,170,0,0.5); }
+        .c-green { color: var(--emerald-green); text-shadow: 0 0 8px rgba(0,255,102,0.5); }
+        .c-red { color: var(--crimson-red); text-shadow: 0 0 8px rgba(255,51,51,0.5); }
+
+        .math-box { 
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 20px; border-radius: 8px; text-align: center; color: var(--text-main); 
+            margin-bottom: 15px; overflow-x: auto; font-size: 1.1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; margin-top: 15px; background: var(--bg-card); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { background: rgba(0,0,0,0.5); color: var(--cyan-neon); font-weight: bold; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        tr:last-child td { border-bottom: none; }
+
+        .game-panel { border-top: 4px solid var(--emerald-green); background: linear-gradient(180deg, var(--bg-panel), #00150a); }
+        .game-overlay { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 10; opacity: 0; pointer-events: none; transition: 0.4s ease; border-radius: 12px; 
+            backdrop-filter: blur(5px);
+        }
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+        .game-msg { font-size: 2rem; font-weight: 800; margin-bottom: 15px; letter-spacing: 2px; text-transform: uppercase; text-align: center;}
+        
+        .math-buffer { position: absolute; visibility: hidden; pointer-events: none; top: -9999px; }
+
+        @media (max-width: 900px) { 
+            .grid-2 { grid-template-columns: 1fr; } 
+            header h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HEADER -->
+        <header>
+            <h1>Momentum Matrix</h1>
+            <p>Kekekalan Momentum & Aksi-Reaksi Newton</p>
+            <div style="margin-top: 15px; font-size: 1rem; color: var(--text-muted); max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                Simulasi interaktif untuk membedah syarat berlakunya <b>Kekekalan Momentum</b> melalui Hukum III Newton ($F_{\text{aksi}} = -F_{\text{reaksi}}$).
+            </div>
+        </header>
+
+        <!-- APERSEPSI -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--amber-neon);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Apersepsi: Rekoil Meriam di Ruang Hampa
+            </h2>
+            <div class="info-box" style="border-color: var(--amber-neon);">
+                Sebuah meriam bermassa $M$ menembakkan peluru bermassa $m$ di ruang hampa ($\Sigma F_{\text{ext}} = 0$). Momentum total sistem sebelum tembakan adalah 0. 
+            </div>
+            
+            <div class="grid-2">
+                <div class="canvas-container" style="height: 300px;">
+                    <canvas id="apersepsiCanvas"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <button class="btn btn-amber" id="btnAper" onclick="playApersepsi()">TEMBAKKAN MERIAM!</button>
+                    <div id="aper-popup" class="info-box" style="margin-top: 20px; border-color: var(--emerald-green); display: none; background: rgba(0, 255, 102, 0.05);">
+                        <span class="c-green" style="font-weight: bold; font-size: 1.2rem; display:block; margin-bottom: 8px;">Kekekalan Terbukti!</span>
+                        Gaya aksi-reaksi internal bernilai sama besar & berlawanan arah ($F_{12} = -F_{21}$).<br><br>
+                        Karena durasi ledakan ($\Delta t$) sama, Impuls totalnya nol. Momentum Total Sistem Sebelum dan Sesudah Tembakan Selalu Sama ($0 \text{ kg·m/s}$)!.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- MODUL 1: BUKTI HUKUM III NEWTON & TUMBUKAN -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-neon);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                    Modul 1: Tumbukan & Isolasi Sistem
+                </h2>
+                <div class="info-box">Buktikan bahwa Hukum Kekekalan Momentum hanya berlaku jika tidak ada Gaya Luar ($\Sigma F_{\text{ext}} = 0$).</div>
+                
+                <div class="toggle-container">
+                    <span class="toggle-label" style="color: var(--text-main);">Gaya Gesek Luar ($\Sigma F_{\text{ext}}$)</span>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span id="sys-status" class="status-badge status-isolated">Sistem Terisolasi</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-friction" onchange="updateModul1Friction()">
+                            <span class="slider-sw"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="canvas-container" style="height: 280px;">
+                    <canvas id="colCanvas"></canvas>
+                </div>
+
+                <!-- Telemetry -->
+                <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                    <div style="flex: 1; background: rgba(0, 240, 255, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.2); text-align: center;">
+                        <div class="tel-label c-cyan" style="margin-bottom: 5px;">Momentum Benda 1 ($p_1$)</div>
+                        <div class="tel-val c-cyan" id="m1-p1">0.00</div>
+                    </div>
+                    <div style="flex: 1; background: rgba(255, 0, 85, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 0, 85, 0.2); text-align: center;">
+                        <div class="tel-label c-magenta" style="margin-bottom: 5px;">Momentum Benda 2 ($p_2$)</div>
+                        <div class="tel-val c-magenta" id="m1-p2">0.00</div>
+                    </div>
+                </div>
+                <div class="telemetry-row" id="tel-ptot-box" style="border-color: var(--emerald-green); padding: 15px;">
+                    <span class="tel-label" style="font-size: 0.9rem;">Momentum Total Sistem ($\Sigma P$)</span>
+                    <span class="tel-val c-green" style="font-size: 1.3rem;" id="m1-ptot">0.00 kg·m/s</span>
+                </div>
+
+                <div class="grid-2" style="gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Massa 1 ($m_1$)</span> <span class="slider-val" id="m1-val-m1">2.0 kg</span></div>
+                            <input type="range" class="s-cyan" id="m1-m1" min="0.5" max="10" step="0.5" value="2" oninput="setupModul1()">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Kec. Awal 1 ($v_1$)</span> <span class="slider-val" id="m1-val-v1">5.0 m/s</span></div>
+                            <input type="range" class="s-cyan" id="m1-v1" min="-15" max="15" step="0.5" value="5" oninput="setupModul1()">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Massa 2 ($m_2$)</span> <span class="slider-val" id="m1-val-m2">3.0 kg</span></div>
+                            <input type="range" class="s-magenta" id="m1-m2" min="0.5" max="10" step="0.5" value="3" oninput="setupModul1()">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-label"><span>Kec. Awal 2 ($v_2$)</span> <span class="slider-val" id="m1-val-v2">-4.0 m/s</span></div>
+                            <input type="range" class="s-magenta" id="m1-v2" min="-15" max="15" step="0.5" value="-4" oninput="setupModul1()">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-cyan" onclick="playModul1()">Tumbukkan!</button>
+                    <button class="btn" style="width: 120px;" onclick="setupModul1()">Reset</button>
+                </div>
+            </div>
+
+            <!-- MODUL 2: PRINSIP ROKET -->
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--magenta-neon);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                    Modul 2: Pendorong Roket
+                </h2>
+                <div class="info-box">Roket (Tsiolkovsky) melaju di ruang hampa dengan membuang gas. Gaya Aksi (gas ke bawah) = Gaya Reaksi (roket ke atas).</div>
+                
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <div class="canvas-container" style="height: 380px; flex: 1; min-width: 200px; margin-bottom: 0;">
+                        <canvas id="rocketCanvas"></canvas>
+                    </div>
+                    <div class="canvas-container" style="height: 380px; flex: 1.2; min-width: 250px; background:rgba(0,0,0,0.8); margin-bottom: 0;">
+                        <div style="position: absolute; top:10px; left:15px; font-size:0.8rem; font-family: var(--font-mono); color:var(--cyan-neon);">Grafik Kecepatan (v - t)</div>
+                        <canvas id="rocketGraph"></canvas>
+                    </div>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="tel-label">Gaya Dorong ($F_{\text{thrust}}$)</span>
+                    <span class="tel-val c-amber" id="m2-f">0 N</span>
+                </div>
+                <div class="telemetry-row" style="margin-bottom: 20px;">
+                    <span class="tel-label">Kecepatan Roket ($v$)</span>
+                    <span class="tel-val c-cyan" id="m2-v">0.0 m/s</span>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Laju Buang Gas ($\frac{dm}{dt}$)</span> <span class="slider-val" id="m2-val-dm">50 kg/s</span></div>
+                    <input type="range" class="s-magenta" id="m2-dm" min="10" max="100" step="5" value="50" oninput="updateModul2()">
+                </div>
+                <div class="slider-box" style="margin-bottom: 20px;">
+                    <div class="slider-label"><span>Kec. Semburan Gas ($v_e$)</span> <span class="slider-val" id="m2-val-ve">500 m/s</span></div>
+                    <input type="range" class="s-magenta" id="m2-ve" min="100" max="1000" step="50" value="500" oninput="updateModul2()">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-amber" id="btnM2Play" onclick="playModul2()">Luncurkan Roket</button>
+                    <button class="btn" style="width: 120px;" onclick="resetModul2()">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL RUMUS & TIMBANGAN -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+                Timbangan Momentum & Penurunan Matematis
+            </h2>
+            
+            <div class="grid-2" style="align-items: stretch;">
+                <div class="math-box" style="display: flex; flex-direction: column; justify-content: center;">
+                    <div style="color: var(--cyan-neon); font-size: 0.85rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight:bold;">Penurunan Newton III ke Kekekalan Momentum</div>
+                    $$F_{\text{aksi}} = -F_{\text{reaksi}} \implies F_{12} \cdot \Delta t = -F_{21} \cdot \Delta t$$
+                    $$\Delta p_1 = -\Delta p_2$$
+                    $$m_1(v_1' - v_1) = -m_2(v_2' - v_2)$$
+                    <div style="background: rgba(0, 255, 102, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(0, 255, 102, 0.3); margin-top: 15px; box-shadow: inset 0 0 10px rgba(0,255,102,0.1);">
+                        $\mathbf{m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'}$
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                    <div class="info-box" style="text-align: center; border: none; background: rgba(0,0,0,0.4); margin-bottom: 10px;">
+                        Timbangan di bawah merespon <b>Modul 1</b>. Membandingkan Total Momentum Awal (Kiri) dan Akhir (Kanan). Timbangan akan sejajar jika $\Sigma F_{\text{ext}} = 0$.
+                    </div>
+                    <div class="canvas-container" style="flex: 1; min-height: 180px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); margin-bottom:0;">
+                        <canvas id="scaleCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEORI MATRIX -->
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                Matriks Konseptual Momentum
+            </h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter Kondisi</th>
+                            <th>Syarat & Gaya Bekerja</th>
+                            <th>Konsekuensi / Dampak Fisis</th>
+                            <th>Contoh Penerapan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="c-green" style="font-weight: bold;">Isolasi Sistem Ideal</td>
+                            <td>$\Sigma F_{\text{eksternal}} = 0$<br><span style="color:var(--text-muted); font-size:0.8rem;">(Tidak ada gesekan luar)</span></td>
+                            <td>Momentum total sistem <b>Konstan / Kekal</b> sebelum dan sesudah interaksi.</td>
+                            <td>Tumbukan partikel, ledakan di ruang hampa, manuver pesawat luar angkasa.</td>
+                        </tr>
+                        <tr>
+                            <td class="c-red" style="font-weight: bold;">Terdapat Gaya Luar</td>
+                            <td>$\Sigma F_{\text{eksternal}} \neq 0$<br><span style="color:var(--text-muted); font-size:0.8rem;">(Ada gaya gesek/gravitasi)</span></td>
+                            <td>Momentum total sistem <b>Berkurang/Berubah</b> sebesar Impuls luar ($\Delta P = I_{\text{ext}}$).</td>
+                            <td>Mobil mengerem di jalan aspal. Benda bertumbukan di lantai kasar.</td>
+                        </tr>
+                        <tr>
+                            <td class="c-amber" style="font-weight: bold;">Aksi-Reaksi Internal</td>
+                            <td>$F_{12} = -F_{21}$<br><span style="color:var(--text-muted); font-size:0.8rem;">(Interaksi antar komponen)</span></td>
+                            <td>Pertukaran momentum internal. Komponen satu terdorong ke kiri, yang lain ke kanan.</td>
+                            <td>Pendorong jet roket, rekoil senapan, tolakan antar astronaut di orbit.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MINI GAME -->
+        <div class="panel game-panel">
+            <h2 class="panel-title" style="color: var(--emerald-green);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                Orbital Docking Challenge
+            </h2>
+            <div style="background: rgba(0, 255, 102, 0.05); border-left: 4px solid var(--emerald-green); padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+                <p style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 8px;">
+                    <strong>Skenario Darurat:</strong> Anda (Astronaut bermassa Total $M_{\text{awal}} = 100 \text{ kg}$) terdampar tak bergerak ($v=0$) di luar stasiun angkasa. Anda memegang tabung pendorong gas darurat.
+                </p>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">
+                    <strong>Tugas:</strong> Atur <b>Massa</b> dan <b>Kecepatan Semburan Gas</b> yang dibuang berlawanan arah, agar rekoil mendorong Anda ke pintu stasiun dengan kecepatan aman (<span class="c-green font-bold">$\le 2.0 \text{ m/s}$</span>).
+                </p>
+            </div>
+
+            <div class="grid-2" style="align-items: center;">
+                <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div class="telemetry-row"><span class="tel-label">Massa Total Awal ($M_{\text{awal}}$)</span> <span class="tel-val">100 kg</span></div>
+                    <div class="slider-box" style="background: transparent;">
+                        <div class="slider-label"><span>Massa Gas Dibuang ($m_{\text{gas}}$)</span> <span class="slider-val c-magenta" id="gm-val-m">5 kg</span></div>
+                        <input type="range" class="s-magenta" id="gm-m" min="1" max="30" step="1" value="5" oninput="updateGameUI()">
+                    </div>
+                    <div class="slider-box" style="background: transparent;">
+                        <div class="slider-label"><span>Kec. Semburan Gas ($v_{\text{gas}}$)</span> <span class="slider-val c-magenta" id="gm-val-v">20 m/s</span></div>
+                        <input type="range" class="s-magenta" id="gm-v" min="5" max="50" step="1" value="20" oninput="updateGameUI()">
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="canvas-container" style="height: 280px; margin-bottom: 15px; box-shadow: inset 0 0 40px rgba(0, 255, 102, 0.1);">
+                        <canvas id="gameCanvas"></canvas>
+                    </div>
+                    <div class="telemetry-row" style="border-color: var(--emerald-green); background: rgba(0, 255, 102, 0.05); padding: 15px;">
+                        <span class="tel-label" style="color:var(--emerald-green);">Estimasi Kec. Astronaut ($v_{\text{astro}}$)</span>
+                        <span class="tel-val c-green" style="font-size: 1.4rem;" id="gm-val-va">0.00 m/s</span>
+                    </div>
+                    <button class="btn btn-amber" onclick="checkGame()" style="margin-top: 10px; font-size: 1.1rem; padding: 15px;">SEMBURKAN GAS!</button>
+                </div>
+            </div>
+
+            <!-- Game Overlay -->
+            <div class="game-overlay" id="game-overlay">
+                <div class="game-msg" id="game-msg"></div>
+                <p id="game-desc" style="color: var(--text-main); margin-bottom: 30px; max-width: 80%; text-align: center; font-size: 1.2rem; line-height: 1.5;"></p>
+                <button class="btn btn-cyan" style="width: auto; padding: 12px 40px; font-size: 1.1rem;" onclick="resetGame()">Tutup & Ulangi</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="math-buffer" class="math-buffer"></div>
+
+    <script>
+        // ==========================================
+        // UTILITY FUNCTIONS & CANVAS SETUP
+        // ==========================================
+        function resizeCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const container = canvas.parentElement;
+            // Handle high DPI displays for crisp rendering
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = container.clientWidth * dpr;
+            canvas.height = container.clientHeight * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, w: container.clientWidth, h: container.clientHeight };
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width=3, label="") {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 1) return; 
+
+            ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color; ctx.lineWidth = width; 
+            ctx.shadowBlur = 10; ctx.shadowColor = color;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = color; ctx.fill();
+            ctx.shadowBlur = 0; // reset
+
+            if (label !== "") {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 12px "Fira Code", monospace';
+                let lx = toX + 18 * Math.cos(angle); let ly = toY + 18 * Math.sin(angle) + 4;
+                ctx.textAlign = 'center'; ctx.fillText(label, lx, ly); ctx.textAlign = 'left';
+            }
+        }
+
+        // ==========================================
+        // CANVAS 1: APERSEPSI (CANNON RECOIL)
+        // ==========================================
+        let ctxAper, wAper, hAper;
+        let aper = { playing: false, t: 0, cx: 0, bx: 0, fw: 0, vBall: 15, vCannon: -3 }; // Sesuai Hukum Fisika: Jika M = 5m, maka V = -v/5
+
+        function initApersepsi() {
+            const res = resizeCanvas('apersepsiCanvas');
+            ctxAper = res.ctx; wAper = res.w; hAper = res.h;
+            // Tempatkan meriam persis di tengah canvas
+            aper.cx = wAper/2; 
+            aper.bx = wAper/2 + 40;
+            drawApersepsiFrame();
+        }
+
+        function playApersepsi() {
+            if (aper.playing) return;
+            // Fisika: Momentum Kekal -> M*V = m*v.
+            aper.playing = true; aper.t = 0; 
+            aper.cx = wAper/2; 
+            aper.bx = wAper/2 + 40; 
+            aper.fw = 0;
+            document.getElementById('aper-popup').style.display = 'none';
+            requestAnimationFrame(loopApersepsi);
+        }
+
+        function drawApersepsiFrame() {
+            if (!aper.playing) {
+                aper.cx = wAper / 2;
+                aper.bx = wAper / 2 + 40;
+            }
+
+            ctxAper.clearRect(0,0,wAper,hAper);
+            
+            // Ground (Lantai Referensi di Ruang Hampa)
+            ctxAper.fillStyle = '#1e293b'; ctxAper.fillRect(0, hAper/2 + 25, wAper, hAper);
+            ctxAper.fillStyle = '#00f0ff'; ctxAper.globalAlpha = 0.2; ctxAper.fillRect(0, hAper/2 + 25, wAper, 2); ctxAper.globalAlpha = 1.0;
+
+            let cx = aper.cx;
+            let cy = hAper/2;
+
+            // Kerangka / Base Meriam (Tampilan Realistis)
+            ctxAper.fillStyle = '#475569';
+            ctxAper.beginPath();
+            ctxAper.moveTo(cx - 30, cy + 25);
+            ctxAper.lineTo(cx + 30, cy + 25);
+            ctxAper.lineTo(cx + 15, cy - 5);
+            ctxAper.lineTo(cx - 20, cy - 5);
+            ctxAper.fill();
+
+            // Laras Meriam (Bentuk mengecil ke depan dan melengkung di belakang)
+            ctxAper.save();
+            ctxAper.translate(cx - 10, cy - 5);
+            ctxAper.rotate(-10 * Math.PI / 180); // Sudut tembakan sedikit menengadah
+            
+            let grad = ctxAper.createLinearGradient(-30, -15, 60, 15);
+            grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.5, '#475569'); grad.addColorStop(1, '#0f172a');
+            ctxAper.fillStyle = grad;
+
+            ctxAper.beginPath();
+            ctxAper.moveTo(-25, -12); // Atas belakang
+            ctxAper.lineTo(60, -7);   // Atas depan (moncong)
+            ctxAper.lineTo(60, 7);    // Bawah depan
+            ctxAper.lineTo(-25, 12);  // Bawah belakang
+            ctxAper.arc(-25, 0, 12, Math.PI/2, Math.PI*1.5); // Pangkal meriam melingkar
+            ctxAper.fill();
+            
+            // Cincin Moncong Meriam
+            ctxAper.fillStyle = '#1e293b';
+            ctxAper.fillRect(55, -9, 8, 18);
+            ctxAper.restore();
+
+            // Roda Meriam Kiri & Kanan
+            ctxAper.fillStyle = '#1e293b';
+            ctxAper.beginPath(); ctxAper.arc(cx - 15, cy + 15, 12, 0, Math.PI*2); ctxAper.fill();
+            ctxAper.beginPath(); ctxAper.arc(cx + 15, cy + 15, 12, 0, Math.PI*2); ctxAper.fill();
+            
+            ctxAper.strokeStyle = '#94a3b8'; ctxAper.lineWidth = 2;
+            ctxAper.beginPath(); ctxAper.arc(cx - 15, cy + 15, 12, 0, Math.PI*2); ctxAper.stroke();
+            ctxAper.beginPath(); ctxAper.arc(cx + 15, cy + 15, 12, 0, Math.PI*2); ctxAper.stroke();
+            
+            // Velg / Poros Roda
+            ctxAper.fillStyle = '#cbd5e1';
+            ctxAper.beginPath(); ctxAper.arc(cx - 15, cy + 15, 4, 0, Math.PI*2); ctxAper.fill();
+            ctxAper.beginPath(); ctxAper.arc(cx + 15, cy + 15, 4, 0, Math.PI*2); ctxAper.fill();
+
+            // Peluru (Bola Energi) - Diatur presisi di ujung moncong meriam
+            let ballY = cy - 15; 
+            ctxAper.shadowBlur = 15; ctxAper.shadowColor = '#ff0055';
+            ctxAper.fillStyle = '#ff0055';
+            ctxAper.beginPath(); ctxAper.arc(aper.bx, ballY, 8, 0, Math.PI*2); ctxAper.fill();
+            ctxAper.fillStyle = '#fff'; ctxAper.shadowBlur = 0;
+            ctxAper.beginPath(); ctxAper.arc(aper.bx - 2, ballY - 2, 2, 0, Math.PI*2); ctxAper.fill();
+
+            // Vektor Aksi-Reaksi & Animasi Ledakan
+            if(aper.fw === 1) {
+                // Efek Kilat Ledakan (Muzzle Flash)
+                ctxAper.shadowBlur = 20; ctxAper.shadowColor = '#ffaa00';
+                ctxAper.beginPath(); ctxAper.arc(cx + 50, cy - 15, 25, 0, Math.PI*2); 
+                ctxAper.fillStyle='rgba(255, 170, 0, 0.7)'; ctxAper.fill();
+                ctxAper.beginPath(); ctxAper.arc(cx + 50, cy - 15, 12, 0, Math.PI*2); 
+                ctxAper.fillStyle='rgba(255, 255, 255, 0.9)'; ctxAper.fill();
+                ctxAper.shadowBlur = 0;
+
+                drawArrow(ctxAper, cx+25, cy-55, cx+90, cy-55, '#ffaa00', 3, 'F(aksi)');
+                drawArrow(ctxAper, cx+10, cy-55, cx-55, cy-55, '#ffaa00', 3, 'F(reaksi)');
+            }
+
+            // Vektor Momentum (Setelah tembakan) menunjukkan P = M*V = m*v
+            if(aper.t >= 1.5) {
+                drawArrow(ctxAper, aper.bx, ballY-25, aper.bx + 50, ballY-25, '#ff0055', 2, '+p (m·v)');
+                drawArrow(ctxAper, cx, cy-45, cx - 50, cy-45, '#00f0ff', 2, '-p (M·V)');
+            }
+        }
+
+        function loopApersepsi() {
+            if(!aper.playing) return;
+            aper.t += 0.05;
+            
+            if(aper.t > 1 && aper.t < 1.5) {
+                aper.fw = 1; // Vektor gaya muncul (Proses Ledakan internal)
+            } else if(aper.t >= 1.5) {
+                aper.fw = 0;
+                aper.bx += aper.vBall;      // Kecepatan peluru m (15px)
+                aper.cx += aper.vCannon;    // Kecepatan rekoil meriam M (bergerak mundur -3px, sesuai asumsi M=5m)
+            }
+            
+            drawApersepsiFrame();
+
+            if (aper.t > 4.5) {
+                aper.playing = false;
+                document.getElementById('aper-popup').style.display = 'block';
+            } else {
+                requestAnimationFrame(loopApersepsi);
+            }
+        }
+
+        // ==========================================
+        // CANVAS 2: MODUL 1 (COLLISION & ISOLATION)
+        // ==========================================
+        let ctxCol, wCol, hCol;
+        let col = {
+            m1: 2, m2: 3, v1: 5, v2: -4, 
+            x1: 50, x2: 300, 
+            w1: 40, w2: 50,
+            playing: false, friction: false,
+            p1Awal: 0, p2Awal: 0, pTotAwal: 0,
+            p1Curr: 0, p2Curr: 0, pTotCurr: 0,
+            particles: []
+        };
+
+        function initModul1() {
+            const res = resizeCanvas('colCanvas');
+            ctxCol = res.ctx; wCol = res.w; hCol = res.h;
+            setupModul1();
+        }
+
+        function setupModul1() {
+            col.playing = false; col.particles = [];
+            col.m1 = parseFloat(document.getElementById('m1-m1').value);
+            col.v1 = parseFloat(document.getElementById('m1-v1').value);
+            col.m2 = parseFloat(document.getElementById('m1-m2').value);
+            col.v2 = parseFloat(document.getElementById('m1-v2').value);
+            col.friction = document.getElementById('toggle-friction').checked;
+
+            document.getElementById('m1-val-m1').innerText = col.m1.toFixed(1) + " kg";
+            document.getElementById('m1-val-v1').innerText = col.v1.toFixed(1) + " m/s";
+            document.getElementById('m1-val-m2').innerText = col.m2.toFixed(1) + " kg";
+            document.getElementById('m1-val-v2').innerText = col.v2.toFixed(1) + " m/s";
+
+            col.w1 = 30 + col.m1 * 4; 
+            col.w2 = 30 + col.m2 * 4;
+            
+            col.x1 = 20; 
+            col.x2 = wCol - col.w2 - 20;
+
+            col.p1Awal = col.m1 * col.v1;
+            col.p2Awal = col.m2 * col.v2;
+            col.pTotAwal = col.p1Awal + col.p2Awal;
+            col.p1Curr = col.p1Awal; col.p2Curr = col.p2Awal; col.pTotCurr = col.pTotAwal;
+            
+            updateColTelemetry(); drawCol(); drawScale();
+        }
+
+        function updateModul1Friction() {
+            col.friction = document.getElementById('toggle-friction').checked;
+            let badge = document.getElementById('sys-status');
+            if(col.friction) {
+                badge.innerText = "Terdapat Gaya Luar";
+                badge.className = "status-badge status-friction";
+                document.getElementById('tel-ptot-box').style.borderColor = "var(--crimson-red)";
+                document.getElementById('tel-ptot-box').style.background = "rgba(255,51,51,0.05)";
+                document.getElementById('m1-ptot').className = "tel-val c-red";
+            } else {
+                badge.innerText = "Sistem Terisolasi";
+                badge.className = "status-badge status-isolated";
+                document.getElementById('tel-ptot-box').style.borderColor = "var(--emerald-green)";
+                document.getElementById('tel-ptot-box').style.background = "rgba(0,255,102,0.05)";
+                document.getElementById('m1-ptot').className = "tel-val c-green";
+            }
+            setupModul1();
+        }
+
+        function updateColTelemetry() {
+            document.getElementById('m1-p1').innerText = col.p1Curr.toFixed(2);
+            document.getElementById('m1-p2').innerText = col.p2Curr.toFixed(2);
+            document.getElementById('m1-ptot').innerText = col.pTotCurr.toFixed(2) + " kg·m/s";
+        }
+
+        function playModul1() {
+            if(col.playing) return;
+            setupModul1(); col.playing = true;
+            requestAnimationFrame(loopCol);
+        }
+
+        function loopCol() {
+            if(!col.playing) return;
+            let dt = 0.05;
+
+            // Friction Logic
+            if(col.friction) {
+                let mu = 0.3; let g = 9.8;
+                let a1 = -Math.sign(col.v1) * mu * g;
+                let a2 = -Math.sign(col.v2) * mu * g;
+                
+                let v1_old = col.v1; let v2_old = col.v2;
+                if(Math.abs(col.v1) > 0.1) col.v1 += a1 * dt; else col.v1 = 0;
+                if(Math.abs(col.v2) > 0.1) col.v2 += a2 * dt; else col.v2 = 0;
+                
+                if(Math.sign(col.v1) !== Math.sign(v1_old)) col.v1 = 0;
+                if(Math.sign(col.v2) !== Math.sign(v2_old)) col.v2 = 0;
+            }
+
+            col.x1 += col.v1 * (dt * 18);
+            col.x2 += col.v2 * (dt * 18);
+
+            // Collision Detection
+            if(col.x1 + col.w1 >= col.x2 && col.x1 <= col.x2 + col.w2) {
+                if(col.v1 > col.v2) {
+                    let v1_new = ((col.m1 - col.m2) * col.v1 + 2 * col.m2 * col.v2) / (col.m1 + col.m2);
+                    let v2_new = ((col.m2 - col.m1) * col.v2 + 2 * col.m1 * col.v1) / (col.m1 + col.m2);
+                    col.v1 = v1_new; col.v2 = v2_new;
+                    col.x1 = col.x2 - col.w1; 
+                    
+                    // Impact Sparks
+                    for(let i=0; i<15; i++) {
+                        col.particles.push({
+                            x: col.x2, y: hCol/2 + (Math.random()*20-10),
+                            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1.0
+                        });
+                    }
+                }
+            }
+
+            let hitBoundary = false;
+            if(col.x1 <= 0) { col.x1 = 0; hitBoundary = true; }
+            if(col.x1 + col.w1 >= wCol) { col.x1 = wCol - col.w1; hitBoundary = true; }
+            if(col.x2 <= 0) { col.x2 = 0; hitBoundary = true; }
+            if(col.x2 + col.w2 >= wCol) { col.x2 = wCol - col.w2; hitBoundary = true; }
+
+            col.p1Curr = col.m1 * col.v1;
+            col.p2Curr = col.m2 * col.v2;
+            col.pTotCurr = col.p1Curr + col.p2Curr;
+
+            updateColTelemetry(); drawCol(); drawScale();
+
+            if(hitBoundary || (col.v1 === 0 && col.v2 === 0)) col.playing = false; 
+            if(col.playing) requestAnimationFrame(loopCol);
+        }
+
+        function drawCol() {
+            ctxCol.clearRect(0,0,wCol,hCol);
+
+            // Ground
+            ctxCol.fillStyle = '#1e293b'; ctxCol.fillRect(0, hCol/2 + 20, wCol, hCol);
+            ctxCol.fillStyle = col.friction ? 'rgba(255,51,51,0.3)' : 'rgba(0,255,102,0.3)';
+            ctxCol.fillRect(0, hCol/2 + 20, wCol, 2);
+
+            let cy = hCol/2 + 20;
+
+            // Particles
+            for(let i=col.particles.length-1; i>=0; i--) {
+                let p = col.particles[i];
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if(p.life <= 0) { col.particles.splice(i,1); continue; }
+                ctxCol.globalAlpha = p.life;
+                ctxCol.fillStyle = '#ffaa00';
+                ctxCol.beginPath(); ctxCol.arc(p.x, p.y, 3, 0, Math.PI*2); ctxCol.fill();
+                ctxCol.globalAlpha = 1.0;
+            }
+
+            // Draw Block 1 (Cyan)
+            ctxCol.shadowBlur = 10; ctxCol.shadowColor = '#00f0ff';
+            ctxCol.fillStyle = 'rgba(0, 240, 255, 0.2)'; 
+            if(ctxCol.roundRect) { ctxCol.beginPath(); ctxCol.roundRect(col.x1, cy - col.w1, col.w1, col.w1, 6); ctxCol.fill(); }
+            else ctxCol.fillRect(col.x1, cy - col.w1, col.w1, col.w1);
+            ctxCol.strokeStyle = '#00f0ff'; ctxCol.lineWidth=2; 
+            if(ctxCol.roundRect) ctxCol.stroke(); else ctxCol.strokeRect(col.x1, cy - col.w1, col.w1, col.w1);
+            ctxCol.shadowBlur = 0;
+            ctxCol.fillStyle = '#fff'; ctxCol.font = 'bold 14px "Inter", sans-serif'; ctxCol.textAlign='center';
+            ctxCol.fillText("m1", col.x1 + col.w1/2, cy - col.w1/2 + 5);
+
+            // Draw Block 2 (Magenta)
+            ctxCol.shadowBlur = 10; ctxCol.shadowColor = '#ff0055';
+            ctxCol.fillStyle = 'rgba(255, 0, 85, 0.2)'; 
+            if(ctxCol.roundRect) { ctxCol.beginPath(); ctxCol.roundRect(col.x2, cy - col.w2, col.w2, col.w2, 6); ctxCol.fill(); }
+            else ctxCol.fillRect(col.x2, cy - col.w2, col.w2, col.w2);
+            ctxCol.strokeStyle = '#ff0055'; ctxCol.lineWidth=2; 
+            if(ctxCol.roundRect) ctxCol.stroke(); else ctxCol.strokeRect(col.x2, cy - col.w2, col.w2, col.w2);
+            ctxCol.shadowBlur = 0;
+            ctxCol.fillStyle = '#fff'; ctxCol.fillText("m2", col.x2 + col.w2/2, cy - col.w2/2 + 5);
+
+            // Momentum Vectors
+            let sc = 2; 
+            if(Math.abs(col.p1Curr) > 0.5) drawArrow(ctxCol, col.x1 + col.w1/2, cy - col.w1 - 20, col.x1 + col.w1/2 + col.p1Curr*sc, cy - col.w1 - 20, '#00f0ff', 2, 'p1');
+            if(Math.abs(col.p2Curr) > 0.5) drawArrow(ctxCol, col.x2 + col.w2/2, cy - col.w2 - 20, col.x2 + col.w2/2 + col.p2Curr*sc, cy - col.w2 - 20, '#ff0055', 2, 'p2');
+        }
+
+        // ==========================================
+        // SCALE CANVAS (TIMBANGAN MOMENTUM)
+        // ==========================================
+        let ctxScale, wScale, hScale;
+        function initScale() {
+            const res = resizeCanvas('scaleCanvas');
+            ctxScale = res.ctx; wScale = res.w; hScale = res.h;
+            drawScale();
+        }
+
+        function drawScale() {
+            if(!ctxScale) return;
+            ctxScale.clearRect(0,0,wScale,hScale);
+
+            let cx = wScale/2; let cy = hScale/2 + 30;
+            let diff = col.pTotAwal - col.pTotCurr; 
+            let maxDiff = Math.max(10, Math.abs(col.pTotAwal)); 
+            let angle = (diff / maxDiff) * (Math.PI/5);
+            if(angle > Math.PI/4) angle = Math.PI/4;
+            if(angle < -Math.PI/4) angle = -Math.PI/4;
+
+            let beamL = 80;
+
+            // Base & Pivot
+            ctxScale.fillStyle = '#334155';
+            ctxScale.beginPath(); ctxScale.moveTo(cx, cy); ctxScale.lineTo(cx-20, cy+40); ctxScale.lineTo(cx+20, cy+40); ctxScale.fill();
+            ctxScale.fillStyle = '#00f0ff'; ctxScale.beginPath(); ctxScale.arc(cx, cy, 5, 0, Math.PI*2); ctxScale.fill();
+
+            // Beam
+            ctxScale.save();
+            ctxScale.translate(cx, cy);
+            ctxScale.rotate(angle);
+            ctxScale.fillStyle = '#cbd5e1';
+            ctxScale.fillRect(-beamL, -3, beamL*2, 6);
+
+            // Left Pan (P awal)
+            ctxScale.translate(-beamL, 0);
+            ctxScale.rotate(-angle); 
+            ctxScale.strokeStyle = '#94a3b8'; ctxScale.lineWidth = 2;
+            ctxScale.beginPath(); ctxScale.moveTo(0,0); ctxScale.lineTo(-25, 40); ctxScale.moveTo(0,0); ctxScale.lineTo(25, 40); ctxScale.stroke();
+            
+            ctxScale.shadowBlur = 10; ctxScale.shadowColor = '#00ff66';
+            ctxScale.fillStyle = 'rgba(0, 255, 102, 0.2)'; ctxScale.fillRect(-30, 40, 60, 12);
+            ctxScale.strokeStyle = '#00ff66'; ctxScale.strokeRect(-30, 40, 60, 12);
+            ctxScale.shadowBlur = 0;
+            ctxScale.fillStyle = '#00ff66'; ctxScale.font='bold 12px sans-serif'; ctxScale.textAlign='center';
+            ctxScale.fillText("P Awal", 0, 65);
+
+            // Right Pan (P akhir)
+            ctxScale.restore(); 
+            ctxScale.save();
+            ctxScale.translate(cx, cy);
+            ctxScale.rotate(angle);
+            ctxScale.translate(beamL, 0);
+            ctxScale.rotate(-angle);
+            ctxScale.strokeStyle = '#94a3b8'; ctxScale.lineWidth = 2;
+            ctxScale.beginPath(); ctxScale.moveTo(0,0); ctxScale.lineTo(-25, 40); ctxScale.moveTo(0,0); ctxScale.lineTo(25, 40); ctxScale.stroke();
+            
+            let pAkhirColor = Math.abs(diff) > 0.1 ? '#ff3333' : '#00ff66';
+            let bgPan = Math.abs(diff) > 0.1 ? 'rgba(255, 51, 51, 0.2)' : 'rgba(0, 255, 102, 0.2)';
+            
+            ctxScale.shadowBlur = 10; ctxScale.shadowColor = pAkhirColor;
+            ctxScale.fillStyle = bgPan; ctxScale.fillRect(-30, 40, 60, 12);
+            ctxScale.strokeStyle = pAkhirColor; ctxScale.strokeRect(-30, 40, 60, 12);
+            ctxScale.shadowBlur = 0;
+            ctxScale.fillStyle = pAkhirColor; ctxScale.textAlign='center'; ctxScale.font='bold 12px sans-serif';
+            ctxScale.fillText("P Akhir", 0, 65);
+            ctxScale.restore();
+        }
+
+        // ==========================================
+        // CANVAS 3: MODUL 2 (ROCKET SIMULATOR)
+        // ==========================================
+        let ctxRoc, wRoc, hRoc;
+        let ctxGraph, wGraph, hGraph;
+        let roc = { playing: false, t: 0, v: 0, y: 0, M: 10000, dm: 50, ve: 500, graphData: [], particles: [] };
+
+        function initModul2() {
+            let res = resizeCanvas('rocketCanvas'); ctxRoc = res.ctx; wRoc = res.w; hRoc = res.h;
+            let gRes = resizeCanvas('rocketGraph'); ctxGraph = gRes.ctx; wGraph = gRes.w; hGraph = gRes.h;
+            resetModul2();
+        }
+
+        function updateModul2() {
+            roc.dm = parseFloat(document.getElementById('m2-dm').value);
+            roc.ve = parseFloat(document.getElementById('m2-ve').value);
+            document.getElementById('m2-val-dm').innerText = roc.dm + " kg/s";
+            document.getElementById('m2-val-ve').innerText = roc.ve + " m/s";
+            let thrust = roc.dm * roc.ve;
+            document.getElementById('m2-f').innerText = thrust.toLocaleString() + " N";
+        }
+
+        function resetModul2() {
+            roc.playing = false; roc.t = 0; roc.v = 0; roc.graphData = []; roc.particles = [];
+            roc.y = hRoc - 80; 
+            document.getElementById('m2-v').innerText = "0.0 m/s";
+            updateModul2(); drawRocket(); drawRocketGraph();
+        }
+
+        function playModul2() {
+            if(roc.playing) return;
+            resetModul2(); roc.playing = true;
+            requestAnimationFrame(loopRocket);
+        }
+
+        function loopRocket() {
+            if(!roc.playing) return;
+            let dt = 0.05; roc.t += dt;
+            let thrust = roc.dm * roc.ve;
+            let mass = roc.M - (roc.dm * roc.t); 
+            if (mass < 2000) mass = 2000; 
+
+            let a = thrust / mass; 
+            roc.v += a * dt;
+            roc.y -= (roc.v * dt * 1.5); // Visual speed scaling
+
+            document.getElementById('m2-v').innerText = roc.v.toFixed(1) + " m/s";
+            roc.graphData.push({t: roc.t, v: roc.v});
+
+            // Rocket Exhaust Particles
+            for(let i=0; i<4; i++) {
+                roc.particles.push({
+                    x: wRoc/2 + (Math.random()-0.5)*15, y: roc.y + 40,
+                    vx: (Math.random()-0.5)*2, vy: (roc.ve/100) * (0.8 + Math.random()*0.4), 
+                    life: 1.0, color: Math.random() > 0.5 ? '#ffaa00' : '#ff0055'
+                });
+            }
+
+            drawRocket(); drawRocketGraph();
+
+            if (roc.t > 15) roc.playing = false; 
+            if (roc.playing) requestAnimationFrame(loopRocket);
+        }
+
+        function drawRocket() {
+            ctxRoc.clearRect(0,0,wRoc,hRoc);
+            
+            // Starfield background based on height
+            ctxRoc.fillStyle = '#fff';
+            let starOffset = (roc.y * 0.5) % hRoc;
+            for(let i=0; i<30; i++) {
+                let sx = (i * 83) % wRoc; let sy = (i * 41 + starOffset) % hRoc;
+                ctxRoc.globalAlpha = Math.random() * 0.8 + 0.2;
+                ctxRoc.fillRect(sx, sy, 2, 2);
+            }
+            ctxRoc.globalAlpha = 1.0;
+
+            // Particles
+            for(let i=roc.particles.length-1; i>=0; i--) {
+                let p = roc.particles[i];
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+                if(p.life <= 0) { roc.particles.splice(i,1); continue; }
+                ctxRoc.globalAlpha = p.life;
+                ctxRoc.fillStyle = p.color;
+                ctxRoc.shadowBlur = 10; ctxRoc.shadowColor = p.color;
+                ctxRoc.beginPath(); ctxRoc.arc(p.x, p.y, Math.random()*6+2, 0, Math.PI*2); ctxRoc.fill();
+                ctxRoc.shadowBlur = 0;
+            }
+            ctxRoc.globalAlpha = 1.0;
+
+            let cx = wRoc/2; let cy = roc.y;
+            
+            // Thrust Vector
+            if(roc.playing) {
+                drawArrow(ctxRoc, cx+40, cy+50, cx+40, cy+110, '#ff0055', 3, 'F(gas)');
+                drawArrow(ctxRoc, cx-40, cy+10, cx-40, cy-50, '#00f0ff', 3, 'F(roket)');
+            }
+
+            // Rocket Body (Stylized)
+            ctxRoc.fillStyle = '#f1f5f9';
+            ctxRoc.beginPath(); ctxRoc.moveTo(cx, cy-50); ctxRoc.lineTo(cx-18, cy-10); ctxRoc.lineTo(cx-18, cy+30); ctxRoc.lineTo(cx+18, cy+30); ctxRoc.lineTo(cx+18, cy-10); ctxRoc.fill();
+            
+            // Window
+            ctxRoc.fillStyle = '#00f0ff'; ctxRoc.shadowBlur = 5; ctxRoc.shadowColor = '#00f0ff';
+            ctxRoc.beginPath(); ctxRoc.arc(cx, cy-10, 6, 0, Math.PI*2); ctxRoc.fill(); ctxRoc.shadowBlur=0;
+            
+            // Fins
+            ctxRoc.fillStyle = '#ff0055';
+            ctxRoc.beginPath(); ctxRoc.moveTo(cx-18, cy+10); ctxRoc.lineTo(cx-30, cy+40); ctxRoc.lineTo(cx-18, cy+30); ctxRoc.fill();
+            ctxRoc.beginPath(); ctxRoc.moveTo(cx+18, cy+10); ctxRoc.lineTo(cx+30, cy+40); ctxRoc.lineTo(cx+18, cy+30); ctxRoc.fill();
+            
+            // Nozzle
+            ctxRoc.fillStyle = '#334155';
+            ctxRoc.beginPath(); ctxRoc.moveTo(cx-10, cy+30); ctxRoc.lineTo(cx-14, cy+40); ctxRoc.lineTo(cx+14, cy+40); ctxRoc.lineTo(cx+10, cy+30); ctxRoc.fill();
+        }
+
+        function drawRocketGraph() {
+            ctxGraph.clearRect(0,0,wGraph,hGraph);
+
+            const pad = 40; const gw = wGraph - pad*1.5; const gh = hGraph - pad*1.5;
+            const ox = pad; const oy = hGraph - pad;
+
+            // Grid
+            ctxGraph.strokeStyle = 'rgba(255,255,255,0.1)'; ctxGraph.lineWidth = 1;
+            for(let i=0; i<=5; i++) {
+                let y = oy - (i/5)*gh;
+                ctxGraph.beginPath(); ctxGraph.moveTo(ox, y); ctxGraph.lineTo(wGraph-pad/2, y); ctxGraph.stroke();
+                let x = ox + (i/5)*gw;
+                ctxGraph.beginPath(); ctxGraph.moveTo(x, oy); ctxGraph.lineTo(x, pad/2); ctxGraph.stroke();
+            }
+
+            // Axes
+            ctxGraph.strokeStyle = '#94a3b8'; ctxGraph.lineWidth = 2;
+            ctxGraph.beginPath(); ctxGraph.moveTo(ox, pad/2); ctxGraph.lineTo(ox, oy); ctxGraph.lineTo(wGraph-pad/2, oy); ctxGraph.stroke();
+
+            if(roc.graphData.length > 0) {
+                let maxT = 15; 
+                let maxV = roc.graphData[roc.graphData.length-1].v;
+                if(maxV < 100) maxV = 100;
+
+                ctxGraph.strokeStyle = '#00f0ff'; ctxGraph.lineWidth = 3;
+                ctxGraph.shadowBlur = 10; ctxGraph.shadowColor = '#00f0ff';
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(ox, oy);
+                roc.graphData.forEach(pt => {
+                    let px = ox + (pt.t / maxT) * gw;
+                    let py = oy - (pt.v / maxV) * gh;
+                    ctxGraph.lineTo(px, py);
+                });
+                ctxGraph.stroke(); ctxGraph.shadowBlur = 0;
+
+                ctxGraph.fillStyle = '#f1f5f9'; ctxGraph.font='12px "Fira Code", monospace';
+                ctxGraph.fillText("t(s)", wGraph-pad+10, oy+5);
+                ctxGraph.fillText("v", ox-20, pad/2);
+                
+                // Show max V value
+                ctxGraph.fillStyle = '#00f0ff';
+                let lastPt = roc.graphData[roc.graphData.length-1];
+                let lx = ox + (lastPt.t / maxT) * gw; let ly = oy - (lastPt.v / maxV) * gh;
+                ctxGraph.fillText(lastPt.v.toFixed(0), lx - 20, ly - 10);
+            }
+        }
+
+        // ==========================================
+        // MINI-GAME LOGIC
+        // ==========================================
+        let ctxGame, wGame, hGame;
+        let game = { Ma: 100, mg: 5, vg: 20, va: 0, ax: 80, gx: 80, playing: false, particles: [], burstFrames: 0 };
+
+        function initGame() {
+            let res = resizeCanvas('gameCanvas'); ctxGame = res.ctx; wGame = res.w; hGame = res.h;
+            resetGame();
+        }
+
+        function updateGameUI() {
+            game.mg = parseFloat(document.getElementById('gm-m').value);
+            game.vg = parseFloat(document.getElementById('gm-v').value);
+            document.getElementById('gm-val-m').innerText = game.mg + " kg";
+            document.getElementById('gm-val-v').innerText = game.vg + " m/s";
+
+            let massFinal = game.Ma - game.mg;
+            game.va = (game.mg * game.vg) / massFinal;
+
+            let vaDisplay = document.getElementById('gm-val-va');
+            vaDisplay.innerText = game.va.toFixed(2) + " m/s";
+            
+            if(game.va > 2.0) { vaDisplay.className = "tel-val c-red"; } 
+            else { vaDisplay.className = "tel-val c-green"; }
+            
+            if(!game.playing) drawGameFrame();
+        }
+
+        function checkGame() {
+            if(game.playing) return;
+            game.playing = true;
+            game.burstFrames = 40; // Gas akan menyembur deras selama 40 frame (simulasi impulse)
+            requestAnimationFrame(loopGame);
+        }
+
+        function loopGame() {
+            if(!game.playing) return;
+            game.ax += game.va * 0.6; // Visual speed
+            game.gx -= game.vg * 0.4; 
+
+            // Emisi Partikel Gas dari punggung Astronaut
+            if (game.burstFrames > 0) {
+                game.burstFrames--;
+                // Intensitas / ketebalan asap bergantung pada Massa Gas (game.mg)
+                let emissionCount = Math.ceil(game.mg / 1.2); 
+                for(let i=0; i < emissionCount; i++) {
+                    game.particles.push({
+                        x: game.ax - 22, // Posisi ujung nozzle jetpack
+                        y: hGame/2 + (Math.random()*12 - 6),
+                        vx: -(game.vg * (0.2 + Math.random()*0.2)), // Kecepatan partikel melesat ke kiri
+                        vy: (Math.random() - 0.5) * 2.5, // Turbulensi vertikal
+                        life: 1.0 + Math.random() * 0.5,
+                        size: Math.random() * 4 + 2
+                    });
+                }
+            }
+
+            drawGameFrame();
+
+            let targetX = wGame - 60;
+            if(game.ax >= targetX) {
+                game.playing = false;
+                let overlay = document.getElementById('game-overlay');
+                let msg = document.getElementById('game-msg');
+                let desc = document.getElementById('game-desc');
+                
+                if(game.va <= 2.0) {
+                    msg.innerText = "DOCKING SUKSES!"; msg.style.color = "var(--emerald-green)"; msg.style.textShadow = "0 0 20px var(--emerald-green)";
+                    desc.innerText = `Kecepatan Anda ${game.va.toFixed(2)} m/s (Aman).\nAnda berhasil kembali ke stasiun berkat Hukum Kekekalan Momentum!`;
+                } else {
+                    msg.innerText = "CRASH! TERLALU CEPAT!"; msg.style.color = "var(--crimson-red)"; msg.style.textShadow = "0 0 20px var(--crimson-red)";
+                    desc.innerText = `Kecepatan Anda ${game.va.toFixed(2)} m/s melebihi batas aman (2.0 m/s).\nAnda menabrak stasiun terlalu keras. Kurangi massa/kecepatan gas!`;
+                }
+                overlay.classList.add('active');
+            } else {
+                requestAnimationFrame(loopGame);
+            }
+        }
+
+        function drawGameFrame() {
+            ctxGame.clearRect(0,0,wGame,hGame);
+
+            // Stars
+            ctxGame.fillStyle = '#fff';
+            for(let i=0; i<40; i++) {
+                let sx = (i * 53) % wGame; let sy = (i * 29) % hGame;
+                ctxGame.globalAlpha = Math.random(); ctxGame.fillRect(sx, sy, 2, 2);
+            }
+            ctxGame.globalAlpha = 1.0;
+
+            // Station (Right)
+            ctxGame.fillStyle = '#1e293b'; 
+            ctxGame.fillRect(wGame-50, 0, 50, hGame);
+            ctxGame.fillStyle = '#334155'; ctxGame.fillRect(wGame-60, hGame/2-40, 10, 80);
+            
+            // Airlock
+            ctxGame.fillStyle = '#00f0ff'; ctxGame.shadowBlur = 15; ctxGame.shadowColor = '#00f0ff';
+            ctxGame.fillRect(wGame-55, hGame/2-25, 5, 50); ctxGame.shadowBlur = 0;
+
+            let cy = hGame/2;
+
+            // Render Sistem Partikel Gas (Menggantikan objek bola solid)
+            if(game.playing || game.particles.length > 0) {
+                ctxGame.shadowBlur = 15; 
+                ctxGame.shadowColor = '#ff0055';
+                
+                for(let i = game.particles.length - 1; i >= 0; i--) {
+                    let p = game.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02; // Memudar perlahan
+                    p.size += 0.5;  // Mengembang seolah menjadi awan gas
+                    
+                    if (p.life <= 0) {
+                        game.particles.splice(i, 1);
+                        continue;
+                    }
+                    
+                    ctxGame.globalAlpha = p.life * 0.6;
+                    // Campuran warna gas magenta & pink muda untuk ilusi energi/plasma dingin
+                    ctxGame.fillStyle = Math.random() > 0.2 ? '#ff0055' : '#ffb3cc';
+                    ctxGame.beginPath();
+                    ctxGame.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctxGame.fill();
+                }
+                ctxGame.globalAlpha = 1.0;
+                ctxGame.shadowBlur = 0;
+            }
+
+            // Vektor Momentum p_gas mengikuti pusat massa gerak gas maya (game.gx)
+            if(game.playing) {
+                drawArrow(ctxGame, game.gx, cy-40, game.gx - 50, cy-40, '#ff0055', 2, 'p_gas');
+            }
+
+            // Astronaut
+            ctxGame.fillStyle = '#f1f5f9';
+            ctxGame.beginPath(); ctxGame.roundRect ? ctxGame.roundRect(game.ax-15, cy-20, 30, 40, 8) : ctxGame.fillRect(game.ax-15, cy-20, 30, 40);
+            if(ctxGame.roundRect) ctxGame.fill();
+            
+            // Visor
+            ctxGame.fillStyle = '#0f172a';
+            ctxGame.beginPath(); ctxGame.roundRect ? ctxGame.roundRect(game.ax+2, cy-15, 12, 14, 4) : ctxGame.fillRect(game.ax+2, cy-15, 12, 14);
+            if(ctxGame.roundRect) ctxGame.fill();
+            
+            // Backpack
+            ctxGame.fillStyle = '#cbd5e1';
+            ctxGame.fillRect(game.ax-22, cy-15, 7, 30);
+            
+            if(game.playing) {
+                drawArrow(ctxGame, game.ax, cy-35, game.ax + 50, cy-35, '#00f0ff', 2, 'p_astro');
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('game-overlay').classList.remove('active');
+            game.playing = false; game.ax = 80; game.gx = 80; game.particles = []; game.burstFrames = 0;
+            updateGameUI();
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.onload = () => {
+            initApersepsi();
+            initModul1();
+            initScale();
+            initModul2();
+            initGame();
+
+            // Memicu event resize otomatis setelah loading untuk merapikan kalkulasi layout/font
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 600);
+        };
+
+        window.addEventListener('resize', () => {
+            // Re-init canvas sizes and contexts
+            let rA = resizeCanvas('apersepsiCanvas'); ctxAper = rA.ctx; wAper = rA.w; hAper = rA.h;
+            let rC = resizeCanvas('colCanvas'); ctxCol = rC.ctx; wCol = rC.w; hCol = rC.h;
+            let rS = resizeCanvas('scaleCanvas'); ctxScale = rS.ctx; wScale = rS.w; hScale = rS.h;
+            let rR = resizeCanvas('rocketCanvas'); ctxRoc = rR.ctx; wRoc = rR.w; hRoc = rR.h;
+            let rG = resizeCanvas('rocketGraph'); ctxGraph = rG.ctx; wGraph = rG.w; hGraph = rG.h;
+            let rGm = resizeCanvas('gameCanvas'); ctxGame = rGm.ctx; wGame = rGm.w; hGame = rGm.h;
+            
+            // Update positioning logic based on new width
+            if (!aper.playing) {
+                aper.cx = wAper / 2;
+                aper.bx = wAper / 2 + 40;
+            }
+            col.x2 = wCol - col.w2 - 20;
+
+            if(!aper.playing) drawApersepsiFrame();
+            if(!col.playing) { drawCol(); drawScale(); }
+            if(!roc.playing) { drawRocket(); drawRocketGraph(); }
+            if(!game.playing) drawGameFrame();
+        });
+
+    </script>
+</body>
+</html>
