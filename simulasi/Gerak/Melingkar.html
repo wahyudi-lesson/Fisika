@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulakor Vektor Rotasi: Gerak Melingkar & Transisi Gerak Lurus</title>
+    <style>
+        :root {
+            /* Palette Cosmic Cybernetics - Dioptimalkan untuk Kontras Maksimal di Layar Gelap */
+            --bg-deep: #0f172a;
+            --bg-panel: #1e293b;
+            --orbit-color: #c084fc; /* Neon Purple Terang */
+            --vec-v: #22d3ee;      /* Electric Cyan Terang */
+            --vec-ac: #ff4545;     /* Pure Bright Red */
+            --vec-fc: #f472b6;     /* Bright Pink/Magenta */
+            --traj-glb: #fbbf24;   /* Bright Amber Gold */
+            --text-main: #ffffff;  /* Pure White */
+            --text-dim: #e2e8f0;   /* Terang sedikit untuk bacaan lebih jelas */
+            --border-glow: rgba(34, 211, 238, 0.4);
+            
+            --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            line-height: 1.6;
+            overflow-x: hidden;
+            font-size: 14px;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 15px; }
+
+        /* Typography */
+        h1 { font-size: 1.8rem; text-align: center; color: var(--vec-v); text-shadow: 0 0 10px var(--border-glow); text-transform: uppercase; letter-spacing: 2px; }
+        h2 { font-size: 1.2rem; margin-bottom: 15px; border-bottom: 1px solid var(--orbit-color); padding-bottom: 5px; color: var(--orbit-color); text-transform: uppercase; }
+        h3 { font-size: 1rem; margin-bottom: 10px; color: var(--text-dim); }
+        .subtitle { text-align: center; color: var(--text-dim); font-size: 0.95rem; margin-bottom: 25px; font-style: italic; }
+        
+        .math { font-family: var(--font-mono); font-style: italic; font-weight: bold; font-size: 1.05em;}
+        .c-v { color: var(--vec-v); font-weight: bold; }
+        .c-ac { color: var(--vec-ac); font-weight: bold; }
+        .c-fc { color: var(--vec-fc); font-weight: bold; }
+        .c-glb { color: var(--traj-glb); font-weight: bold; }
+        .c-orbit { color: var(--orbit-color); font-weight: bold; }
+
+        /* Layout Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;}
+        .grid-3-main { 
+            display: grid; 
+            grid-template-columns: 280px 1fr 300px; 
+            grid-template-areas: "left center right";
+            gap: 15px; 
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) {
+            .grid-3-main { 
+                grid-template-columns: 1fr 1fr; 
+                grid-template-areas: 
+                    "center center"
+                    "left right";
+            }
+            .panel-canvas { grid-area: center; }
+            .panel-left { grid-area: left; }
+            .panel-right { grid-area: right; }
+        }
+        @media (max-width: 768px) {
+            .grid-3-main { 
+                grid-template-columns: 1fr; 
+                grid-template-areas: 
+                    "center"
+                    "left"
+                    "right";
+            }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        /* Panels HUD */
+        .panel {
+            background-color: var(--bg-panel);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .panel-glow { border-color: var(--vec-v); box-shadow: 0 0 12px var(--border-glow) inset; }
+
+        /* Streaming Chunk: Defining UI Controls */
+        /* Controls */
+        .control-group { margin-bottom: 12px; }
+        .control-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-dim); }
+        .val-disp { font-family: var(--font-mono); color: var(--vec-v); font-weight: bold; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #0f172a; border-radius: 3px; border: 1px solid #334155; }
+        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--vec-v); cursor: pointer; -webkit-appearance: none; margin-top: -6px; box-shadow: 0 0 8px var(--vec-v); }
+
+        .btn {
+            display: inline-block; width: 100%; padding: 10px; margin-bottom: 8px;
+            background: #1e293b; color: var(--text-main); border: 1px solid var(--text-dim);
+            border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase;
+            text-align: center; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .btn:hover { background: #334155; }
+        .btn-action { background: rgba(6, 182, 212, 0.1); border-color: var(--vec-v); color: var(--vec-v); }
+        .btn-action:hover { background: var(--vec-v); color: var(--bg-deep); box-shadow: 0 0 15px var(--vec-v); }
+        .btn-danger { background: rgba(245, 158, 11, 0.1); border-color: var(--traj-glb); color: var(--traj-glb); }
+        .btn-danger:hover { background: var(--traj-glb); color: var(--bg-deep); box-shadow: 0 0 15px var(--traj-glb); }
+
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-dim);}
+        .checkbox-group input { cursor: pointer; accent-color: var(--vec-v); width: 16px; height: 16px;}
+        
+        .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .radio-group label { flex: 1; text-align: center; padding: 8px; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 0.8rem; background: #0f172a;}
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label { background: rgba(168, 85, 247, 0.2); border-color: var(--orbit-color); color: var(--text-main); box-shadow: 0 0 10px rgba(168, 85, 247, 0.4); }
+
+        /* Canvas */
+        .canvas-container {
+            width: 100%; background: #050810; border: 1px solid #334155;
+            border-radius: 6px; overflow: hidden; position: relative;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas { display: block; width: 100%; height: auto; touch-action: none; }
+
+        /* Dashboard & Meters */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .metric-box { background: #0f172a; border: 1px solid #334155; padding: 8px; border-radius: 4px; text-align: center; }
+        .metric-title { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: bold; }
+        .metric-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: bold; margin-top: 2px; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+
+        .formula-box { background: #0b1121; padding: 10px; border-radius: 6px; border: 1px dashed #475569; font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 10px; line-height: 1.8;}
+        
+        .bar-container { width: 100%; height: 20px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; overflow: hidden; margin-bottom: 5px; position: relative;}
+        .bar-fill { height: 100%; transition: width 0.1s linear; }
+        .bar-ac { background: var(--vec-ac); }
+        .bar-label { position: absolute; top: 0; left: 5px; font-size: 0.7rem; line-height: 20px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; font-family: var(--font-mono);}
+
+        /* Game Elements */
+        #game-feedback { margin-top: 10px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; display: none; font-size: 0.9rem;}
+        .fb-success { background: rgba(6, 182, 212, 0.2); border: 1px solid var(--vec-v); color: var(--vec-v); }
+        .fb-fail { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--vec-ac); color: var(--vec-ac); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulakor Vektor Rotasi</h1>
+        <div class="subtitle">Visualisasi Vektor Kecepatan Tangensial, Percepatan Sentripetal & Transisi Translasi</div>
+    </header>
+
+    <div class="grid-2">
+        <div class="panel">
+            <h2>Dekomposisi Miskonsepsi</h2>
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--vec-ac); padding: 10px; margin-bottom: 10px;">
+                <div style="color: var(--vec-ac); font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">Miskonsepsi 1: "Percepatan = 0 karena kelajuan konstan"</div>
+                <p style="font-size: 0.85rem; margin-bottom: 0;"><strong>Fakta:</strong> Dalam GMB, nilai kelajuan (<span class="c-v">|v|</span>) konstan, namun <strong>ARAH kecepatan selalu berubah</strong>. Perubahan arah vektor ini menghasilkan Percepatan Sentripetal (<span class="c-ac">a<sub>c</sub></span>) yang mutlak ada dan selalu menunjuk pusat.</p>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--traj-glb); padding: 10px;">
+                <div style="color: var(--traj-glb); font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">Miskonsepsi 2: "Jika tali putus, benda terlempar menjauhi pusat radial"</div>
+                <p style="font-size: 0.85rem; margin-bottom: 0;"><strong>Fakta:</strong> Hukum I Newton (Inersia). Saat gaya sentripetal hilang (<span class="math">&Sigma;F = 0</span>), benda mempertahankan gerak akhirnya, yaitu bergerak <strong class="c-glb">LURUS TANGENSIAL</strong> (menyinggung lingkaran) dengan kecepatan konstan.</p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Apersepsi: Sling Inersia (Potong Tali)</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 10px;">Simulasi sederhana. Tekan tombol saat benda berputar untuk melihat transisi GMB menjadi GLB secara instan.</p>
+            <div class="canvas-container" style="height: 180px;">
+                <canvas id="appCanvas"></canvas>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-danger" id="btn-app-cut" style="flex:2;">POTONG TALI SPONTAN!</button>
+                <button class="btn" id="btn-app-reset" style="flex:1;">Reset Orbit</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 15px; border-left: 4px solid var(--orbit-color);">
+        <h2>Database Teori: Gerak Melingkar Beraturan (GMB)</h2>
+        <div class="grid-2">
+            <!-- Kolom 1: Konsep Dasar & Hubungan -->
+            <div>
+                <h3 style="color: var(--vec-v);">1. Kinematika Rotasi vs Translasi</h3>
+                <p style="font-size: 0.85rem; margin-bottom: 8px;">Hubungan antara gerak melingkar dan gerak lurus ditengahi oleh Jari-jari (<span class="math">r</span>):</p>
+                <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-dim); margin-bottom: 15px; line-height: 1.8;">
+                    <li><strong>Panjang Lintasan / Busur (<span class="math">s</span>):</strong> <span class="math">s = &theta; &middot; r</span> (m)</li>
+                    <li><strong>Kecepatan Tangensial (<span class="math c-v">v</span>):</strong> <span class="math">v = &omega; &middot; r</span> (m/s)</li>
+                    <li><strong>Periode (<span class="math">T</span>):</strong> Waktu 1 putaran. <span class="math">T = 2&pi; / &omega;</span> (s)</li>
+                </ul>
+
+                <h3 style="color: var(--vec-ac);">2. Gaya & Percepatan Sentripetal</h3>
+                <p style="font-size: 0.85rem; margin-bottom: 8px;">Syarat mutlak benda berbelok membentuk lingkaran adalah adanya tarikan ke pusat lintasan.</p>
+                <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-dim); margin-bottom: 0; line-height: 1.8;">
+                    <li><strong>Percepatan Sentripetal (<span class="math c-ac">a<sub>c</sub></span>):</strong> Mengubah <em>arah</em> kecepatan tangensial, bukan besarnya. <br><span class="math">a<sub>c</sub> = v&sup2; / r = &omega;&sup2; &middot; r</span></li>
+                    <li><strong>Gaya Sentripetal (<span class="math c-fc">F<sub>c</sub></span>):</strong> Tarikan ke pusat (tegangan tali, gravitasi, dll). <span class="math">F<sub>c</sub> = m &middot; a<sub>c</sub></span></li>
+                </ul>
+            </div>
+            
+            <!-- Kolom 2: Hukum Newton & Transisi -->
+            <div>
+                <h3 style="color: var(--traj-glb);">3. Hukum I Newton (Inersia) dalam GMB</h3>
+                <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text-dim);">Menurut prinsip kelembaman (inersia), massa benda cenderung mempertahankan keadaan awalnya yaitu bergerak dengan kecepatan konstan pada lintasan berupa <strong>garis lurus</strong>. Oleh karena itu, gerak melingkar sejatinya adalah gerak lurus yang arahnya terus-menerus "dipaksakan" berbelok oleh gaya sentripetal.</p>
+                
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px; border-radius: 4px; font-size: 0.85rem; margin-top: 15px;">
+                    <strong style="color: var(--traj-glb); display: block; margin-bottom: 5px;">Efek Hilangnya Gaya Sentripetal:</strong>
+                    Jika <span class="math c-fc">&Sigma;F<sub>c</sub> = 0</span> (contoh: tali pemutar putus secara tiba-tiba), benda akan terbebas dari tarikan radial sentripetal.<br><br>Seketika itu juga, benda akan melanjutkan geraknya pada arah kecepatan tangensial terakhirnya (<span class="math c-v">v</span>), menciptakan lintasan <strong class="c-glb">Gerak Lurus Beraturan (GLB)</strong> yang tegak lurus (menyinggung) lintasan lingkaran semula.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-glow" style="margin-bottom: 15px;">
+        <h2>Laboratorium Utama: Dinamika Rotasi & Translasi</h2>
+        
+        <div class="grid-3-main">
+            <!-- Panel Kiri: Kontrol -->
+            <div class="panel panel-left">
+                <h3>Mode Visualisasi</h3>
+                <div class="radio-group">
+                    <input type="radio" id="mode-gmb" name="sim-mode" value="gmb" checked>
+                    <label for="mode-gmb">Dinamika Vektor GMB</label>
+                    <input type="radio" id="mode-roll" name="sim-mode" value="roll">
+                    <label for="mode-roll">Roda Menggelinding</label>
+                </div>
+
+                <h3>Parameter Fisika</h3>
+                <div class="control-group">
+                    <div class="control-label"><span>Jari-jari (<span class="math">r</span>)</span> <span class="val-disp" id="val-r">2.0 m</span></div>
+                    <input type="range" id="sl-r" min="0.5" max="5.0" step="0.1" value="2.0">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Kec. Sudut (<span class="math">&omega;</span>)</span> <span class="val-disp" id="val-w">2.0 rad/s</span></div>
+                    <input type="range" id="sl-w" min="0.5" max="12.0" step="0.5" value="2.0">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Massa Beban (<span class="math">m</span>)</span> <span class="val-disp" id="val-m">1.0 kg</span></div>
+                    <input type="range" id="sl-m" min="0.1" max="5.0" step="0.1" value="1.0">
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-action" id="btn-main-play">PAUSE / PLAY</button>
+                    <button class="btn btn-danger" id="btn-main-release" title="Simulasi tali putus">LEPAS BEBAN (GLB)</button>
+                    <button class="btn" id="btn-main-reset">RESET</button>
+                </div>
+
+                <div style="margin-top: 15px; border-top: 1px solid #334155; padding-top: 10px;">
+                    <h3>Toggles Overlay Visual</h3>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-v" checked> <span class="c-v">Vektor Kec. Tangensial (v)</span></label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-ac" checked> <span class="c-ac">Vektor Perc. Sentripetal (a<sub>c</sub>)</span></label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-fc"> <span class="c-fc">Vektor Gaya Sentripetal (F<sub>c</sub>)</span></label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-traj" checked> <span class="c-glb">Jejak Transisi Tangensial</span></label>
+                    <label class="checkbox-group"><input type="checkbox" id="chk-comp"> Komponen Vektor (v<sub>x</sub>, v<sub>y</sub>)</label>
+                </div>
+            </div>
+
+            <!-- Panel Tengah: Canvas -->
+            <div class="panel-canvas panel-center">
+                <div class="canvas-container" style="aspect-ratio: 4/3; min-height: 350px; display: flex; flex-direction: column;">
+                    <div style="position: absolute; top: 10px; left: 10px; z-index: 10; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(15, 23, 42, 0.8); padding: 5px; border: 1px solid #334155; border-radius: 4px;">
+                        STATUS: <span id="hud-status" class="c-orbit">ORBITING</span> | Waktu (t): <span id="hud-time" class="c-v">0.00</span> s
+                    </div>
+                    <canvas id="mainCanvas" style="flex-grow: 1; height: 100%;"></canvas>
+                </div>
+            </div>
+
+            <!-- Panel Kanan: Telemetri -->
+            <div class="panel panel-right">
+                <h3>Telemetri Data <span style="font-size:0.7em; color:var(--orbit-color);">(Real-time)</span></h3>
+                <div class="dash-grid">
+                    <div class="metric-box">
+                        <div class="metric-title">Kec. Linear (v)</div>
+                        <div class="metric-val c-v"><span id="dash-v">0.00</span> m/s</div>
+                        <div style="font-size:0.6rem; color:var(--text-dim);">&omega; &middot; r</div>
+                    </div>
+                    <div class="metric-box" style="border-color: var(--vec-ac);">
+                        <div class="metric-title">Perc. Sentripetal (a<sub>c</sub>)</div>
+                        <div class="metric-val c-ac"><span id="dash-ac">0.00</span> m/s&sup2;</div>
+                        <div style="font-size:0.6rem; color:var(--text-dim);">&omega;&sup2; &middot; r</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Gaya Sentripetal (F<sub>c</sub>)</div>
+                        <div class="metric-val c-fc"><span id="dash-fc">0.00</span> N</div>
+                        <div style="font-size:0.6rem; color:var(--text-dim);">m &middot; a<sub>c</sub></div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Periode (T)</div>
+                        <div class="metric-val"><span id="dash-t">0.00</span> s</div>
+                        <div style="font-size:0.6rem; color:var(--text-dim);">2&pi; / &omega;</div>
+                    </div>
+                </div>
+
+                <h3>Substitusi Vektor Kinematik</h3>
+                <div class="formula-box">
+                    <div style="color:var(--text-dim); font-size: 0.75rem;">Posisi Sudut &theta;(t) = &omega; &middot; t = <span id="f-theta" class="c-orbit">0.00</span> rad</div>
+                    
+                    <div style="margin-top: 8px; border-top: 1px solid #334155; padding-top: 8px;">
+                        <div class="c-v" style="font-weight:bold; font-size:0.8rem;">Kecepatan v(t) = -r&omega;sin(&omega;t)i + r&omega;cos(&omega;t)j</div>
+                        v<sub>x</sub> = -<span id="f-r1">0</span> &middot; <span id="f-w1">0</span> &middot; sin(<span class="f-th">0</span>) = <span id="f-vx" class="c-v">0.0</span> m/s<br>
+                        v<sub>y</sub> =  <span id="f-r2">0</span> &middot; <span id="f-w2">0</span> &middot; cos(<span class="f-th">0</span>) = <span id="f-vy" class="c-v">0.0</span> m/s
+                    </div>
+
+                    <div style="margin-top: 8px; border-top: 1px solid #334155; padding-top: 8px;">
+                        <div class="c-ac" style="font-weight:bold; font-size:0.8rem;">Percepatan a<sub>c</sub>(t) = -r&omega;&sup2;cos(&omega;t)i - r&omega;&sup2;sin(&omega;t)j</div>
+                        a<sub>cx</sub> = -<span id="f-r3">0</span> &middot; <span id="f-wsq1">0</span> &middot; cos(<span class="f-th">0</span>) = <span id="f-ax" class="c-ac">0.0</span><br>
+                        a<sub>cy</sub> = -<span id="f-r4">0</span> &middot; <span id="f-wsq2">0</span> &middot; sin(<span class="f-th">0</span>) = <span id="f-ay" class="c-ac">0.0</span>
+                    </div>
+                </div>
+
+                <h3>Kompensasi Non-Linear (a<sub>c</sub> = &omega;&sup2;r)</h3>
+                <p style="font-size: 0.7rem; color: var(--text-dim); line-height:1.2; margin-bottom: 5px;">Perhatikan lonjakan drastis batang merah saat <span class="math">&omega;</span> diperbesar vs saat <span class="math">r</span> diperbesar.</p>
+                <div class="bar-container">
+                    <div class="bar-fill bar-ac" id="bar-ac-fill" style="width: 0%;"></div>
+                    <div class="bar-label">a<sub>c</sub> Magnitude</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Mini-Game: Orbital Sling Target Precision</h2>
+        <div class="grid-2">
+            <div>
+                <p style="font-size: 0.9rem; margin-bottom: 10px;"><strong>Misi:</strong> Hancurkan target di luar orbit! Analisis arah panah vektor <span class="c-v">Kecepatan Tangensial (v)</span> biru. Putuskan kapan waktu yang tepat menekan tombol <strong>LEPAS</strong> agar inersia membawa proyektil lurus menghantam target.</p>
+                <div style="background: #0f172a; padding: 15px; border: 1px solid #334155; border-radius: 6px; text-align: center;">
+                    <div style="font-family: var(--font-mono); font-size: 1.2rem; margin-bottom: 10px;">
+                        POSISI TARGET: [X: <span id="game-tx" class="c-orbit">0</span>, Y: <span id="game-ty" class="c-orbit">0</span>]
+                    </div>
+                    <button class="btn btn-danger" id="btn-game-release" style="font-size: 1.2rem; padding: 15px;">LEPAS & TEMBAK!</button>
+                    <button class="btn" id="btn-game-reset" style="margin-top: 10px;">Acak Target Baru</button>
+                    <div id="game-feedback"></div>
+                </div>
+            </div>
+            <div class="canvas-container" style="aspect-ratio: 1/1; max-height: 350px;">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- UTILITIES & MATH ---
+    const round = (val, dec=2) => Number(val).toFixed(dec);
+    let meterToPx = 40; // Default, akan di-update otomatis menyesuaikan layar
+    
+    // UI Elements
+    const els = {
+        appCanvas: document.getElementById('appCanvas'),
+        btnAppCut: document.getElementById('btn-app-cut'),
+        btnAppReset: document.getElementById('btn-app-reset'),
+        
+        mainCanvas: document.getElementById('mainCanvas'),
+        slR: document.getElementById('sl-r'), valR: document.getElementById('val-r'),
+        slW: document.getElementById('sl-w'), valW: document.getElementById('val-w'),
+        slM: document.getElementById('sl-m'), valM: document.getElementById('val-m'),
+        btnMainPlay: document.getElementById('btn-main-play'),
+        btnMainRel: document.getElementById('btn-main-release'),
+        btnMainRes: document.getElementById('btn-main-reset'),
+        radioGmb: document.getElementById('mode-gmb'),
+        radioRoll: document.getElementById('mode-roll'),
+        
+        chkV: document.getElementById('chk-v'), chkAc: document.getElementById('chk-ac'),
+        chkFc: document.getElementById('chk-fc'), chkTraj: document.getElementById('chk-traj'),
+        chkComp: document.getElementById('chk-comp'),
+        
+        dashV: document.getElementById('dash-v'), dashAc: document.getElementById('dash-ac'),
+        dashFc: document.getElementById('dash-fc'), dashT: document.getElementById('dash-t'),
+        hudStatus: document.getElementById('hud-status'), hudTime: document.getElementById('hud-time'),
+        
+        fTheta: document.getElementById('f-theta'), fVx: document.getElementById('f-vx'), fVy: document.getElementById('f-vy'),
+        fAx: document.getElementById('f-ax'), fAy: document.getElementById('f-ay'),
+        fThs: document.querySelectorAll('.f-th'),
+        
+        barAcFill: document.getElementById('bar-ac-fill'),
+        
+        gameCanvas: document.getElementById('gameCanvas'),
+        gameTx: document.getElementById('game-tx'), gameTy: document.getElementById('game-ty'),
+        btnGameRel: document.getElementById('btn-game-release'), btnGameRes: document.getElementById('btn-game-reset'),
+        gameFb: document.getElementById('game-feedback')
+    };
+
+    // contexts
+    const aCtx = els.appCanvas.getContext('2d');
+    const mCtx = els.mainCanvas.getContext('2d');
+    const gCtx = els.gameCanvas.getContext('2d');
+
+    // --- PHYSICS STATES ---
+    let appState = { running: true, released: false, theta: 0, r: 2.5, w: 3, x:0, y:0, vx:0, vy:0, t:0, scale: 30 };
+    
+    let simState = {
+        running: true, released: false, mode: 'gmb', // 'gmb' or 'roll'
+        t: 0, theta: 0, r: 2.0, w: 2.0, m: 1.0,
+        x: 0, y: 0, vx: 0, vy: 0, ax: 0, ay: 0,
+        v_mag: 0, ac_mag: 0, fc_mag: 0,
+        centerX: 0, centerY: 0, trail: []
+    };
+
+    let gameState = {
+        running: true, released: false, theta: 0, r: 3, w: 2, x:0, y:0, vx:0, vy:0,
+        tx: 0, ty: 0, targetRadius: 0.5, hit: false, trail: []
+    };
+
+    let lastTime = 0;
+    let animId = null;
+
+    // --- DRAWING HELPERS ---
+    function resizeCanvas(canvas, container) {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    function drawGrid(ctx, w, h, center_x, center_y, scale) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Dynamic grid based on scale
+        let step = scale; // 1 meter grid
+        for(let x=center_x%step; x<w; x+=step) { ctx.moveTo(x,0); ctx.lineTo(x,h); }
+        for(let y=center_y%step; y<h; y+=step) { ctx.moveTo(0,y); ctx.lineTo(w,y); }
+        ctx.stroke();
+        
+        // Axes
+        ctx.strokeStyle = 'rgba(203, 213, 225, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, center_y); ctx.lineTo(w, center_y);
+        ctx.moveTo(center_x, 0); ctx.lineTo(center_x, h);
+        ctx.stroke();
+    }
+
+    function drawVector(ctx, startX, startY, vecX, vecY, color, scaleMag = 1, label="") {
+        if(Math.abs(vecX)<0.01 && Math.abs(vecY)<0.01) return;
+        
+        const endX = startX + (vecX * scaleMag);
+        const endY = startY - (vecY * scaleMag); // Canvas Y inverted
+        
+        const angle = Math.atan2(-(vecY * scaleMag), vecX * scaleMag);
+        const headlen = 12;
+        
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4; // Dipertebal sedikit untuk visibilitas
+        ctx.stroke();
+        
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 7), endY - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 7), endY - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.lineTo(endX, endY);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        if(label) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 15px monospace';
+            // Background label lebih gelap (Dark Slate) bukan hitam murni
+            let textW = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(endX + 3, endY - 16, textW + 6, 20);
+            
+            ctx.fillStyle = color;
+            // Menambahkan outline warna slate gelap pada teks untuk ekstra kontras
+            ctx.shadowColor = "#0f172a"; 
+            ctx.shadowBlur = 4;
+            ctx.lineWidth = 2;
+            ctx.fillText(label, endX + 6, endY - 1);
+            ctx.shadowBlur = 0; // reset shadow
+        }
+    }
+
+    // --- MAIN SIMULATION LOGIC ---
+    function updateSimPhysics(dt) {
+        if (!simState.running) return;
+        
+        simState.t += dt;
+        simState.v_mag = simState.w * simState.r;
+        simState.ac_mag = simState.w * simState.w * simState.r;
+        simState.fc_mag = simState.m * simState.ac_mag;
+
+        if (!simState.released) {
+            // GMB Kinematics
+            simState.theta += simState.w * dt;
+            // Bound theta 0-2PI for cleaner formula display
+            simState.theta = simState.theta % (2 * Math.PI);
+            
+            if (simState.mode === 'roll') {
+                // Rolling wheel: Center translates x = v*t
+                simState.centerX = (simState.v_mag * simState.t);
+            } else {
+                simState.centerX = 0;
+            }
+
+            // Math calculations based on unit circle standard (Counter-Clockwise)
+            // Note: In canvas, Y grows downwards, so we handle inversion in render
+            let cosT = Math.cos(simState.theta);
+            let sinT = Math.sin(simState.theta);
+
+            simState.x = simState.centerX + simState.r * cosT;
+            simState.y = simState.r * sinT; 
+
+            // Tangential Velocity Vector (Derivative of position)
+            simState.vx = -simState.v_mag * sinT;
+            simState.vy = simState.v_mag * cosT;
+
+            // Centripetal Acceleration Vector (Derivative of velocity)
+            // Points to center: (-x, -y) direction relative to center
+            simState.ax = -simState.ac_mag * cosT;
+            simState.ay = -simState.ac_mag * sinT;
+
+            if(simState.mode === 'roll') {
+                 // In rolling, absolute velocity includes translational center velocity
+                 simState.vx += simState.v_mag; 
+            }
+
+            // Save trail
+            if(simState.mode === 'roll') {
+                if(simState.trail.length === 0 || simState.t - simState.trail[simState.trail.length-1].t > 0.05) {
+                    simState.trail.push({x: simState.x, y: simState.y, t: simState.t});
+                }
+            }
+
+        } else {
+            // RELEASED: GLB (Translational Inertia)
+            // Velocity remains constant, acceleration is 0
+            simState.x += simState.vx * dt;
+            simState.y += simState.vy * dt;
+            simState.ax = 0;
+            simState.ay = 0;
+
+            if (simState.trail.length === 0 || simState.t - simState.trail[simState.trail.length-1].t > 0.05) {
+                simState.trail.push({x: simState.x, y: simState.y, t: simState.t});
+            }
+        }
+    }
+
+    function renderMainSim() {
+        const w = els.mainCanvas.width;
+        const h = els.mainCanvas.height;
+        
+        // Auto-scaling: Max Radius 5m (Diameter 10m) + Padding ekstra agar pas di layar
+        meterToPx = Math.max(15, Math.min(w, h) / 12); 
+
+        mCtx.clearRect(0, 0, w, h);
+        
+        let cx_px = w/2;
+        let cy_px = h/2;
+
+        if (simState.mode === 'roll') {
+            cy_px = h - 40; // ground near bottom
+            cx_px = 60; // start left
+            // Auto-pan camera if wheel moves far right
+            let shift = Math.max(0, (simState.centerX * meterToPx) - (w/2));
+            cx_px -= shift;
+        }
+
+        drawGrid(mCtx, w, h, cx_px, cy_px, meterToPx);
+
+        if (simState.mode === 'roll') {
+             // Draw Ground
+             mCtx.strokeStyle = '#cbd5e1'; mCtx.lineWidth=3;
+             mCtx.beginPath(); mCtx.moveTo(0, cy_px + (simState.r*meterToPx)); mCtx.lineTo(w, cy_px + (simState.r*meterToPx)); mCtx.stroke();
+        }
+
+        let objX_px = cx_px + (simState.x * meterToPx);
+        let objY_px = cy_px - (simState.y * meterToPx); // Invert Y for standard cartesian
+        let cX_px = cx_px + (simState.centerX * meterToPx);
+        let cY_px = cy_px;
+
+        // Draw Orbit/Wheel
+        mCtx.strokeStyle = '#c084fc'; // Neon Purple
+        mCtx.lineWidth = 2.5;
+        mCtx.beginPath();
+        mCtx.arc(cX_px, cY_px, simState.r * meterToPx, 0, 2*Math.PI);
+        mCtx.stroke();
+
+        // Draw Center Point & Radius line
+        mCtx.fillStyle = '#ffffff'; mCtx.beginPath(); mCtx.arc(cX_px, cY_px, 5, 0, 2*Math.PI); mCtx.fill();
+        if(!simState.released || simState.mode === 'roll') {
+            mCtx.strokeStyle = '#c084fc'; mCtx.setLineDash([5,5]);
+            mCtx.lineWidth = 2;
+            mCtx.beginPath(); mCtx.moveTo(cX_px, cY_px); mCtx.lineTo(objX_px, objY_px); mCtx.stroke();
+            mCtx.setLineDash([]);
+        }
+
+        // Draw Trail (GLB path or Cycloid)
+        if (simState.trail.length > 0 && els.chkTraj.checked) {
+            mCtx.strokeStyle = '#fbbf24'; mCtx.lineWidth = 3; // Bright Amber Gold
+            mCtx.beginPath();
+            let startX = cx_px + (simState.trail[0].x * meterToPx);
+            let startY = cy_px - (simState.trail[0].y * meterToPx);
+            mCtx.moveTo(startX, startY);
+            for(let i=1; i<simState.trail.length; i++) {
+                mCtx.lineTo(cx_px + (simState.trail[i].x * meterToPx), cy_px - (simState.trail[i].y * meterToPx));
+            }
+            mCtx.stroke();
+        }
+
+        // Object (Mass)
+        mCtx.fillStyle = '#ffff00'; // Kuning Neon murni untuk objek agar sangat mencolok
+        mCtx.beginPath(); mCtx.arc(objX_px, objY_px, 10 + (simState.m*1.5), 0, 2*Math.PI); mCtx.fill();
+        mCtx.strokeStyle = '#ffffff'; mCtx.lineWidth = 2; mCtx.stroke();
+
+        // Draw Vectors
+        const vecScale = meterToPx * 0.4; // Proposional terhadap zoom
+        
+        if (!simState.released) {
+            if(els.chkAc.checked) drawVector(mCtx, objX_px, objY_px, simState.ax, simState.ay, '#ff4545', vecScale/3, "ac");
+            if(els.chkFc.checked) drawVector(mCtx, objX_px, objY_px, simState.ax * simState.m, simState.ay * simState.m, '#f472b6', vecScale/3, "Fc");
+        }
+        
+        if(els.chkV.checked) {
+            drawVector(mCtx, objX_px, objY_px, simState.vx, simState.vy, '#22d3ee', vecScale, "v");
+            
+            // Component Vectors
+            if (els.chkComp.checked) {
+                mCtx.setLineDash([4,4]);
+                mCtx.lineWidth = 2;
+                drawVector(mCtx, objX_px, objY_px, simState.vx, 0, 'rgba(6, 182, 212, 0.7)', vecScale, "vx");
+                drawVector(mCtx, objX_px, objY_px, 0, simState.vy, 'rgba(6, 182, 212, 0.7)', vecScale, "vy");
+                mCtx.setLineDash([]);
+            }
+        }
+    }
+
+    function updateTelemetry() {
+        // Update DOM values
+        els.dashV.textContent = round(simState.v_mag);
+        els.dashAc.textContent = round(simState.ac_mag);
+        els.dashFc.textContent = round(simState.fc_mag);
+        els.dashT.textContent = round((2 * Math.PI) / simState.w);
+        
+        els.hudTime.textContent = round(simState.t);
+        if(simState.released) {
+            els.hudStatus.textContent = "GLB TRANSLATION";
+            els.hudStatus.className = "c-glb";
+        } else {
+            els.hudStatus.textContent = simState.mode === 'gmb' ? "GMB ORBITING" : "ROLLING KINEMATICS";
+            els.hudStatus.className = "c-orbit";
+        }
+
+        // Live Math Formulas (Only update if not released for GMB formulas)
+        if(!simState.released) {
+            els.fTheta.textContent = round(simState.theta);
+            
+            document.getElementById('f-r1').textContent = round(simState.r,1);
+            document.getElementById('f-w1').textContent = round(simState.w,1);
+            document.getElementById('f-r2').textContent = round(simState.r,1);
+            document.getElementById('f-w2').textContent = round(simState.w,1);
+            
+            document.getElementById('f-r3').textContent = round(simState.r,1);
+            document.getElementById('f-wsq1').textContent = round(simState.w*simState.w,1);
+            document.getElementById('f-r4').textContent = round(simState.r,1);
+            document.getElementById('f-wsq2').textContent = round(simState.w*simState.w,1);
+
+            els.fThs.forEach(el => el.textContent = round(simState.theta,1));
+            
+            els.fVx.textContent = round(simState.vx);
+            els.fVy.textContent = round(simState.vy);
+            els.fAx.textContent = round(simState.ax);
+            els.fAy.textContent = round(simState.ay);
+        }
+
+        // Bar Chart Logic (Max expected Ac = 12^2 * 5 = 720. Scale relative to max plausible slider values)
+        let maxAc = 12 * 12 * 5; // 720
+        let pct = (simState.ac_mag / maxAc) * 100;
+        els.barAcFill.style.width = `${Math.min(100, pct)}%`;
+    }
+
+    // --- APPERCEPTION MODULE ---
+    function updateApperception(dt) {
+        let w = els.appCanvas.width;
+        let h = els.appCanvas.height;
+        let cx = w / 2;
+        let cy = h / 2;
+        let pPx = Math.min(w, h) / 7; // Auto-scale fit untuk radius 2.5m
+
+        if (!appState.released) {
+            appState.theta -= appState.w * dt; // Clockwise for variety
+            appState.x = appState.r * Math.cos(appState.theta);
+            appState.y = appState.r * Math.sin(appState.theta);
+            
+            // Tangential
+            appState.vx = appState.w * appState.r * Math.sin(appState.theta);
+            appState.vy = -appState.w * appState.r * Math.cos(appState.theta);
+        } else {
+            appState.x += appState.vx * dt;
+            appState.y += appState.vy * dt;
+        }
+
+        // Render
+        aCtx.clearRect(0, 0, w, h);
+        
+        let ox = cx + appState.x * pPx;
+        let oy = cy + appState.y * pPx;
+
+        // Orbit path
+        if(!appState.released) {
+            aCtx.strokeStyle = '#c084fc'; aCtx.lineWidth = 2; aCtx.beginPath(); aCtx.arc(cx, cy, appState.r * pPx, 0, 2*Math.PI); aCtx.stroke();
+            // String
+            aCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; aCtx.setLineDash([4,4]); aCtx.beginPath(); aCtx.moveTo(cx, cy); aCtx.lineTo(ox, oy); aCtx.stroke();
+            aCtx.setLineDash([]);
+        }
+
+        // Center
+        aCtx.fillStyle='#ffffff'; aCtx.beginPath(); aCtx.arc(cx,cy,5,0,2*Math.PI); aCtx.fill();
+        
+        // Mass
+        aCtx.fillStyle = '#ffff00'; aCtx.beginPath(); aCtx.arc(ox, oy, 10, 0, 2*Math.PI); aCtx.fill();
+        
+        // Vectors (Simple)
+        if(!appState.released) {
+            drawVector(aCtx, ox, oy, -appState.x, -appState.y, '#ff4545', 2.0, "ac"); // towards center
+        }
+        drawVector(aCtx, ox, oy, appState.vx, -appState.vy, '#22d3ee', 2.5, "v"); // tangent
+    }
+
+    // --- MINI GAME MODULE ---
+    function generateGameTarget() {
+        // Random angle, radius > orbit
+        let randTh = Math.random() * Math.PI * 2;
+        let rTarget = gameState.r + 2 + (Math.random() * 3); // 5 to 8 meters away
+        gameState.tx = rTarget * Math.cos(randTh);
+        gameState.ty = rTarget * Math.sin(randTh);
+        els.gameTx.textContent = round(gameState.tx, 1);
+        els.gameTy.textContent = round(gameState.ty, 1);
+        gameState.released = false;
+        gameState.hit = false;
+        gameState.trail = [];
+        els.gameFb.style.display = 'none';
+    }
+
+    function updateGame(dt) {
+        if(!gameState.running) return;
+
+        if(!gameState.released) {
+            gameState.theta += gameState.w * dt;
+            gameState.x = gameState.r * Math.cos(gameState.theta);
+            gameState.y = gameState.r * Math.sin(gameState.theta);
+            gameState.vx = -gameState.w * gameState.r * Math.sin(gameState.theta);
+            gameState.vy = gameState.w * gameState.r * Math.cos(gameState.theta);
+        } else {
+            gameState.x += gameState.vx * dt;
+            gameState.y += gameState.vy * dt;
+            
+            // Trail recording
+            if(gameState.trail.length===0 || Math.random() > 0.5) gameState.trail.push({x:gameState.x, y:gameState.y});
+
+            // Collision Check
+            if(!gameState.hit) {
+                let dist = Math.sqrt((gameState.x - gameState.tx)**2 + (gameState.y - gameState.ty)**2);
+                if(dist <= gameState.targetRadius + 0.5) { // 0.5 object radius roughly
+                    gameState.hit = true;
+                    gameState.running = false; // pause on hit
+                    els.gameFb.style.display = 'block';
+                    els.gameFb.className = 'fb-success';
+                    els.gameFb.innerHTML = "🎯 TARGET HANCUR!<br>Presisi Inersia Luar Biasa!";
+                }
+                
+                // Out of bounds check
+                let bound = 15; // meters
+                if(Math.abs(gameState.x)>bound || Math.abs(gameState.y)>bound) {
+                    els.gameFb.style.display = 'block';
+                    els.gameFb.className = 'fb-fail';
+                    els.gameFb.innerHTML = "💥 MELESET!<br>Arah kecepatan tangensial (V) saat dilepas tidak mengarah ke target.";
+                    gameState.running = false;
+                }
+            }
+        }
+
+        // Render Game
+        let gw = els.gameCanvas.width; let gh = els.gameCanvas.height;
+        let gcx = gw/2; let gcy = gh/2;
+        let gpPx = Math.min(gw, gh) / 24; // auto-scale untuk range area +/- 12m
+        
+        gCtx.clearRect(0,0,gw,gh);
+        drawGrid(gCtx, gw, gh, gcx, gcy, gpPx);
+
+        // Target
+        let tpx = gcx + (gameState.tx * gpPx);
+        let tpy = gcy - (gameState.ty * gpPx);
+        gCtx.strokeStyle = gameState.hit ? '#34d399' : '#f472b6';
+        gCtx.lineWidth = 4;
+        gCtx.beginPath(); gCtx.arc(tpx, tpy, gameState.targetRadius * gpPx, 0, 2*Math.PI); gCtx.stroke();
+        gCtx.beginPath(); gCtx.moveTo(tpx-12, tpy); gCtx.lineTo(tpx+12, tpy); gCtx.moveTo(tpx, tpy-12); gCtx.lineTo(tpx, tpy+12); gCtx.stroke();
+
+        // Orbit
+        gCtx.strokeStyle = '#c084fc'; gCtx.lineWidth = 2; gCtx.beginPath(); gCtx.arc(gcx, gcy, gameState.r * gpPx, 0, 2*Math.PI); gCtx.stroke();
+
+        // Trail
+        if(gameState.trail.length > 0) {
+            gCtx.strokeStyle = '#fbbf24'; gCtx.lineWidth = 3;
+            gCtx.beginPath(); gCtx.moveTo(gcx + gameState.trail[0].x*gpPx, gcy - gameState.trail[0].y*gpPx);
+            for(let pt of gameState.trail) gCtx.lineTo(gcx + pt.x*gpPx, gcy - pt.y*gpPx);
+            gCtx.stroke();
+        }
+
+        // Object
+        let opx = gcx + gameState.x * gpPx;
+        let opy = gcy - gameState.y * gpPx;
+        gCtx.fillStyle = '#ffff00'; gCtx.beginPath(); gCtx.arc(opx, opy, 8, 0, 2*Math.PI); gCtx.fill();
+
+        // Vector V
+        if(!gameState.released) {
+            drawVector(gCtx, opx, opy, gameState.vx, gameState.vy, '#22d3ee', gpPx*0.15);
+        }
+    }
+
+
+    function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        let dt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+        if(dt > 0.1) dt = 0.1; // cap
+
+        updateApperception(dt);
+        
+        readMainInputs();
+        updateSimPhysics(dt);
+        renderMainSim();
+        updateTelemetry();
+
+        updateGame(dt);
+
+        animId = requestAnimationFrame(loop);
+    }
+
+    // --- EVENT LISTENERS & INPUTS ---
+    function readMainInputs() {
+        if(!simState.released) {
+            simState.r = parseFloat(els.slR.value);
+            simState.w = parseFloat(els.slW.value);
+            simState.m = parseFloat(els.slM.value);
+            els.valR.textContent = simState.r.toFixed(1) + " m";
+            els.valW.textContent = simState.w.toFixed(1) + " rad/s";
+            els.valM.textContent = simState.m.toFixed(1) + " kg";
+        }
+    }
+
+    function initEvents() {
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            resizeCanvas(els.appCanvas, els.appCanvas.parentElement);
+            resizeCanvas(els.mainCanvas, els.mainCanvas.parentElement);
+            resizeCanvas(els.gameCanvas, els.gameCanvas.parentElement);
+        });
+        window.dispatchEvent(new Event('resize'));
+
+        // Apperception
+        els.btnAppCut.addEventListener('click', () => { appState.released = true; });
+        els.btnAppReset.addEventListener('click', () => { appState.released = false; appState.theta=0; appState.x=0; appState.y=0; });
+
+        // Main Sim
+        els.btnMainPlay.addEventListener('click', () => simState.running = !simState.running);
+        els.btnMainRel.addEventListener('click', () => simState.released = true);
+        els.btnMainRes.addEventListener('click', () => {
+            simState.released = false; simState.t = 0; simState.theta = 0; simState.trail = [];
+            simState.centerX = 0;
+        });
+
+        // Mode Switch
+        const handleModeChange = (e) => {
+            simState.mode = e.target.value;
+            simState.released = false; simState.t = 0; simState.theta = 0; simState.trail = [];
+            simState.centerX = 0;
+            // Force reset trail view toggle based on mode logic
+            if(simState.mode === 'roll') els.chkTraj.checked = true;
+        };
+        els.radioGmb.addEventListener('change', handleModeChange);
+        els.radioRoll.addEventListener('change', handleModeChange);
+
+        // Game
+        els.btnGameRel.addEventListener('click', () => { if(gameState.running) gameState.released = true; });
+        els.btnGameRes.addEventListener('click', () => {
+            generateGameTarget();
+            gameState.running = true; gameState.theta = 0; gameState.trail = [];
+        });
+
+        generateGameTarget();
+        animId = requestAnimationFrame(loop);
+    }
+
+    // Start
+    initEvents();
+
+</script>
+</body>
+</html>
