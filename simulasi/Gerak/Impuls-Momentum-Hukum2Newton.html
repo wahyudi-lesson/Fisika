@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newtonian Lab: Impuls, Momentum & Sistem Banyak Benda</title>
+
+    <!-- MathJax Configuration for LaTeX Rendering -->
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-space: #080c14;
+            --bg-panel: #111827;
+            --bg-card: #1e293b;
+            --cyan-vel: #00e5ff;       /* Velocity / Momentum */
+            --gold-force: #facc15;     /* Force / Impulse */
+            --magenta-tens: #ec4899;   /* Tension / Contact */
+            --crimson-alert: #ef4444;  /* Alert / Limit */
+            --warning-org: #f97316;    /* Warning / Coasting */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --grid-line: rgba(0, 229, 255, 0.05);
+            --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-space);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            /* Telemetry Grid Background */
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center center;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+        header {
+            text-align: center; padding: 30px 20px; background: var(--bg-panel);
+            border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; border-top: 4px solid var(--cyan-vel);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 229, 255, 0.05);
+        }
+        header h1 { color: var(--cyan-vel); font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); margin-bottom: 5px; }
+        header p { color: var(--text-muted); font-size: 1.05rem; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        
+        .panel {
+            background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px;
+            padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;
+        }
+        .panel-title { font-size: 1.25rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .info-box { background: rgba(0, 229, 255, 0.05); border-left: 3px solid var(--cyan-vel); padding: 12px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; border-radius: 0 6px 6px 0; }
+        .info-box strong { color: var(--text-main); }
+
+        .canvas-container {
+            width: 100%; background: #000; border: 1px solid #334155; border-radius: 8px;
+            position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        .telemetry-row { display: flex; justify-content: space-between; align-items: center; background: #000; border: 1px dashed #334155; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-family: var(--font-mono); }
+        .tel-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
+        .tel-val { font-size: 1.1rem; font-weight: bold; }
+
+        .c-cyan { color: var(--cyan-vel); text-shadow: 0 0 8px rgba(0,229,255,0.5); }
+        .c-gold { color: var(--gold-force); text-shadow: 0 0 8px rgba(250,204,21,0.5); }
+        .c-magenta { color: var(--magenta-tens); text-shadow: 0 0 8px rgba(236,72,153,0.5); }
+        .c-red { color: var(--crimson-alert); text-shadow: 0 0 8px rgba(239,68,68,0.5); }
+
+        .btn {
+            width: 100%; padding: 12px; background: #1e293b; color: var(--text-main); 
+            border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-weight: bold; 
+            transition: 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: #334155; }
+        .btn-action { border-color: var(--gold-force); color: var(--gold-force); background: rgba(250, 204, 21, 0.1); }
+        .btn-action:hover { background: rgba(250, 204, 21, 0.2); box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
+        .btn-warning { border-color: var(--warning-org); color: var(--warning-org); background: rgba(249, 115, 22, 0.1); }
+        .btn-warning:hover { background: rgba(249, 115, 22, 0.2); box-shadow: 0 0 15px rgba(249, 115, 22, 0.4); }
+
+        .slider-box { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); font-family: var(--font-mono); }
+        .slider-val { font-weight: bold; color: var(--text-main); }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text-main); cursor: pointer; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+        input[type="range"].s-cyan::-webkit-slider-thumb { background: var(--cyan-vel); box-shadow: 0 0 10px var(--cyan-vel); }
+        input[type="range"].s-gold::-webkit-slider-thumb { background: var(--gold-force); box-shadow: 0 0 10px var(--gold-force); }
+        input[type="range"].s-magenta::-webkit-slider-thumb { background: var(--magenta-tens); box-shadow: 0 0 10px var(--magenta-tens); }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; background: #0f172a; border: 1px solid #334155; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; text-align: center; }
+        .tab-btn.active { background: rgba(0, 229, 255, 0.1); border-color: var(--cyan-vel); color: var(--cyan-vel); box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px; background: rgba(0,0,0,0.3); }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: left; }
+        th { background: #1e293b; color: var(--cyan-vel); }
+        
+        .math-box { background: #000; border: 1px dashed var(--cyan-vel); padding: 15px; border-radius: 8px; text-align: center; color: var(--text-main); margin-bottom: 15px; overflow-x: auto; font-size: 1.1rem; }
+
+        .game-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; border-radius: 8px; }
+        .game-overlay.active { opacity: 1; pointer-events: all; }
+
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Newtonian Lab</h1>
+            <p>Impuls, Momentum & Dinamika Sistem Banyak Benda</p>
+        </header>
+
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--gold-force);">🚀 Apersepsi: Teorema Impuls-Momentum</h2>
+            <div class="info-box">
+                Sebuah roket melaju konstan ($\vec{p}_1$). Saat mesin menyala, roket menerima <strong>Gaya Dorong ($\vec{F}$)</strong> selama selang waktu ($\Delta t$). Akumulasi gaya ini disebut <strong>Impuls ($\vec{I}$)</strong>, yang secara eksak mengubah momentum roket menjadi ($\vec{p}_2$).
+            </div>
+            
+            <div class="grid-2">
+                <div class="canvas-container" style="height: 250px;">
+                    <canvas id="apersepsiCanvas"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <button class="btn btn-action" id="btnAper" onclick="playApersepsi()">AKTIFKAN DORONGAN GAYA (F)</button>
+                    <div id="aper-popup" class="info-box" style="margin-top: 15px; border-color: var(--gold-force); display: none;">
+                        Luas grafik $F-t$ di samping adalah <strong>Impuls ($\vec{I}$)</strong>.<br>
+                        Terbukti bahwa: <span class="c-gold">Impuls</span> menyebabkan <span class="c-cyan">Perubahan Momentum</span>!<br>
+                        <span style="font-family: monospace; font-size: 1.1rem;">$\vec{I} = \vec{F} \cdot \Delta t = \Delta \vec{p} = \vec{p}_2 - \vec{p}_1$</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--cyan-vel);">☄️ Modul 1: Hukum II Newton (Bentuk Asli)</h2>
+                <div class="info-box">
+                    Hukum II Newton bukan hanya $F = ma$, melainkan: <strong>"Gaya total adalah laju perubahan momentum terhadap waktu"</strong> ($F = \frac{\Delta p}{\Delta t}$).
+                </div>
+                
+                <div class="canvas-container" style="height: 350px;">
+                    <canvas id="modul1Canvas"></canvas>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="tel-label">Δp Berjalan (F·t_sim)</span>
+                    <span class="tel-val c-cyan" id="m1-dp">0.00 kg·m/s</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="tel-label">Impuls Total Target (F·Δt)</span>
+                    <span class="tel-val c-gold" id="m1-i">0.00 N·s</span>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Massa ($m$)</span> <span class="slider-val" id="m1-val-m">10.0 kg</span></div>
+                    <input type="range" class="s-cyan" id="m1-m" min="0.5" max="20" step="0.5" value="10" oninput="updateModul1Inputs()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Kecepatan Awal ($v_1$)</span> <span class="slider-val" id="m1-val-v1">5.0 m/s</span></div>
+                    <input type="range" class="s-cyan" id="m1-v1" min="-10" max="10" step="0.5" value="5" oninput="updateModul1Inputs()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Gaya Luar ($F$)</span> <span class="slider-val c-gold" id="m1-val-f">50 N</span></div>
+                    <input type="range" class="s-gold" id="m1-f" min="-100" max="100" step="1" value="50" oninput="updateModul1Inputs()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Durasi Waktu ($\Delta t$)</span> <span class="slider-val c-gold" id="m1-val-t">2.00 s</span></div>
+                    <input type="range" class="s-gold" id="m1-t" min="0.5" max="5" step="0.1" value="2" oninput="updateModul1Inputs()">
+                </div>
+
+                <button class="btn btn-action" id="btnM1Play" onclick="playModul1()" style="margin-top: 15px;">JALANKAN SIMULASI (F bekerja selama Δt)</button>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title" style="color: var(--magenta-tens);">🔗 Modul 2: Sistem Banyak Benda</h2>
+                <div class="info-box">
+                    Pada sistem terhubung, gaya eksternal menggerakkan <strong>massa total</strong> sistem. Tegangan tali ($T$) bertindak sebagai gaya internal penyeimbang.
+                </div>
+
+                <div class="tabs">
+                    <div class="tab-btn active" id="tab-sysA" onclick="setSystem('A')">Sistem Datar</div>
+                    <div class="tab-btn" id="tab-sysB" onclick="setSystem('B')">Mesin Atwood</div>
+                </div>
+                
+                <div class="canvas-container" style="height: 220px;">
+                    <canvas id="modul2Canvas"></canvas>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="tel-label">Percepatan Sistem ($a$)</span>
+                    <span class="tel-val c-cyan" id="m2-a">0.00 m/s²</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="tel-label">Tegangan Tali ($T$)</span>
+                    <span class="tel-val c-magenta" id="m2-t">0.00 N</span>
+                </div>
+
+                <div class="slider-box">
+                    <div class="slider-label"><span>Massa Benda 1 ($m_1$)</span> <span class="slider-val" id="m2-val-m1">5.0 kg</span></div>
+                    <input type="range" class="s-magenta" id="m2-m1" min="1" max="20" step="0.5" value="5" oninput="updateModul2Inputs()">
+                </div>
+                <div class="slider-box">
+                    <div class="slider-label"><span>Massa Benda 2 ($m_2$)</span> <span class="slider-val" id="m2-val-m2">5.0 kg</span></div>
+                    <input type="range" class="s-magenta" id="m2-m2" min="1" max="20" step="0.5" value="5" oninput="updateModul2Inputs()">
+                </div>
+                <div class="slider-box" id="sysA-force-control">
+                    <div class="slider-label"><span>Gaya Tarik ($F$) pada $m_2$</span> <span class="slider-val c-gold" id="m2-val-f">100 N</span></div>
+                    <input type="range" class="s-gold" id="m2-f" min="-200" max="200" step="5" value="100" oninput="updateModul2Inputs()">
+                </div>
+                
+                <button class="btn btn-action" id="btnM2Play" onclick="playModul2()" style="margin-top: 15px;">JALANKAN SISTEM</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2 class="panel-title" style="color: var(--text-main);">📚 Analisis Dinamika & Matriks Konsep</h2>
+            <div class="grid-2">
+                <div class="math-box">
+                    <span style="color: var(--text-muted); font-size:0.9rem;">Hukum II Newton & Impuls:</span><br>
+                    $$\vec{F}_{\text{net}} = \frac{d\vec{p}}{dt} \approx \frac{\Delta \vec{p}}{\Delta t}$$
+                    $$\vec{I} = \vec{F} \cdot \Delta t = \Delta \vec{p} = m\vec{v}_2 - m\vec{v}_1$$
+                </div>
+                <div class="math-box" style="border-color: var(--magenta-tens);">
+                    <span style="color: var(--text-muted); font-size:0.9rem;">Akselerasi Sistem Terhubung:</span><br>
+                    $$a_{\text{datar}} = \frac{F}{m_1 + m_2}$$
+                    $$a_{\text{atwood}} = \frac{|m_2 - m_1|g}{m_1 + m_2}$$
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Konsep Fisika</th>
+                            <th>Persamaan Matematis</th>
+                            <th>Makna Fisis Telemetri</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="c-gold">Teorema Impuls-Momentum</td>
+                            <td>$\vec{I} = \Delta \vec{p} = m(\vec{v}_2 - \vec{v}_1)$</td>
+                            <td>Impuls adalah jumlah transfer energi/gerak yang merubah kondisi momentum suatu sistem.</td>
+                        </tr>
+                        <tr>
+                            <td class="c-cyan">Hukum II Newton (Bentuk Asli)</td>
+                            <td>$\vec{F}_{\text{net}} = \frac{\Delta \vec{p}}{\Delta t}$</td>
+                            <td>Gaya netto adalah derivatif (laju perubahan) momentum terhadap waktu.</td>
+                        </tr>
+                        <tr>
+                            <td class="c-magenta">Sistem Banyak Benda</td>
+                            <td>$a = \frac{\Sigma F_{\text{eks}}}{\Sigma m}$</td>
+                            <td>Perubahan momentum sistem ditanggung bersama oleh total massa. Gaya internal ($T$) saling menghilangkan.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel" style="border-color: var(--gold-force);">
+            <h2 class="panel-title" style="color: var(--gold-force);">🎯 Mini-Game: Towing & Momentum Challenge</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px;">
+                <strong>Skenario:</strong> Anda mengendalikan Truk ($m_1$) yang menarik Muatan ($m_2$). 
+                Hitung dan tentukan Gaya Tarik Truk ($F$) agar sistem mencapai <strong>Target $\Delta p$</strong> dalam batas waktu $\Delta t$, tanpa memutus tali penarik!
+            </p>
+
+            <div class="canvas-container" style="height: 180px; margin-bottom: 15px;">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <div class="telemetry-row"><span class="tel-label">Massa Truk ($m_1$)</span> <span class="tel-val" id="g-m1">2000 kg</span></div>
+                    <div class="telemetry-row"><span class="tel-label">Massa Muatan ($m_2$)</span> <span class="tel-val" id="g-m2">1000 kg</span></div>
+                    <div class="telemetry-row"><span class="tel-label">Waktu Tempuh ($\Delta t$)</span> <span class="tel-val" id="g-t">5.0 s</span></div>
+                </div>
+                <div>
+                    <div class="telemetry-row" style="border-color: var(--cyan-vel);"><span class="tel-label">Target $\Delta p_{\text{sistem}}$</span> <span class="tel-val c-cyan" id="g-target-dp">15000 kg·m/s</span></div>
+                    <div class="telemetry-row" style="border-color: var(--crimson-alert);"><span class="tel-label">Batas Tegangan Tali ($T_{\max}$)</span> <span class="tel-val c-red" id="g-max-t">4000 N</span></div>
+                </div>
+            </div>
+
+            <div class="slider-box" style="margin-top: 15px; border-color: var(--gold-force);">
+                <div class="slider-label"><span>Set Gaya Tarik Truk ($F$)</span> <span class="slider-val c-gold" id="g-val-f">0 N</span></div>
+                <input type="range" class="s-gold" id="g-f" min="0" max="20000" step="100" value="0" oninput="updateGameUI()">
+            </div>
+
+            <div class="telemetry-row" style="background: transparent;">
+                <span class="tel-label">Tegangan Terjadi ($T = m_2 \cdot a$) :</span>
+                <span class="tel-val" id="g-current-t" style="color: var(--text-main);">0 N</span>
+            </div>
+
+            <button class="btn btn-action" onclick="checkGame()">LUNCURKAN TRUK!</button>
+
+            <div class="game-overlay" id="game-overlay">
+                <div class="game-msg" id="game-msg" style="font-size: 2rem; color: var(--gold-force); font-weight: bold; margin-bottom: 10px;"></div>
+                <p id="game-desc" style="color: var(--text-main); margin-bottom: 20px; max-width: 80%; text-align: center;"></p>
+                <button class="btn btn-action" style="width: auto; padding: 10px 30px;" onclick="nextGame()">Tutup & Misi Baru</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // UTILITY FUNCTIONS & CANVAS SETUP
+        // ==========================================
+        function resizeCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            return canvas.getContext('2d');
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width=3, label="") {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const len = Math.sqrt(dx*dx + dy*dy);
+            
+            if (len < 1) return; // Don't draw if zero
+
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            if (label !== "") {
+                ctx.fillStyle = color;
+                ctx.font = 'bold 12px monospace';
+                let lx = toX + 15 * Math.cos(angle);
+                let ly = toY + 15 * Math.sin(angle) + 5;
+                ctx.textAlign = 'center';
+                ctx.fillText(label, lx, ly);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // ==========================================
+        // CANVAS 1: APERSEPSI
+        // ==========================================
+        const ctxAper = resizeCanvas('apersepsiCanvas');
+        let aperState = {
+            playing: false, time: 0, x: 50, phase: 0,
+            v1: 20, F: 150, mass: 10, dt: 1.5,
+            graphData: [], lastTime: 0
+        };
+
+        function playApersepsi() {
+            if (aperState.playing) return;
+            aperState.playing = true;
+            aperState.time = 0;
+            aperState.x = 50;
+            aperState.phase = 0;
+            aperState.graphData = [];
+            aperState.lastTime = performance.now();
+            document.getElementById('aper-popup').style.display = 'none';
+            document.getElementById('btnAper').style.opacity = '0.5';
+            requestAnimationFrame(apersepsiLoop);
+        }
+
+        function apersepsiLoop(timestamp) {
+            if (aperState.playing) {
+                let dtReal = (timestamp - aperState.lastTime) / 1000;
+                if(dtReal > 0.1) dtReal = 0.1; // clamp dt to avoid weird jump
+                aperState.lastTime = timestamp;
+                
+                // Advance simulated time based on real time
+                aperState.time += dtReal * 2.0; // 2.0x time speed multiplier for visual snappiness
+                
+                drawApersepsi();
+                requestAnimationFrame(apersepsiLoop);
+            }
+        }
+
+        function drawApersepsi() {
+            const w = ctxAper.canvas.width;
+            const h = ctxAper.canvas.height;
+            if (w === 0 || h === 0) return;
+            ctxAper.clearRect(0, 0, w, h);
+
+            let vCurrent = aperState.v1;
+            let currentF = 0;
+
+            if (aperState.playing) {
+                // Phase 0: Coasting before force
+                if (aperState.time < 1.0) {
+                    aperState.phase = 0;
+                    aperState.x += (vCurrent * 0.05) * (aperState.time > 0 ? 1 : 0); 
+                } 
+                // Phase 1: Force applied
+                else if (aperState.time < 1.0 + aperState.dt) {
+                    aperState.phase = 1;
+                    currentF = aperState.F;
+                    let tRel = aperState.time - 1.0;
+                    vCurrent = aperState.v1 + (aperState.F / aperState.mass) * tRel;
+                    aperState.x += (vCurrent * 0.05);
+                    aperState.graphData.push({ t: aperState.time, f: currentF });
+                } 
+                // Phase 2: Post force
+                else {
+                    aperState.phase = 2;
+                    vCurrent = aperState.v1 + (aperState.F / aperState.mass) * aperState.dt;
+                    aperState.x += (vCurrent * 0.05);
+                    // Close graph
+                    if (aperState.graphData.length > 0 && aperState.graphData[aperState.graphData.length-1].f > 0) {
+                        aperState.graphData.push({ t: aperState.time, f: 0 });
+                    }
+                }
+
+                // Berhenti setelah bergerak sejauh jarak tertentu, bukan berdasarkan batas layar
+                if (aperState.x - 50 > 300) { 
+                    aperState.playing = false;
+                    document.getElementById('aper-popup').style.display = 'block';
+                    document.getElementById('btnAper').style.opacity = '1';
+                }
+            }
+
+            // --- SISTEM KAMERA PARALLAX ---
+            let cx = 100; // Posisi tetap roket pada layar (kiri tengah)
+            let cy = h/2;
+            let cameraDisplacement = aperState.x - 50;
+
+            // Gambar Lantai (tetap membentang sampai sebelum grafik)
+            ctxAper.fillStyle = '#1e293b';
+            ctxAper.fillRect(0, cy + 20, w * 0.65, 5); 
+
+            // Gambar marker lantai yang bergerak berlawanan (Efek Bergerak)
+            ctxAper.strokeStyle = '#334155'; ctxAper.lineWidth = 2;
+            let trackOffset = cameraDisplacement % 50;
+            if (trackOffset < 0) trackOffset += 50;
+            for (let i = -trackOffset; i < w * 0.65; i+=50) {
+                ctxAper.beginPath(); ctxAper.moveTo(i, cy + 20); ctxAper.lineTo(i, cy + 30); ctxAper.stroke();
+            }
+
+            // Gambar Roket Hantu (Posisi Awal) yang tertinggal ke belakang
+            if (cameraDisplacement > 0) {
+                let ghostX = cx - cameraDisplacement;
+                if (ghostX > -50) { // Render jika masih terlihat di layar
+                    ctxAper.globalAlpha = 0.3;
+                    ctxAper.fillStyle = '#475569';
+                    ctxAper.beginPath(); ctxAper.moveTo(ghostX, cy-15); ctxAper.lineTo(ghostX+40, cy); ctxAper.lineTo(ghostX, cy+15); ctxAper.fill();
+                    ctxAper.fillStyle = '#334155'; ctxAper.fillRect(ghostX-20, cy-10, 20, 20);
+                    ctxAper.fillStyle = '#fff'; ctxAper.font = '10px sans-serif'; ctxAper.fillText("START", ghostX - 15, cy+45);
+                    ctxAper.globalAlpha = 1.0;
+                }
+            }
+
+            // Gambar Roket (Posisi Tetap)
+            ctxAper.fillStyle = '#94a3b8';
+            ctxAper.beginPath(); ctxAper.moveTo(cx, cy-15); ctxAper.lineTo(cx+40, cy); ctxAper.lineTo(cx, cy+15); ctxAper.fill();
+            ctxAper.fillStyle = '#334155'; ctxAper.fillRect(cx-20, cy-10, 20, 20);
+
+            // Draw Engine Fire
+            if (aperState.phase === 1) {
+                ctxAper.fillStyle = 'var(--gold-force)';
+                ctxAper.beginPath(); ctxAper.moveTo(cx-20, cy-8); ctxAper.lineTo(cx-40 - Math.random()*20, cy); ctxAper.lineTo(cx-20, cy+8); ctxAper.fill();
+                ctxAper.shadowColor = 'var(--gold-force)'; ctxAper.shadowBlur = 15; ctxAper.fill(); ctxAper.shadowBlur = 0;
+            }
+
+            // Draw Vectors
+            let pCurrent = aperState.mass * vCurrent;
+            drawArrow(ctxAper, cx+20, cy-25, cx+20 + (pCurrent/2), cy-25, 'var(--cyan-vel)', 3, 'p');
+            
+            if (aperState.phase === 1) {
+                drawArrow(ctxAper, cx-60, cy, cx-25, cy, 'var(--gold-force)', 3, 'F');
+            }
+
+            // Draw Graph F-t on the right (Tidak akan pernah tumpang tindih dengan roket)
+            const gx = w * 0.7; const gy = h - 30; const gw = w * 0.25; const gh = h - 60;
+            
+            ctxAper.strokeStyle = '#64748b'; ctxAper.lineWidth = 2;
+            ctxAper.beginPath(); 
+            ctxAper.moveTo(gx, gy - gh); ctxAper.lineTo(gx, gy); 
+            ctxAper.lineTo(gx + gw, gy); ctxAper.stroke();
+            
+            ctxAper.fillStyle = '#94a3b8'; ctxAper.font = '12px monospace';
+            ctxAper.fillText("F", gx - 15, gy - gh + 10);
+            ctxAper.fillText("t", gx + gw + 5, gy + 5);
+
+            if (aperState.graphData.length > 0) {
+                let mapT = (t) => gx + ((t-1) / 2) * gw;
+                let mapF = (f) => gy - (f / 200) * gh;
+                
+                ctxAper.strokeStyle = 'var(--gold-force)';
+                ctxAper.fillStyle = 'rgba(250, 204, 21, 0.3)';
+                ctxAper.lineWidth = 2;
+                
+                ctxAper.beginPath();
+                ctxAper.moveTo(mapT(1.0), gy);
+                
+                aperState.graphData.forEach(pt => {
+                    ctxAper.lineTo(mapT(pt.t), mapF(pt.f));
+                });
+                
+                let lastT = aperState.graphData[aperState.graphData.length-1].t;
+                ctxAper.lineTo(mapT(lastT), gy);
+                ctxAper.stroke();
+                ctxAper.fill();
+
+                if (aperState.phase === 2) {
+                    ctxAper.fillStyle = 'var(--gold-force)';
+                    ctxAper.textAlign = 'center';
+                    ctxAper.fillText("I = Luas", gx + gw/2, gy - gh/2);
+                    ctxAper.textAlign = 'left';
+                }
+            }
+        }
+
+        // ==========================================
+        // CANVAS 2: MODUL 1 (DYNAMICS SIMULATION)
+        // ==========================================
+        const ctxM1 = resizeCanvas('modul1Canvas');
+        
+        let m1State = {
+            playing: false,
+            phase: 'setup',
+            simTime: 0, lastTime: 0,
+            m: 10, v1: 5, f: 50, dt: 2.0,
+            currentX: 0, currentV: 5, currentP: 50, accumulatedI: 0,
+            xAtDt: 0, vAtDt: 0
+        };
+
+        function updateModul1Inputs() {
+            m1State.playing = false;
+            m1State.phase = 'setup';
+            m1State.simTime = 0;
+            m1State.accumulatedI = 0;
+
+            m1State.m = parseFloat(document.getElementById('m1-m').value);
+            m1State.v1 = parseFloat(document.getElementById('m1-v1').value);
+            m1State.f = parseFloat(document.getElementById('m1-f').value);
+            m1State.dt = parseFloat(document.getElementById('m1-t').value);
+
+            document.getElementById('m1-val-m').innerText = m1State.m.toFixed(1) + " kg";
+            document.getElementById('m1-val-v1').innerText = m1State.v1.toFixed(1) + " m/s";
+            document.getElementById('m1-val-f').innerText = m1State.f.toFixed(0) + " N";
+            document.getElementById('m1-val-t').innerText = m1State.dt.toFixed(1) + " s";
+
+            let I_target = m1State.f * m1State.dt;
+            document.getElementById('m1-i').innerText = (I_target > 0 ? "+" : "") + I_target.toFixed(2) + " N·s (Target)";
+            document.getElementById('m1-dp').innerText = "0.00 kg·m/s (Siap)";
+
+            m1State.currentX = 0;
+            m1State.currentV = m1State.v1;
+            m1State.currentP = m1State.m * m1State.v1;
+            
+            let btn = document.getElementById('btnM1Play');
+            btn.innerText = "JALANKAN SIMULASI (F Bekerja selama Δt)";
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-action');
+
+            drawModul1Dynamic();
+        }
+
+        function playModul1() {
+            if (m1State.phase === 'coasting') {
+                updateModul1Inputs(); // Reset
+                return;
+            }
+            if (m1State.playing) return;
+
+            m1State.playing = true;
+            m1State.phase = 'impulse';
+            m1State.lastTime = performance.now();
+            
+            let btn = document.getElementById('btnM1Play');
+            btn.innerText = "SIMULASI BERJALAN...";
+            btn.style.opacity = "0.8";
+            
+            requestAnimationFrame(modul1Loop);
+        }
+
+        function modul1Loop(timestamp) {
+            if (!m1State.playing) return;
+            
+            let dtReal = (timestamp - m1State.lastTime) / 1000;
+            if(dtReal > 0.1) dtReal = 0.1; 
+            m1State.lastTime = timestamp;
+            
+            m1State.simTime += dtReal;
+            let a = m1State.f / m1State.m;
+
+            if (m1State.phase === 'impulse') {
+                if (m1State.simTime >= m1State.dt) {
+                    m1State.phase = 'coasting';
+                    m1State.vAtDt = m1State.v1 + a * m1State.dt;
+                    m1State.xAtDt = (m1State.v1 * m1State.dt) + (0.5 * a * Math.pow(m1State.dt, 2));
+                    
+                    m1State.currentV = m1State.vAtDt;
+                    m1State.currentP = m1State.m * m1State.currentV;
+                    m1State.accumulatedI = m1State.f * m1State.dt;
+                    
+                    let btn = document.getElementById('btnM1Play');
+                    btn.innerText = "BENDA MELAJU KONSTAN (v₂) - KLIK UNTUK RESET";
+                    btn.style.opacity = "1";
+                    btn.classList.remove('btn-action');
+                    btn.classList.add('btn-warning');
+                } else {
+                    m1State.currentV = m1State.v1 + a * m1State.simTime;
+                    m1State.currentP = m1State.m * m1State.currentV;
+                    m1State.currentX = (m1State.v1 * m1State.simTime) + (0.5 * a * Math.pow(m1State.simTime, 2));
+                    m1State.accumulatedI = m1State.f * m1State.simTime;
+                }
+            } 
+            else if (m1State.phase === 'coasting') {
+                let tCoast = m1State.simTime - m1State.dt;
+                m1State.currentX = m1State.xAtDt + (m1State.vAtDt * tCoast);
+            }
+
+            let p1 = m1State.m * m1State.v1;
+            let dpCurrent = m1State.currentP - p1;
+            document.getElementById('m1-dp').innerText = (dpCurrent > 0 ? "+" : "") + dpCurrent.toFixed(2) + " kg·m/s";
+            
+            let iLabel = m1State.phase === 'impulse' ? ` (Berjalan: ${m1State.simTime.toFixed(2)}s)` : " (Selesai)";
+            document.getElementById('m1-i').innerText = (m1State.accumulatedI > 0 ? "+" : "") + m1State.accumulatedI.toFixed(2) + " N·s" + iLabel;
+
+            drawModul1Dynamic();
+            
+            if (m1State.playing) {
+                requestAnimationFrame(modul1Loop);
+            }
+        }
+
+        function drawModul1Dynamic() {
+            const w = ctxM1.canvas.width; const h = ctxM1.canvas.height;
+            if(w===0) return;
+            ctxM1.clearRect(0, 0, w, h);
+
+            let cy = h/2 + 20; 
+            let bSize = 40 + (m1State.m * 1.2); 
+            let scaleP = 0.8; 
+            let scaleF = 1.0; 
+
+            // Tracking camera: Block stays centered, environment moves opposite
+            let pixelsPerMeter = 30;
+            let cx = w/2;
+            let cameraDisplacement = m1State.currentX * pixelsPerMeter;
+
+            ctxM1.fillStyle = '#080c14';
+            ctxM1.fillRect(0, 0, w, h);
+            
+            let floorY = cy + bSize/2;
+            ctxM1.shadowColor = 'var(--cyan-vel)';
+            ctxM1.shadowBlur = 10;
+            ctxM1.fillStyle = 'rgba(0, 229, 255, 0.15)';
+            ctxM1.fillRect(0, floorY, w, 4);
+            ctxM1.shadowBlur = 0;
+
+            ctxM1.strokeStyle = '#334155'; ctxM1.lineWidth = 2;
+            let trackOffset = cameraDisplacement % 50;
+            if (trackOffset < 0) trackOffset += 50; 
+            for (let i = -trackOffset - 50; i < w + 50; i+=50) {
+                ctxM1.beginPath(); ctxM1.moveTo(i, floorY); ctxM1.lineTo(i, floorY+15); ctxM1.stroke();
+            }
+
+            if (m1State.phase !== 'setup') {
+                let ghostX = cx - cameraDisplacement;
+                ctxM1.globalAlpha = 0.3;
+                ctxM1.fillStyle = '#475569';
+                ctxM1.fillRect(ghostX - bSize/2, cy - bSize/2, bSize, bSize);
+                ctxM1.strokeStyle = '#94a3b8'; ctxM1.setLineDash([5, 5]);
+                ctxM1.strokeRect(ghostX - bSize/2, cy - bSize/2, bSize, bSize);
+                ctxM1.setLineDash([]);
+                
+                let p1 = m1State.m * m1State.v1;
+                if (Math.abs(p1) > 1) {
+                    drawArrow(ctxM1, ghostX, cy - bSize/2 - 20, ghostX + p1*scaleP, cy - bSize/2 - 20, 'var(--cyan-vel)', 2, "");
+                    ctxM1.fillStyle = 'var(--cyan-vel)';
+                    ctxM1.font = 'bold 12px monospace';
+                    ctxM1.textAlign = 'center';
+                    ctxM1.fillText("p1", ghostX + (p1*scaleP)/2, cy - bSize/2 - 28);
+                    ctxM1.textAlign = 'left';
+                }
+                
+                ctxM1.beginPath(); ctxM1.moveTo(ghostX, cy + bSize/2); ctxM1.lineTo(ghostX, floorY+30); ctxM1.stroke();
+                ctxM1.fillStyle = '#fff'; ctxM1.font = '10px sans-serif'; ctxM1.fillText("START", ghostX - 15, floorY+45);
+                ctxM1.globalAlpha = 1.0;
+            }
+
+            ctxM1.save();
+            ctxM1.shadowColor = 'rgba(0, 229, 255, 0.4)'; ctxM1.shadowBlur = 15;
+            
+            let grd = ctxM1.createLinearGradient(0, cy - bSize/2, 0, cy + bSize/2);
+            grd.addColorStop(0, '#1e293b'); grd.addColorStop(1, '#0f172a');
+            
+            ctxM1.fillStyle = grd;
+            if (ctxM1.roundRect) { ctxM1.roundRect(cx - bSize/2, cy - bSize/2, bSize, bSize, 8); } 
+            else { ctxM1.fillRect(cx - bSize/2, cy - bSize/2, bSize, bSize); }
+            ctxM1.fill();
+            
+            ctxM1.strokeStyle = 'var(--cyan-vel)'; ctxM1.lineWidth = 2; ctxM1.stroke();
+            ctxM1.shadowBlur = 0;
+            
+            ctxM1.fillStyle = 'var(--cyan-vel)'; ctxM1.font = 'bold 14px sans-serif';
+            ctxM1.textAlign = 'center'; ctxM1.fillText(m1State.m.toFixed(1)+"kg", cx, cy + 5);
+            ctxM1.restore();
+
+            if (Math.abs(m1State.currentP) > 1) {
+                let labelP = m1State.phase === 'setup' ? "p1" : (m1State.phase === 'coasting' ? "p2 (Konstan)" : "p(t)");
+                drawArrow(ctxM1, cx, cy - bSize/2 - 20, cx + m1State.currentP*scaleP, cy - bSize/2 - 20, '#38bdf8', 4, "");
+                ctxM1.fillStyle = '#38bdf8';
+                ctxM1.font = 'bold 12px monospace';
+                ctxM1.textAlign = 'center';
+                ctxM1.fillText(labelP, cx + (m1State.currentP*scaleP)/2, cy - bSize/2 - 28);
+                ctxM1.textAlign = 'left';
+            }
+
+            if (m1State.phase === 'impulse' && m1State.f !== 0) {
+                let fColor = 'var(--gold-force)';
+                drawArrow(ctxM1, cx, cy, cx + m1State.f*scaleF, cy, fColor, 5, 'F');
+                
+                ctxM1.fillStyle = 'rgba(250, 204, 21, 0.3)';
+                ctxM1.beginPath(); ctxM1.arc(cx + (m1State.f > 0 ? bSize/2 : -bSize/2), cy, 20 + Math.random()*10, 0, Math.PI*2); ctxM1.fill();
+            }
+
+            let barW = 200; let barH = 8;
+            let barX = w/2 - barW/2; let barY = 25;
+            
+            ctxM1.fillStyle = '#1e293b'; ctxM1.fillRect(barX, barY, barW, barH);
+            ctxM1.strokeStyle = '#334155'; ctxM1.lineWidth = 1; ctxM1.strokeRect(barX, barY, barW, barH);
+            
+            let progress = m1State.simTime / m1State.dt;
+            if (progress > 1) progress = 1;
+            
+            let fillCol = m1State.phase === 'coasting' ? '#10b981' : 'var(--gold-force)';
+            ctxM1.fillStyle = fillCol;
+            ctxM1.fillRect(barX, barY, barW * progress, barH);
+            
+            ctxM1.fillStyle = '#fff'; ctxM1.font = 'bold 12px monospace'; ctxM1.textAlign = 'center';
+            
+            let durasiLabel = m1State.phase === 'coasting' ? 
+                              "IMPULS SELESAI (Gaya Nol)" : 
+                              `Durasi Gaya (Δt): ${m1State.simTime.toFixed(2)}s / ${m1State.dt.toFixed(2)}s`;
+            ctxM1.fillText(durasiLabel, w/2, barY - 8);
+            ctxM1.textAlign = 'left'; 
+        }
+
+        // ==========================================
+        // CANVAS 3: MODUL 2 (MULTI BODY)
+        // ==========================================
+        const ctxM2 = resizeCanvas('modul2Canvas');
+        let sysMode = 'A'; // 'A' or 'B'
+        
+        let m2State = {
+            playing: false,
+            lastTime: 0,
+            pos: 0, 
+            vel: 0
+        };
+
+        function setSystem(mode) {
+            sysMode = mode;
+            document.getElementById('tab-sysA').classList.toggle('active', mode === 'A');
+            document.getElementById('tab-sysB').classList.toggle('active', mode === 'B');
+            document.getElementById('sysA-force-control').style.display = mode === 'A' ? 'block' : 'none';
+            updateModul2Inputs();
+        }
+
+        function playModul2() {
+            if (m2State.playing) {
+                // Hentikan simulasi
+                m2State.playing = false;
+                m2State.pos = 0;
+                m2State.vel = 0;
+                let btn = document.getElementById('btnM2Play');
+                btn.innerText = "JALANKAN SISTEM";
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-action');
+                updateModul2CalcAndDraw();
+                return;
+            }
+            // Mulai Simulasi
+            m2State.playing = true;
+            m2State.pos = 0;
+            m2State.vel = 0;
+            m2State.lastTime = performance.now();
+            let btn = document.getElementById('btnM2Play');
+            btn.innerText = "HENTIKAN & RESET";
+            btn.classList.remove('btn-action');
+            btn.classList.add('btn-warning');
+            
+            requestAnimationFrame(modul2Loop);
+        }
+
+        function updateModul2Inputs() {
+            if(m2State.playing) {
+                playModul2(); // Stop when user slides
+            } else {
+                m2State.pos = 0;
+                m2State.vel = 0;
+                updateModul2CalcAndDraw();
+            }
+        }
+
+        function modul2Loop(timestamp) {
+            if (!m2State.playing) return;
+            
+            let dt = (timestamp - m2State.lastTime) / 1000;
+            if(dt > 0.1) dt = 0.1;
+            m2State.lastTime = timestamp;
+
+            let m1 = parseFloat(document.getElementById('m2-m1').value);
+            let m2 = parseFloat(document.getElementById('m2-m2').value);
+            let f = parseFloat(document.getElementById('m2-f').value);
+            let g = 9.8;
+            let a = 0;
+
+            if (sysMode === 'A') {
+                a = f / (m1 + m2);
+            } else {
+                a = ((m2 - m1) * g) / (m1 + m2);
+            }
+
+            m2State.vel += a * dt; // v = v0 + at
+            let nextPos = m2State.pos + m2State.vel * dt; // hitung posisi selanjutnya
+            
+            // Cek Tabrakan dengan Katrol (Khusus Mesin Atwood)
+            let isCrash = false;
+            if (sysMode === 'B') {
+                let pxOffset = nextPos * 30; // 30 px = 1 meter
+                let maxPxOffset = 40; // Batas mentok: 60 (panjang tali awal) - 20 (jari-jari katrol)
+                
+                if (Math.abs(pxOffset) >= maxPxOffset) {
+                    nextPos = Math.sign(pxOffset) * (maxPxOffset / 30); // Kunci posisi balok menempel di katrol
+                    isCrash = true;
+                }
+            }
+
+            m2State.pos = nextPos;
+            updateModul2CalcAndDraw();
+
+            if (isCrash) {
+                // Hentikan simulasi karena terjadi tabrakan
+                m2State.playing = false;
+                m2State.vel = 0;
+                let btn = document.getElementById('btnM2Play');
+                btn.innerText = "🛑 BENTURAN! KLIK UNTUK RESET";
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-action');
+                updateModul2CalcAndDraw(); // Render update status UI terakhir
+                return; // Putuskan loop
+            }
+
+            // Limit dinaikkan ke 20 meter untuk sistem datar
+            if (sysMode === 'A' && Math.abs(m2State.pos) > 20) { 
+                playModul2(); // Auto reset
+            } else {
+                requestAnimationFrame(modul2Loop);
+            }
+        }
+
+        function updateModul2CalcAndDraw() {
+            let m1 = parseFloat(document.getElementById('m2-m1').value);
+            let m2 = parseFloat(document.getElementById('m2-m2').value);
+            let f = parseFloat(document.getElementById('m2-f').value);
+            let g = 9.8;
+            let a = 0; let T = 0;
+
+            if (sysMode === 'A') {
+                a = f / (m1 + m2);
+                T = m1 * Math.abs(a); 
+            } else {
+                a = ((m2 - m1) * g) / (m1 + m2);
+                T = (2 * m1 * m2 * g / (m1 + m2));
+            }
+
+            document.getElementById('m2-val-m1').innerText = m1.toFixed(1) + " kg";
+            document.getElementById('m2-val-m2').innerText = m2.toFixed(1) + " kg";
+            document.getElementById('m2-val-f').innerText = f.toFixed(0) + " N";
+            document.getElementById('m2-a').innerText = Math.abs(a).toFixed(2) + " m/s²";
+            document.getElementById('m2-t').innerText = T.toFixed(2) + " N";
+
+            drawModul2(m1, m2, f, a, T);
+        }
+
+        function drawModul2(m1, m2, f, a, T) {
+            const w = ctxM2.canvas.width;
+            const h = ctxM2.canvas.height;
+            if(w===0) return;
+            ctxM2.clearRect(0, 0, w, h);
+
+            // Teks Status Animasi
+            ctxM2.font = 'bold 12px sans-serif';
+            ctxM2.textAlign = 'left';
+            
+            let statusText = "⏸ SIMULASI BERHENTI (SIAP)";
+            ctxM2.fillStyle = '#f59e0b'; // Warna Standar Berhenti
+            
+            if (m2State.playing) {
+                statusText = "▶ SIMULASI BERJALAN";
+                ctxM2.fillStyle = '#10b981'; // Warna Hijau Berjalan
+            } else if (sysMode === 'B' && Math.abs(m2State.pos * 30) >= 39.9) {
+                statusText = "🛑 BENTURAN PADA KATROL!";
+                ctxM2.fillStyle = '#ef4444'; // Warna Merah Alert
+            }
+            
+            ctxM2.fillText(statusText, 10, 20);
+
+            ctxM2.font = '12px monospace';
+            let pxOffset = m2State.pos * 30; // 30 pixels per meter
+
+            if (sysMode === 'A') {
+                let cx = w/2; let cy = h/2 + 30;
+                ctxM2.fillStyle = '#1e293b'; ctxM2.fillRect(0, cy, w, 10); // Floor
+
+                // Gambar marker lantai yang bergerak untuk ilusi visual
+                ctxM2.strokeStyle = '#334155'; ctxM2.lineWidth = 2;
+                let trackOffset = pxOffset % 50;
+                if (trackOffset < 0) trackOffset += 50;
+                for (let i = -trackOffset - 50; i < w + 50; i+=50) {
+                    ctxM2.beginPath(); ctxM2.moveTo(i, cy); ctxM2.lineTo(i, cy+10); ctxM2.stroke();
+                }
+
+                let s1 = 20 + m1; let s2 = 20 + m2;
+                // Hilangkan "+ pxOffset" agar posisi Box Tetap di Tengah
+                let x1 = cx - 60 - s1; 
+                let x2 = cx + 60;
+
+                // String
+                ctxM2.strokeStyle = '#f8fafc'; ctxM2.lineWidth = 2;
+                ctxM2.beginPath(); ctxM2.moveTo(x1+s1, cy - s1/2); ctxM2.lineTo(x2, cy - s2/2); ctxM2.stroke();
+
+                // Blocks
+                ctxM2.fillStyle = '#3b82f6'; ctxM2.fillRect(x1, cy - s1, s1, s1); ctxM2.fillStyle = '#fff'; ctxM2.fillText("m1", x1+s1/2-5, cy-s1/2+5);
+                ctxM2.fillStyle = '#ef4444'; ctxM2.fillRect(x2, cy - s2, s2, s2); ctxM2.fillStyle = '#fff'; ctxM2.fillText("m2", x2+s2/2-5, cy-s2/2+5);
+
+                // Forces & Accelerations (panah tidak perlu ditambah pxOffset karena mengikuti box)
+                if (f !== 0) drawArrow(ctxM2, x2+s2, cy-s2/2, x2+s2 + (f*0.5), cy-s2/2, 'var(--gold-force)', 3, 'F');
+                
+                if (T > 0.1) {
+                    drawArrow(ctxM2, x1+s1, cy-s1/2 - 15, x1+s1 + 20, cy-s1/2 - 15, 'var(--magenta-tens)', 2, 'T');
+                    drawArrow(ctxM2, x2, cy-s2/2 - 15, x2 - 20, cy-s2/2 - 15, 'var(--magenta-tens)', 2, 'T');
+                }
+                
+                if (Math.abs(a) > 0.01 && m2State.playing) {
+                    let dir = a > 0 ? 1 : -1;
+                    drawArrow(ctxM2, cx-30, cy - Math.max(s1,s2) - 20, cx-30 + dir*40, cy - Math.max(s1,s2) - 20, 'var(--cyan-vel)', 3, 'a');
+                }
+
+            } else {
+                let cx = w/2; let cy = 40;
+                
+                // Ceiling & Pulley
+                ctxM2.fillStyle = '#334155'; ctxM2.fillRect(cx-40, 0, 80, 10);
+                ctxM2.beginPath(); ctxM2.moveTo(cx, 10); ctxM2.lineTo(cx, cy); ctxM2.strokeStyle='#fff'; ctxM2.lineWidth=2; ctxM2.stroke();
+                
+                // Rotate Pulley Visually based on velocity
+                ctxM2.save();
+                ctxM2.translate(cx, cy);
+                ctxM2.rotate(m2State.pos * 1.5);
+                ctxM2.beginPath(); ctxM2.arc(0, 0, 20, 0, Math.PI*2); ctxM2.fillStyle='#64748b'; ctxM2.fill(); ctxM2.stroke();
+                ctxM2.beginPath(); ctxM2.moveTo(-20,0); ctxM2.lineTo(20,0); ctxM2.stroke();
+                ctxM2.restore();
+
+                let s1 = 20 + m1; let s2 = 20 + m2;
+                // m2 moves down when a>0, so y2 increases, y1 decreases
+                let y1 = cy + 60 - pxOffset; 
+                let y2 = cy + 60 + pxOffset;
+
+                // Strings (Anchor exactly at middle height of pulley cy)
+                ctxM2.beginPath(); ctxM2.moveTo(cx-20, cy); ctxM2.lineTo(cx-20, y1); ctxM2.stroke();
+                ctxM2.beginPath(); ctxM2.moveTo(cx+20, cy); ctxM2.lineTo(cx+20, y2); ctxM2.stroke();
+
+                // Blocks
+                ctxM2.fillStyle = '#3b82f6'; ctxM2.fillRect(cx-20 - s1/2, y1, s1, s1); ctxM2.fillStyle = '#fff'; ctxM2.fillText("m1", cx-20-5, y1+s1/2+5);
+                ctxM2.fillStyle = '#ef4444'; ctxM2.fillRect(cx+20 - s2/2, y2, s2, s2); ctxM2.fillStyle = '#fff'; ctxM2.fillText("m2", cx+20-5, y2+s2/2+5);
+
+                drawArrow(ctxM2, cx-20, y1+s1, cx-20, y1+s1 + m1*2, 'var(--gold-force)', 2, 'W1');
+                drawArrow(ctxM2, cx+20, y2+s2, cx+20, y2+s2 + m2*2, 'var(--gold-force)', 2, 'W2');
+
+                if (T > 0.1) {
+                    drawArrow(ctxM2, cx-20, y1, cx-20, y1 - 20, 'var(--magenta-tens)', 2, 'T');
+                    drawArrow(ctxM2, cx+20, y2, cx+20, y2 - 20, 'var(--magenta-tens)', 2, 'T');
+                }
+
+                if (Math.abs(a) > 0.01 && m2State.playing) {
+                    let dir1 = a > 0 ? -1 : 1;
+                    let dir2 = a > 0 ? 1 : -1;
+                    drawArrow(ctxM2, cx-40-s1/2, y1+s1/2, cx-40-s1/2, y1+s1/2 + dir1*30, 'var(--cyan-vel)', 3, 'a');
+                    drawArrow(ctxM2, cx+40+s2/2, y2+s2/2, cx+40+s2/2, y2+s2/2 + dir2*30, 'var(--cyan-vel)', 3, 'a');
+                }
+            }
+        }
+
+        // ==========================================
+        // MINI-GAME LOGIC
+        // ==========================================
+        let ctxGame;
+        let gameState = { 
+            m1: 2000, m2: 1000, t: 5, targetDp: 15000, maxT: 4000, 
+            currentF: 0, playing: false, simTime: 0, broken: false,
+            // Track Independent Real Positions and Velocity
+            truckPos: 0, loadPos: 0, cameraPos: 0,
+            sysV: 0, truckV: 0, loadV: 0,
+            lastTime: 0
+        };
+
+        function initGame() {
+            gameState.m1 = Math.floor(Math.random() * 2000) + 1000;
+            gameState.m2 = Math.floor(Math.random() * 2000) + 500;
+            gameState.t = Math.floor(Math.random() * 5) + 3;
+            
+            let targetA = Math.random() * 2 + 1; 
+            gameState.targetDp = Math.floor((gameState.m1 + gameState.m2) * targetA * gameState.t);
+            
+            let reqF = gameState.targetDp / gameState.t;
+            let reqA = reqF / (gameState.m1 + gameState.m2);
+            let reqT = gameState.m2 * reqA;
+            gameState.maxT = Math.floor(reqT * (1 + Math.random()*0.2)); 
+
+            document.getElementById('g-m1').innerText = gameState.m1 + " kg";
+            document.getElementById('g-m2').innerText = gameState.m2 + " kg";
+            document.getElementById('g-t').innerText = gameState.t.toFixed(1) + " s";
+            document.getElementById('g-target-dp').innerText = gameState.targetDp + " kg·m/s";
+            document.getElementById('g-max-t').innerText = gameState.maxT + " N";
+
+            document.getElementById('g-f').max = Math.floor(reqF * 2);
+            document.getElementById('g-f').value = 0;
+            
+            gameState.playing = false;
+            gameState.simTime = 0;
+            gameState.broken = false;
+            
+            // Reset Kinematics
+            gameState.truckPos = 0; gameState.loadPos = 0; gameState.cameraPos = 0;
+            gameState.sysV = 0; gameState.truckV = 0; gameState.loadV = 0;
+
+            document.getElementById('g-f').disabled = false;
+            updateGameUI();
+        }
+
+        function updateGameUI() {
+            if (gameState.playing) return;
+            gameState.currentF = parseFloat(document.getElementById('g-f').value);
+            document.getElementById('g-val-f').innerText = gameState.currentF + " N";
+            
+            let a = gameState.currentF / (gameState.m1 + gameState.m2);
+            let T = gameState.m2 * a;
+            
+            let tEl = document.getElementById('g-current-t');
+            tEl.innerText = T.toFixed(0) + " N";
+            
+            if (T > gameState.maxT) tEl.style.color = "var(--crimson-alert)";
+            else tEl.style.color = "var(--text-main)";
+            
+            drawGame();
+        }
+
+        function checkGame() {
+            if (gameState.playing) return;
+            gameState.playing = true;
+            gameState.simTime = 0;
+            gameState.broken = false;
+            
+            gameState.truckPos = 0; gameState.loadPos = 0; gameState.cameraPos = 0;
+            gameState.sysV = 0; gameState.truckV = 0; gameState.loadV = 0;
+            
+            gameState.lastTime = performance.now();
+            document.getElementById('g-f').disabled = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameState.playing) return;
+            
+            let dtReal = (timestamp - gameState.lastTime) / 1000;
+            if(dtReal > 0.1) dtReal = 0.1;
+            gameState.lastTime = timestamp;
+            
+            // Time multiplier for snappier game feel
+            let timeScale = 2.4; 
+            let dt = dtReal * timeScale;
+            gameState.simTime += dt; 
+            
+            let a = gameState.currentF / (gameState.m1 + gameState.m2);
+            let T = gameState.m2 * a;
+            
+            // Check Breaking condition safely
+            if (T > gameState.maxT && gameState.simTime > 0.5 && !gameState.broken) {
+                gameState.broken = true;
+                // Transition current system velocity to independent bodies
+                gameState.truckV = gameState.sysV;
+                gameState.loadV = gameState.sysV;
+            }
+            
+            if (!gameState.broken) {
+                gameState.sysV += a * dt;
+                let dx = gameState.sysV * dt;
+                gameState.truckPos += dx;
+                gameState.loadPos += dx;
+                gameState.cameraPos += dx; // Camera tracks perfectly
+            } else {
+                // Tali Putus! Fisika berpisah.
+                let aTruck = gameState.currentF / gameState.m1; // Beban lenyap, truk melesat
+                gameState.truckV += aTruck * dt;
+                
+                // Beban melambat krn gesekan hipotetis
+                gameState.loadV -= 15 * dt; 
+                if (gameState.loadV < 0) gameState.loadV = 0;
+
+                gameState.truckPos += gameState.truckV * dt;
+                gameState.loadPos += gameState.loadV * dt;
+                
+                // Kamera menyorot ke beban agar truk terlihat kabur
+                gameState.cameraPos = gameState.loadPos;
+            }
+            
+            drawGame();
+            
+            if (gameState.simTime >= gameState.t || (gameState.broken && gameState.simTime > 1.5)) {
+                gameState.playing = false;
+                document.getElementById('g-f').disabled = false;
+                showGameResult();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function showGameResult() {
+            let achievedDp = gameState.currentF * gameState.t; // I = F*t = dP
+            let a = gameState.currentF / (gameState.m1 + gameState.m2);
+            let T = gameState.m2 * a;
+            
+            let msgBox = document.getElementById('game-msg');
+            let descBox = document.getElementById('game-desc');
+            let overlay = document.getElementById('game-overlay');
+
+            if (T > gameState.maxT) {
+                msgBox.innerText = "💥 TALI PUTUS!";
+                msgBox.style.color = "var(--crimson-alert)";
+                descBox.innerText = `Tegangan tali (${T.toFixed(0)} N) melampaui batas maksimum (${gameState.maxT} N). Gaya tarik Anda terlalu brutal sehingga muatan tertinggal!`;
+            } else if (Math.abs(achievedDp - gameState.targetDp) <= (gameState.targetDp * 0.05)) { 
+                msgBox.innerText = "✅ MISI SUKSES!";
+                msgBox.style.color = "var(--cyan-vel)";
+                descBox.innerHTML = `Sempurna! Anda memberikan Gaya $F = ${gameState.currentF}\\text{ N}$.<br>Menghasilkan Impuls $I = ${achievedDp.toFixed(0)}\\text{ Ns}$ yang merubah Momentum tepat pada target tanpa memutus tali.`;
+                if(window.MathJax) MathJax.typesetPromise([descBox]);
+            } else if (achievedDp < gameState.targetDp) {
+                msgBox.innerText = "❌ TERLALU LAMBAT!";
+                msgBox.style.color = "var(--gold-force)";
+                descBox.innerText = `Perubahan Momentum yang dihasilkan (${achievedDp.toFixed(0)} Ns) kurang dari target. Tambah Gaya Tarik F!`;
+            } else {
+                msgBox.innerText = "❌ TERLALU CEPAT!";
+                msgBox.style.color = "var(--gold-force)";
+                descBox.innerText = `Perubahan Momentum yang dihasilkan (${achievedDp.toFixed(0)} Ns) melebihi target. Kurangi Gaya Tarik F!`;
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function drawGame() {
+            if (!ctxGame) return;
+            const w = ctxGame.canvas.width;
+            const h = ctxGame.canvas.height;
+            if(w===0) return;
+            ctxGame.clearRect(0, 0, w, h);
+
+            let cy = h/2 + 10;
+
+            // Ground & Camera Parallax Effect
+            ctxGame.fillStyle = '#1e293b';
+            ctxGame.fillRect(0, cy + 20, w, 10);
+            
+            ctxGame.fillStyle = '#334155';
+            let offset = gameState.cameraPos % 40;
+            for(let i = -40; i < w + 40; i+=40) {
+                ctxGame.beginPath();
+                ctxGame.moveTo(i - offset, cy + 20);
+                ctxGame.lineTo(i - offset + 10, cy + 30);
+                ctxGame.lineTo(i - offset - 10, cy + 30);
+                ctxGame.fill();
+            }
+
+            let a = gameState.currentF / (gameState.m1 + gameState.m2);
+            let T = gameState.m2 * a;
+            let isBreaking = T > gameState.maxT;
+            let cx = w/2;
+
+            // Hitung Posisi Render terhadap Posisi Kamera Absolut
+            let baseLoadX = cx - 60;
+            let drawLoadX = baseLoadX + (gameState.loadPos - gameState.cameraPos);
+            let drawTruckX = baseLoadX + 100 + (gameState.truckPos - gameState.cameraPos);
+
+            // Rope
+            if (!gameState.broken) {
+                ctxGame.strokeStyle = isBreaking ? '#ef4444' : '#94a3b8';
+                ctxGame.lineWidth = 3;
+                if (isBreaking && gameState.playing && Math.floor(Date.now() / 150) % 2 === 0) {
+                    ctxGame.strokeStyle = '#ffffff'; // kilat tanda bahaya
+                }
+                ctxGame.beginPath();
+                ctxGame.moveTo(drawLoadX + 20, cy);
+                ctxGame.lineTo(drawTruckX - 20, cy);
+                ctxGame.stroke();
+                
+                ctxGame.fillStyle = isBreaking ? '#ef4444' : '#f8fafc';
+                ctxGame.textAlign = 'center';
+                ctxGame.font = '12px monospace';
+                ctxGame.fillText(`T = ${T.toFixed(0)} N`, drawLoadX + 50, cy - 10);
+            } else {
+                ctxGame.strokeStyle = '#ef4444';
+                ctxGame.lineWidth = 3;
+                ctxGame.beginPath(); ctxGame.moveTo(drawLoadX + 20, cy); ctxGame.lineTo(drawLoadX + 40, cy + 10); ctxGame.stroke();
+                ctxGame.beginPath(); ctxGame.moveTo(drawTruckX - 20, cy); ctxGame.lineTo(drawTruckX - 40, cy + 10); ctxGame.stroke();
+            }
+
+            // Load (m2)
+            ctxGame.fillStyle = '#ef4444';
+            ctxGame.fillRect(drawLoadX - 20, cy - 20, 40, 40);
+            ctxGame.fillStyle = '#ffffff';
+            ctxGame.textAlign = 'center';
+            ctxGame.font = 'bold 12px sans-serif';
+            ctxGame.fillText("m2", drawLoadX, cy + 5);
+
+            // Truck (m1)
+            ctxGame.fillStyle = '#3b82f6';
+            ctxGame.fillRect(drawTruckX - 25, cy - 20, 50, 30);
+            ctxGame.fillStyle = '#60a5fa'; 
+            ctxGame.fillRect(drawTruckX + 5, cy - 15, 15, 15);
+            ctxGame.fillStyle = '#ffffff';
+            ctxGame.textAlign = 'center';
+            ctxGame.fillText("m1", drawTruckX - 5, cy + 5);
+            
+            // Wheels rotation
+            ctxGame.fillStyle = '#111111';
+            
+            function drawWheel(wx, wy, rotAngle) {
+                ctxGame.save();
+                ctxGame.translate(wx, wy);
+                ctxGame.rotate(rotAngle);
+                ctxGame.beginPath(); ctxGame.arc(0, 0, 8, 0, Math.PI*2); ctxGame.fill();
+                ctxGame.fillStyle = '#94a3b8';
+                ctxGame.beginPath(); ctxGame.arc(0, 0, 3, 0, Math.PI*2); ctxGame.fill();
+                ctxGame.fillRect(-1, -6, 2, 12);
+                ctxGame.fillRect(-6, -1, 12, 2);
+                ctxGame.restore();
+            }
+            
+            let loadRot = gameState.loadPos * 0.1;
+            let truckRot = gameState.truckPos * 0.1;
+            
+            drawWheel(drawLoadX - 10, cy + 20, loadRot);
+            drawWheel(drawLoadX + 10, cy + 20, loadRot);
+            drawWheel(drawTruckX - 15, cy + 15, truckRot);
+            drawWheel(drawTruckX + 15, cy + 15, truckRot);
+
+            // Force Arrow
+            if (gameState.currentF > 0) {
+                let fScale = Math.min(100, gameState.currentF / 50);
+                drawArrow(ctxGame, drawTruckX + 30, cy, drawTruckX + 30 + fScale, cy, '#facc15', 3, 'F');
+            }
+            
+            // Time label
+            ctxGame.fillStyle = '#ffffff';
+            ctxGame.font = '14px monospace';
+            ctxGame.textAlign = 'left';
+            ctxGame.fillText(`Waktu: ${gameState.simTime.toFixed(1)} / ${gameState.t.toFixed(1)} s`, 10, 20);
+        }
+
+        function nextGame() {
+            document.getElementById('game-overlay').classList.remove('active');
+            initGame();
+        }
+
+        // ==========================================
+        // INITIALIZATION & RESIZE HANDLING
+        // ==========================================
+        function handleResize() {
+            resizeCanvas('apersepsiCanvas');
+            resizeCanvas('modul1Canvas');
+            resizeCanvas('modul2Canvas');
+            ctxGame = resizeCanvas('gameCanvas');
+            
+            drawApersepsi();
+            if(!m1State.playing) {
+                // Redraw manually to fit
+                drawModul1Dynamic(); 
+            }
+            if(!m2State.playing) {
+                updateModul2CalcAndDraw();
+            }
+            if(!gameState.playing) drawGame();
+        }
+
+        window.onload = () => {
+            handleResize();
+            window.addEventListener('resize', handleResize);
+            
+            drawApersepsi();
+            updateModul1Inputs();
+            updateModul2Inputs();
+            initGame();
+        };
+
+    </script>
+</body>
+</html>
